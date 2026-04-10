@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////
+// USER + RBAC
+//////////////////////////
+
+model User {
+  id           String  @id @default(uuid())
+  name         String
+  email        String  @unique
+  password     String
+  roleId       String
+  refreshToken String?
+  isActive     Boolean @default(true)
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  // Relations
+  projects         Project[]         @relation("ProjectOwner")
+  createdSubtasks  Subtask[]         @relation("SubtaskCreator")
+  assignedSubtasks SubtaskAssignee[]
+  comments         Comment[]
+  attachments      Attachment[]
+  activities       ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  users           User[]
+  rolePermissions RolePermission[]
+}
+
+model Module {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  path     String
+  isActive Boolean @default(true)
+
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id     String @id @default(uuid())
+  action String @unique
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  moduleId     String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  module     Module     @relation(fields: [moduleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, moduleId, permissionId])
+}
+
+//////////////////////////
+// PROJECT
+//////////////////////////
+
+model Project {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  ownerId String
+  owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
+
+  tasks Task[]
+
+  progress Int @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////
+// TASK (CONTAINER)
+//////////////////////////
+
+model Task {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  statuses Status[]
+  subtasks Subtask[]
+
+  progress Int @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////
+// STATUS (KANBAN PER TASK)
+//////////////////////////
+
+model Status {
+  id    String  @id @default(uuid())
+  name  String
+  color String?
+  order Int
+
+  progressValue Int @default(0)
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  subtasks Subtask[]
+}
+
+//////////////////////////
+// SUBTASK (KANBAN CARD)
+//////////////////////////
+
+model Subtask {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  taskId   String
+  statusId String
+
+  order Int
+
+  priority String?
+  dueDate  DateTime?
+
+  createdBy String
+  createdAt DateTime @default(now())
+
+  // Relations
+  task   Task   @relation(fields: [taskId], references: [id])
+  status Status @relation(fields: [statusId], references: [id])
+
+  creator User @relation("SubtaskCreator", fields: [createdBy], references: [id])
+
+  checklists  Checklist[]
+  assignees   SubtaskAssignee[]
+  comments    Comment[]
+  attachments Attachment[]
+  activities  ActivityLog[]     @relation("SubtaskActivity")
+
+  progress Int @default(0)
+
+  @@index([taskId])
+  @@index([statusId])
+}
+
+//////////////////////////
+// CHECKLIST
+//////////////////////////
+
+model Checklist {
+  id          String  @id @default(uuid())
+  title       String
+  isCompleted Boolean @default(false)
+  order       Int
+
+  subtaskId String
+  subtask   Subtask @relation(fields: [subtaskId], references: [id])
+}
+
+//////////////////////////
+// ASSIGNEES
+//////////////////////////
+
+model SubtaskAssignee {
+  subtaskId String
+  userId    String
+
+  subtask Subtask @relation(fields: [subtaskId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([subtaskId, userId])
+}
+
+//////////////////////////
+// COMMENTS
+//////////////////////////
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  subtaskId String
+  userId    String
+
+  subtask Subtask @relation(fields: [subtaskId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+//////////////////////////
+// ATTACHMENTS
+//////////////////////////
+
+model Attachment {
+  id        String   @id @default(uuid())
+  fileUrl   String
+  fileName  String
+  createdAt DateTime @default(now())
+
+  subtaskId  String
+  uploadedBy String
+
+  subtask Subtask @relation(fields: [subtaskId], references: [id])
+  user    User    @relation(fields: [uploadedBy], references: [id])
+}
+
+//////////////////////////
+// ACTIVITY LOG
+//////////////////////////
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  userId    String
+  subtaskId String?
+
+  user    User     @relation(fields: [userId], references: [id])
+  subtask Subtask? @relation("SubtaskActivity", fields: [subtaskId], references: [id])
+
+  @@index([entityType, entityId])
+}
