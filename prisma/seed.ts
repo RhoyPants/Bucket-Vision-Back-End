@@ -43,7 +43,7 @@ async function main() {
     modules.push(module);
   }
 
-  // PERMISSIONS
+  // PERMISSION
   const actions = ["CREATE", "READ", "UPDATE", "DELETE"];
 
   const permissions = [];
@@ -79,7 +79,7 @@ async function main() {
   }
 
   // ----------------------------------------
-  // 🚀 DEMO DATA (PROJECT → TASK → STATUS → SUBTASK)
+  // DEMO DATA (PROJECT → TASK → STATUS → SUBTASK)
   // ----------------------------------------
 
   const demoUser = await prisma.user.findFirst(); // use any existing user
@@ -88,7 +88,7 @@ async function main() {
     throw new Error("❌ No user found. Create user first.");
   }
 
-  // 🟣 PROJECT
+  // PROJECT
   const project = await prisma.project.create({
     data: {
       name: "Demo Project",
@@ -97,7 +97,7 @@ async function main() {
     },
   });
 
-  // 🔵 TASK (BOARD)
+  // TASK (BOARD)
   const task = await prisma.task.create({
     data: {
       title: "Frontend Kanban Board",
@@ -106,7 +106,7 @@ async function main() {
     },
   });
 
-  // 🟡 STATUSES (COLUMNS)
+  // STATUSES (COLUMNS)
   const statuses = await prisma.$transaction([
     prisma.status.create({
       data: {
@@ -134,7 +134,7 @@ async function main() {
     }),
   ]);
 
-  // 🟢 SUBTASKS (CARDS)
+  // SUBTASKS (CARDS)
   await prisma.subtask.createMany({
     data: [
       {
@@ -161,8 +161,8 @@ async function main() {
     ],
   });
 
-  console.log("🔥 Demo Kanban data created!");
-  console.log("👉 TASK ID:", task.id);
+  console.log(" Demo Kanban data created!");
+  console.log(" TASK ID:", task.id);
 
   console.log("✅ Seed completed");
 }
