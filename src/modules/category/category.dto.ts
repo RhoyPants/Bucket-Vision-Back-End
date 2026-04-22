@@ -1,11 +1,11 @@
 // =========================
 // CREATE
 // =========================
-export interface CreateTaskDTO {
-  title: string;
+export interface CreateCategoryDTO {
+  name: string;
   description?: string;
 
-  categoryId: string; // 🔥 REPLACED
+  projectId: string;
 
   budgetAllocated?: number;
   budgetPercent?: number;
@@ -14,22 +14,22 @@ export interface CreateTaskDTO {
 // =========================
 // PARAMS
 // =========================
-export interface TaskParamsDTO {
+export interface CategoryParamsDTO {
   id: string;
 }
 
 // =========================
-// GET BY CATEGORY
+// GET BY PROJECT
 // =========================
-export interface GetTasksByCategoryParamsDTO {
-  categoryId: string;
+export interface GetCategoriesByProjectParamsDTO {
+  projectId: string;
 }
 
 // =========================
-// UPDATE (SAFE)
+// UPDATE
 // =========================
-export interface UpdateTaskDTO {
-  title?: string;
+export interface UpdateCategoryDTO {
+  name?: string;
   description?: string;
 
   budgetAllocated?: number;

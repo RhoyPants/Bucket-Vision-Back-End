@@ -22,10 +22,11 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  // Relations
-  projects         Project[]         @relation("ProjectOwner")
-  createdSubtasks  Subtask[]         @relation("SubtaskCreator")
+  managedProjects Project[] @relation("ProjectManager")
+  projects         Project[] @relation("ProjectOwner")
+  createdSubtasks  Subtask[] @relation("SubtaskCreator")
   assignedSubtasks SubtaskAssignee[]
+  assignedTasks TaskAssignee[]
   comments         Comment[]
   attachments      Attachment[]
   activities       ActivityLog[]
@@ -81,56 +82,98 @@ model Project {
   name        String
   description String?
 
+  location Json?
+  businessUnit String?
+  entity String?
+  managerId  String?
+  manager    User? @relation("ProjectManager", fields: [managerId], references: [id])
+
+  startDate       DateTime?
+  expectedEndDate DateTime?
+  actualStartDate DateTime?
+  actualEndDate   DateTime?
+
+  totalBudget Float?
+  priority    String?
+  duration    Int?
+
+  pin String? @unique
+
+  progress Float @default(0)
+
   ownerId String
   owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
 
-  tasks Task[]
-
-  progress Int @default(0)
+  categories  Category[]
+  attachments Attachment[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 //////////////////////////
-// TASK (CONTAINER)
+// CATEGORY
 //////////////////////////
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  budgetAllocated Float?
+  budgetPercent   Float?
+
+  progress Float @default(0)
+
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+//////////////////////////
+// TASK
+//////////////////////////
+
+model TaskAssignee {
+  taskId String
+  userId String
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([taskId, userId])
+}
 
 model Task {
   id          String  @id @default(uuid())
   title       String
   description String?
 
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
-  statuses Status[]
+  budgetAllocated Float?
+  budgetPercent   Float?
+
+  progress Float @default(0)
+
+  assignees TaskAssignee[]
+
   subtasks Subtask[]
-
-  progress Int @default(0)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 //////////////////////////
-// STATUS (KANBAN PER TASK)
-//////////////////////////
-
-model Status {
-  id    String  @id @default(uuid())
-  name  String
-  color String?
-  order Int
-
-  progressValue Int @default(0)
-
-  taskId String
-  task   Task   @relation(fields: [taskId], references: [id])
-
-  subtasks Subtask[]
-}
-
-//////////////////////////
-// SUBTASK (KANBAN CARD)
+// SUBTASK
 //////////////////////////
 
 model Subtask {
@@ -138,33 +181,74 @@ model Subtask {
   title       String
   description String?
 
-  taskId   String
-  statusId String
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
 
   order Int
 
   priority String?
-  dueDate  DateTime?
+
+  // 🔥 NEW STATUS SYSTEM
+  status Int @default(0) // 0=Pending, 1=Ongoing, 2=Done
+
+  // 📅 PROJECTED
+  projectedStartDate DateTime?
+  projectedEndDate   DateTime?
+
+  // 📅 ACTUAL (AUTO)
+  actualStartDate DateTime?
+  actualEndDate   DateTime?
+
+  // 💰 BUDGET
+  budgetAllocated Float?
+  budgetPercent   Float?
+
+  // 📊 PROGRESS
+  progress Float @default(0)
+
+  remarks String?
 
   createdBy String
+  creator   User @relation("SubtaskCreator", fields: [createdBy], references: [id])
+
   createdAt DateTime @default(now())
-
-  // Relations
-  task   Task   @relation(fields: [taskId], references: [id])
-  status Status @relation(fields: [statusId], references: [id])
-
-  creator User @relation("SubtaskCreator", fields: [createdBy], references: [id])
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   checklists  Checklist[]
   assignees   SubtaskAssignee[]
   comments    Comment[]
   attachments Attachment[]
-  activities  ActivityLog[]     @relation("SubtaskActivity")
+  activities  ActivityLog[] @relation("SubtaskActivity")
 
-  progress Int @default(0)
+  progressLogs ProgressLog[]
 
   @@index([taskId])
-  @@index([statusId])
+}
+
+//////////////////////////
+// PROGRESS LOG
+//////////////////////////
+
+model ProgressLog {
+  id                String   @id @default(uuid())
+  subtaskId         String
+  date              DateTime
+
+  dailyPercent      Float
+  cumulativePercent Float
+
+  remarks   String?
+  photoUrl  String?
+  latitude  Float?
+  longitude Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subtask Subtask @relation(fields: [subtaskId], references: [id])
+
+  @@unique([subtaskId, date])
 }
 
 //////////////////////////
@@ -182,7 +266,7 @@ model Checklist {
 }
 
 //////////////////////////
-// ASSIGNEES
+// ASSIGNEE
 //////////////////////////
 
 model SubtaskAssignee {
@@ -196,7 +280,7 @@ model SubtaskAssignee {
 }
 
 //////////////////////////
-// COMMENTS
+// COMMENT
 //////////////////////////
 
 model Comment {
@@ -212,7 +296,7 @@ model Comment {
 }
 
 //////////////////////////
-// ATTACHMENTS
+// ATTACHMENT
 //////////////////////////
 
 model Attachment {
@@ -221,11 +305,13 @@ model Attachment {
   fileName  String
   createdAt DateTime @default(now())
 
-  subtaskId  String
+  subtaskId  String?
+  projectId  String?
   uploadedBy String
 
-  subtask Subtask @relation(fields: [subtaskId], references: [id])
-  user    User    @relation(fields: [uploadedBy], references: [id])
+  subtask Subtask? @relation(fields: [subtaskId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+  user    User     @relation(fields: [uploadedBy], references: [id])
 }
 
 //////////////////////////

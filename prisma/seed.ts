@@ -3,33 +3,41 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding...");
+  console.log("🌱 Seeding LARGE realistic project data...");
 
+  // =========================
+  // CLEAN ONLY BUSINESS DATA
+  // =========================
+  await prisma.progressLog.deleteMany();
+  await prisma.checklist.deleteMany();
+  await prisma.subtask.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.project.deleteMany();
+
+  // =========================
+  // GET EXISTING USER (IMPORTANT)
+  // =========================
+  // =========================
   // ROLES
-  const ceo = await prisma.role.upsert({
-    where: { name: "CEO" },
-    update: {},
-    create: { name: "CEO" },
-  });
-
-  const admin = await prisma.role.upsert({
+  // =========================
+  const adminRole = await prisma.role.upsert({
     where: { name: "ADMIN" },
     update: {},
     create: { name: "ADMIN" },
   });
 
-  const tester = await prisma.role.upsert({
-    where: { name: "TESTER" },
-    update: {},
-    create: { name: "TESTER" },
-  });
-
-  // MODULES (Developer controlled)
+  // =========================
+  // MODULES
+  // =========================
   const modulesData = [
     { name: "USERS", path: "/users" },
     { name: "ROLES", path: "/roles" },
     { name: "TASKS", path: "/tasks" },
     { name: "PROJECTS", path: "/projects" },
+    { name: "SUBTASKS", path: "/subtasks" },
+    { name: "CATEGORIES", path: "/categories" },
+    { name: "PROGRESS", path: "/progress" },
   ];
 
   const modules = [];
@@ -43,7 +51,9 @@ async function main() {
     modules.push(module);
   }
 
-  // PERMISSION
+  // =========================
+  // PERMISSIONS
+  // =========================
   const actions = ["CREATE", "READ", "UPDATE", "DELETE"];
 
   const permissions = [];
@@ -57,20 +67,22 @@ async function main() {
     permissions.push(perm);
   }
 
-  // ADMIN FULL ACCESS
+  // =========================
+  // ROLE PERMISSIONS (ADMIN FULL)
+  // =========================
   for (const module of modules) {
     for (const perm of permissions) {
       await prisma.rolePermission.upsert({
         where: {
           roleId_moduleId_permissionId: {
-            roleId: admin.id,
+            roleId: adminRole.id,
             moduleId: module.id,
             permissionId: perm.id,
           },
         },
         update: {},
         create: {
-          roleId: admin.id,
+          roleId: adminRole.id,
           moduleId: module.id,
           permissionId: perm.id,
         },
@@ -78,97 +90,148 @@ async function main() {
     }
   }
 
-  // ----------------------------------------
-  // DEMO DATA (PROJECT → TASK → STATUS → SUBTASK)
-  // ----------------------------------------
+  // =========================
+  // USER
+  // =========================
+  const user = await prisma.user.upsert({
+    where: { email: "pm@test.com" },
+    update: {},
+    create: {
+      name: "Project Manager",
+      email: "pm@test.com",
+      password: "$2b$10$7sGQJ7sZzV3F5uC0k9Fq5u1ZkY8d6ZxYyZQ7Qz0QeQ7zK9J7Q1abc", // 123456
+      roleId: adminRole.id,
+    },
+  });
 
-  const demoUser = await prisma.user.findFirst(); // use any existing user
+  // =========================
+  // HELPER FUNCTION
+  // =========================
+  const createProgress = async (
+    subtaskId: string,
+    pattern: "ahead" | "delay" | "normal",
+  ) => {
+    let logs: [string, number][] = [];
 
-  if (!demoUser) {
-    throw new Error("❌ No user found. Create user first.");
+    if (pattern === "ahead") {
+      logs = [
+        ["2026-04-01", 20],
+        ["2026-04-02", 25],
+        ["2026-04-03", 25],
+        ["2026-04-04", 20],
+        ["2026-04-05", 10],
+      ];
+    }
+
+    if (pattern === "delay") {
+      logs = [
+        ["2026-04-01", 5],
+        ["2026-04-03", 10],
+        ["2026-04-05", 10],
+        ["2026-04-08", 15],
+        ["2026-04-10", 20],
+      ];
+    }
+
+    if (pattern === "normal") {
+      logs = [
+        ["2026-04-01", 10],
+        ["2026-04-02", 15],
+        ["2026-04-03", 20],
+        ["2026-04-04", 20],
+        ["2026-04-05", 15],
+      ];
+    }
+
+    for (const [date, val] of logs) {
+      await prisma.progressLog.create({
+        data: {
+          subtaskId,
+          date: new Date(date),
+          dailyPercent: val,
+          cumulativePercent: 0,
+        },
+      });
+    }
+  };
+
+  // =========================
+  // CREATE PROJECTS
+  // =========================
+  for (let p = 1; p <= 3; p++) {
+    const project = await prisma.project.create({
+      data: {
+        name: `Project ${p}`,
+        description: `Full Construction Project ${p}`,
+        startDate: new Date("2026-04-01"),
+        expectedEndDate: new Date("2026-06-30"),
+        ownerId: user.id,
+      },
+    });
+
+    // =========================
+    // CATEGORIES
+    // =========================
+    for (let c = 1; c <= 2; c++) {
+      const category = await prisma.category.create({
+        data: {
+          name: `Category ${c} - Project ${p}`,
+          projectId: project.id,
+          budgetPercent: 50,
+        },
+      });
+
+      // =========================
+      // TASKS
+      // =========================
+      for (let t = 1; t <= 4; t++) {
+        const task = await prisma.task.create({
+          data: {
+            title: `Task ${t} - Cat ${c}`,
+            categoryId: category.id,
+            budgetPercent: 25,
+          },
+        });
+
+        // =========================
+        // SUBTASKS
+        // =========================
+        for (let s = 1; s <= 5; s++) {
+          const subtask = await prisma.subtask.create({
+            data: {
+              title: `Subtask ${s} - Task ${t}`,
+              taskId: task.id,
+              createdBy: user.id,
+              order: s,
+              status: 0, // 🔥 default pending
+
+              projectedStartDate: new Date("2026-04-01"),
+              projectedEndDate: new Date("2026-04-10"),
+
+              budgetPercent: 20,
+            },
+          });
+
+          // =========================
+          // RANDOM PROGRESS TYPE
+          // =========================
+          const type = ["ahead", "delay", "normal"][
+            Math.floor(Math.random() * 3)
+          ] as "ahead" | "delay" | "normal";
+
+          await createProgress(subtask.id, type);
+        }
+      }
+    }
   }
 
-  // PROJECT
-  const project = await prisma.project.create({
-    data: {
-      name: "Demo Project",
-      description: "Kanban Demo",
-      ownerId: demoUser.id,
-    },
-  });
-
-  // TASK (BOARD)
-  const task = await prisma.task.create({
-    data: {
-      title: "Frontend Kanban Board",
-      description: "Test board",
-      projectId: project.id,
-    },
-  });
-
-  // STATUSES (COLUMNS)
-  const statuses = await prisma.$transaction([
-    prisma.status.create({
-      data: {
-        name: "Pending",
-        order: 0,
-        progressValue: 0,
-        taskId: task.id,
-      },
-    }),
-    prisma.status.create({
-      data: {
-        name: "Ongoing",
-        order: 1,
-        progressValue: 50,
-        taskId: task.id,
-      },
-    }),
-    prisma.status.create({
-      data: {
-        name: "Done",
-        order: 2,
-        progressValue: 100,
-        taskId: task.id,
-      },
-    }),
-  ]);
-
-  // SUBTASKS (CARDS)
-  await prisma.subtask.createMany({
-    data: [
-      {
-        title: "Setup project",
-        taskId: task.id,
-        statusId: statuses[0].id, // Pending
-        order: 0,
-        createdBy: demoUser.id,
-      },
-      {
-        title: "Build UI",
-        taskId: task.id,
-        statusId: statuses[1].id, // Ongoing
-        order: 0,
-        createdBy: demoUser.id,
-      },
-      {
-        title: "Deploy app",
-        taskId: task.id,
-        statusId: statuses[2].id, // Done
-        order: 0,
-        createdBy: demoUser.id,
-      },
-    ],
-  });
-
-  console.log(" Demo Kanban data created!");
-  console.log(" TASK ID:", task.id);
-
-  console.log("✅ Seed completed");
+  console.log("✅ MASSIVE TEST DATA SEEDED SUCCESSFULLY!");
 }
 
 main()
-  .catch(console.error)
-  .finally(async () => {
+  .then(() => prisma.$disconnect())
+  .catch(async (e) => {
+    console.error(e);
     await prisma.$disconnect();
+    process.exit(1);
   });

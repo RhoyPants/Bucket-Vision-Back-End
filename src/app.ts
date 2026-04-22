@@ -8,6 +8,8 @@ import moduleRoutes from "./modules/module/module.routes";
 import projectRoutes from "./modules/project/project.routes";
 import taskRoutes from "./modules/task/task.routes";
 import subtaskRoutes from "./modules/subtask/subtask.routes";
+import categoryRoutes from "./modules/category/category.routes";
+import progressRoutes from "./modules/progress/progress.routes";
 
 const app = express();
 app.use(cors({
@@ -28,6 +30,9 @@ app.use("/api/modules", moduleRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/subtasks", subtaskRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/progress", progressRoutes);
+
 
 
 app.get("/test-auth", authenticate, (req: any, res) => {

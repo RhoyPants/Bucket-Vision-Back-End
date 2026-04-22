@@ -5,12 +5,12 @@ import { authorize } from "../../middleware/rbac.middleware";
 
 const router = Router();
 
-// GET TASKS BY PROJECT
+// 🔥 CHANGE THIS
 router.get(
-  "/project/:projectId",
+  "/category/:categoryId",
   authenticate,
   authorize("TASKS", "READ"),
-  TaskController.getByProject
+  TaskController.getByCategory
 );
 
 // GET SINGLE TASK (KANBAN VIEW)

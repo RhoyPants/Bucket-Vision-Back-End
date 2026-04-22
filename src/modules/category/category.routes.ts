@@ -1,32 +1,32 @@
 import { Router } from "express";
-import { ProjectController } from "./project.controller";
+import { CategoryController } from "./category.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
 const router = Router();
 
-// GET ALL
+// GET BY PROJECT
 router.get(
-  "/",
+  "/project/:projectId",
   authenticate,
   authorize("PROJECTS", "READ"),
-  ProjectController.getAll,
+  CategoryController.getByProject
 );
 
-// GET ONE
+// GET SINGLE CATEGORY
 router.get(
   "/:id",
   authenticate,
   authorize("PROJECTS", "READ"),
-  ProjectController.getById,
+  CategoryController.getById
 );
 
 // CREATE
 router.post(
   "/",
   authenticate,
-  authorize("PROJECTS", "CREATE"),
-  ProjectController.create,
+  authorize("PROJECTS", "UPDATE"),
+  CategoryController.create
 );
 
 // UPDATE
@@ -34,7 +34,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("PROJECTS", "UPDATE"),
-  ProjectController.update,
+  CategoryController.update
 );
 
 // DELETE
@@ -42,23 +42,7 @@ router.delete(
   "/:id",
   authenticate,
   authorize("PROJECTS", "DELETE"),
-  ProjectController.delete,
-);
-
-//FULL PROJECT TREE
-router.get(
-  "/:id/full",
-  authenticate,
-  authorize("PROJECTS", "READ"),
-  ProjectController.getFull,
-);
-
-// PROJECT DASHBOARD
-router.get(
-  "/:id/dashboard",
-  authenticate,
-  authorize("PROJECTS", "READ"),
-  ProjectController.getDashboard,
+  CategoryController.delete
 );
 
 export default router;
