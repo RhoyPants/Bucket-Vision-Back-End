@@ -104,13 +104,11 @@ export const deleteUser = async (req: any, res: any) => {
       });
     }
 
-
     if (req.user.userId === userId) {
       return res.status(400).json({
         message: "You cannot delete your own account",
       });
     }
-
 
     await prisma.user.update({
       where: { id: userId },
@@ -122,5 +120,321 @@ export const deleteUser = async (req: any, res: any) => {
     });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const getMyMembers = async (req: any, res: any) => {
+  try {
+    const currentUserId = req.user.id;
+
+    // =========================
+    // 🔥 GET DIRECT MEMBERS
+    // =========================
+    const relations = await prisma.userHierarchy.findMany({
+      where: {
+        managerId: currentUserId,
+      },
+      select: {
+        memberId: true,
+      },
+    });
+
+    const memberIds = [...new Set(relations.map((r) => r.memberId))];
+
+    const members = await prisma.user.findMany({
+      where: {
+        id: { in: memberIds },
+      },
+      include: {
+        role: true,
+      },
+    });
+
+    // =========================
+    // 🔥 GET CURRENT USER (YOU)
+    // =========================
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      include: { role: true },
+    });
+
+    // =========================
+    // 🔥 MERGE (YOU FIRST)
+    // =========================
+    const finalData = [
+      currentUser,
+      ...members,
+    ].filter(Boolean); // remove null if ever
+
+    res.json({
+      success: true,
+      data: finalData,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const getMyManagers = async (req: any, res: any) => {
+  try {
+    const currentUserId = req.user.userId;
+
+    // Get all managers of current user
+    const relations = await prisma.userHierarchy.findMany({
+      where: {
+        memberId: currentUserId,
+      },
+      select: {
+        managerId: true,
+      },
+    });
+
+    const managerIds = relations.map((r) => r.managerId);
+
+    // Fetch full user details
+    const managers = await prisma.user.findMany({
+      where: {
+        id: { in: managerIds },
+      },
+      include: {
+        role: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: managers,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const assignManager = async (req: any, res: any) => {
+  try {
+    const { managerId, userId: memberId } = req.body;
+
+    // Validate both users exist
+    const manager = await prisma.user.findUnique({
+      where: { id: managerId },
+    });
+
+    const member = await prisma.user.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!manager || !member) {
+      return res.status(404).json({
+        message: "Manager or member not found",
+      });
+    }
+
+    // Check if relation already exists
+    const existing = await prisma.userHierarchy.findUnique({
+      where: {
+        managerId_memberId: {
+          managerId,
+          memberId,
+        },
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "This manager is already assigned to this member",
+      });
+    }
+
+    // Create the hierarchy relationship
+    const hierarchy = await prisma.userHierarchy.create({
+      data: {
+        managerId,
+        memberId,
+      },
+      include: {
+        manager: { include: { role: true } },
+        member: { include: { role: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `${manager.name} is now managing ${member.name}`,
+      data: hierarchy,
+    });
+  } catch (err: any) {
+    if (err.code === "P2002") {
+      return res.status(400).json({
+        message: "This relation already exists",
+      });
+    }
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const removeManager = async (req: any, res: any) => {
+  try {
+    const { managerId, userId: memberId } = req.body;
+
+    const hierarchy = await prisma.userHierarchy.findUnique({
+      where: {
+        managerId_memberId: {
+          managerId,
+          memberId,
+        },
+      },
+    });
+
+    if (!hierarchy) {
+      return res.status(404).json({
+        message: "This manager-member relationship not found",
+      });
+    }
+
+    await prisma.userHierarchy.delete({
+      where: {
+        managerId_memberId: {
+          managerId,
+          memberId,
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Manager-member relationship removed",
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const getOrgChart = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Get managers via UserHierarchy
+    const managerRelations = await prisma.userHierarchy.findMany({
+      where: { memberId: userId },
+      include: {
+        manager: { include: { role: true } },
+      },
+    });
+
+    // Get members via UserHierarchy
+    const memberRelations = await prisma.userHierarchy.findMany({
+      where: { managerId: userId },
+      include: {
+        member: { include: { role: true } },
+      },
+    });
+
+    // 🔥 FORMAT CLEAN RESPONSE
+    const formatted = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role?.name || null,
+      managers: managerRelations.map((rel) => ({
+        id: rel.manager.id,
+        name: rel.manager.name,
+        email: rel.manager.email,
+        role: rel.manager.role?.name || null,
+      })),
+      members: memberRelations.map((rel) => ({
+        id: rel.member.id,
+        name: rel.member.name,
+        email: rel.member.email,
+        role: rel.member.role?.name || null,
+      })),
+    };
+
+    res.json({
+      success: true,
+      data: formatted,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const getUserMembersById = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+
+    // Get all member IDs from UserHierarchy
+    const memberRelations = await prisma.userHierarchy.findMany({
+      where: { managerId: userId },
+      select: { memberId: true },
+    });
+
+    const memberIds = memberRelations.map((rel) => rel.memberId);
+
+    // Fetch actual User objects with role
+    const members = await prisma.user.findMany({
+      where: { id: { in: memberIds } },
+      include: { role: true },
+    });
+
+    res.json({
+      success: true,
+      data: members,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const getUserManagersById = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+
+    // Get all manager IDs from UserHierarchy
+    const managerRelations = await prisma.userHierarchy.findMany({
+      where: { memberId: userId },
+      select: { managerId: true },
+    });
+
+    const managerIds = managerRelations.map((rel) => rel.managerId);
+
+    // Fetch actual User objects with role
+    const managers = await prisma.user.findMany({
+      where: { id: { in: managerIds } },
+      include: { role: true },
+    });
+
+    res.json({
+      success: true,
+      data: managers,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };

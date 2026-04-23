@@ -85,4 +85,11 @@ router.get(
   SubtaskController.getByTask,
 );
 
+router.post(
+  "/:id/assign",
+  authenticate,
+  authorize("SUBTASKS", "UPDATE"),
+  SubtaskController.assign
+);
+
 export default router;

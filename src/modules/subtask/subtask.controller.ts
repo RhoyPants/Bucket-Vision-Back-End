@@ -55,7 +55,8 @@ export class SubtaskController {
         budgetAllocated,
         budgetPercent,
         remarks,
-      } = req.body;
+        userIds, 
+      } = req.body as any;
 
       const userId = (req as any).user.id;
 
@@ -77,15 +78,38 @@ export class SubtaskController {
           budgetAllocated,
           budgetPercent,
 
-          order: 0,
-
-          // 🔥 NEW SYSTEM
-          status: 0, // PENDING
+          order: 0, // ✅ UNCHANGED
+          status: 0, // ✅ UNCHANGED
 
           task: { connect: { id: taskId } },
           creator: { connect: { id: userId } },
         },
       });
+
+      // 🔥 ASSIGN USERS (ONLY ADDITION)
+      if (userIds && userIds.length > 0) {
+        const validRelations = await prisma.userHierarchy.findMany({
+          where: {
+            managerId: userId,
+            memberId: { in: userIds },
+          },
+        });
+
+        if (validRelations.length !== userIds.length) {
+          return res.status(403).json({
+            message: "Invalid assignment: some users are not under you",
+          });
+        }
+
+        await prisma.subtaskAssignee.createMany({
+          data: userIds.map((uid: string) => ({
+            subtaskId: subtask.id,
+            userId: uid,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
       await recomputeTask(taskId);
 
       res.json(subtask);
@@ -93,7 +117,6 @@ export class SubtaskController {
       res.status(400).json({ message: error.message });
     }
   }
-
   // ========================================
   // GET (KANBAN)
   // ========================================
@@ -109,7 +132,7 @@ export class SubtaskController {
           progressLogs: true,
         },
         orderBy: [
-          { status: "asc" }, // 🔥 GROUP BY STATUS
+          { status: "asc" }, 
           { order: "asc" },
         ],
       });
@@ -123,7 +146,7 @@ export class SubtaskController {
   // ========================================
   // UPDATE
   // ========================================
-  static async update(
+ static async update(
     req: Request<UpdateSubtaskParamsDTO, {}, UpdateSubtaskDTO>,
     res: Response,
   ) {
@@ -344,6 +367,76 @@ export class SubtaskController {
       res.json(subtask);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
+    }
+  }
+  static async assign(req: any, res: any) {
+    try {
+      const { id: subtaskId } = req.params;
+      const { userIds } = req.body;
+      const currentUserId = req.user.userId;
+
+      if (!userIds || userIds.length === 0) {
+        return res.status(400).json({
+          message: "No users provided",
+        });
+      }
+
+      // ✅ Check subtask exists
+      const subtask = await prisma.subtask.findUnique({
+        where: { id: subtaskId },
+      });
+
+      if (!subtask) {
+        return res.status(404).json({
+          message: "Subtask not found",
+        });
+      }
+
+      // 🔒 VALIDATION: only allow manager's members
+      const validRelations = await prisma.userHierarchy.findMany({
+        where: {
+          managerId: currentUserId,
+          memberId: { in: userIds },
+        },
+      });
+
+      if (validRelations.length !== userIds.length) {
+        return res.status(403).json({
+          message:
+            "Invalid assignment: some users are not under your management",
+        });
+      }
+
+      // ✅ SAVE (skip duplicates)
+      await prisma.subtaskAssignee.createMany({
+        data: userIds.map((userId: string) => ({
+          subtaskId,
+          userId,
+        })),
+        skipDuplicates: true,
+      });
+
+      // 🔥 OPTIONAL: Activity Log
+      await prisma.activityLog.create({
+        data: {
+          userId: currentUserId,
+          action: "ASSIGN_SUBTASK",
+          entityType: "SUBTASK",
+          entityId: subtaskId,
+          metadata: {
+            assignedUserIds: userIds,
+          },
+        },
+      });
+
+      res.json({
+        success: true,
+        message: "Users assigned successfully",
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        message: err.message,
+      });
     }
   }
 }

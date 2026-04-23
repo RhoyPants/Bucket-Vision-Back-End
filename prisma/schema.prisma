@@ -23,13 +23,23 @@ model User {
   role Role @relation(fields: [roleId], references: [id])
 
   managedProjects Project[] @relation("ProjectManager")
-  projects         Project[] @relation("ProjectOwner")
-  createdSubtasks  Subtask[] @relation("SubtaskCreator")
+  projects        Project[] @relation("ProjectOwner")
+  createdSubtasks Subtask[] @relation("SubtaskCreator")
+
   assignedSubtasks SubtaskAssignee[]
-  assignedTasks TaskAssignee[]
-  comments         Comment[]
-  attachments      Attachment[]
-  activities       ActivityLog[]
+  assignedTasks    TaskAssignee[]
+
+  comments    Comment[]
+  attachments Attachment[]
+  activities  ActivityLog[]
+
+  // 🔥 ORG CHART: Manager-Member Relations (many-to-many)
+  managers UserHierarchy[] @relation("UserMembers")
+  members  UserHierarchy[] @relation("UserManagers")
+
+  progressLogs  ProgressLog[]
+  dailyReports  DailyReport[]
+  weeklyReports WeeklyReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,6 +84,25 @@ model RolePermission {
 }
 
 //////////////////////////
+// ORG CHART HIERARCHY
+//////////////////////////
+
+model UserHierarchy {
+  id       String @id @default(uuid())
+  managerId String
+  memberId String
+
+  manager User @relation("UserMembers", fields: [managerId], references: [id])
+  member  User @relation("UserManagers", fields: [memberId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([managerId, memberId])
+  @@index([managerId])
+  @@index([memberId])
+}
+
+//////////////////////////
 // PROJECT
 //////////////////////////
 
@@ -82,11 +111,12 @@ model Project {
   name        String
   description String?
 
-  location Json?
+  location     Json?
   businessUnit String?
-  entity String?
-  managerId  String?
-  manager    User? @relation("ProjectManager", fields: [managerId], references: [id])
+  entity       String?
+
+  managerId String?
+  manager   User?   @relation("ProjectManager", fields: [managerId], references: [id])
 
   startDate       DateTime?
   expectedEndDate DateTime?
@@ -107,8 +137,12 @@ model Project {
   categories  Category[]
   attachments Attachment[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // 🔥 NEW
+  dailyReports DailyReport[]
+  timelines    ProjectTimeline[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -131,8 +165,8 @@ model Category {
 
   tasks Task[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -164,11 +198,10 @@ model Task {
   progress Float @default(0)
 
   assignees TaskAssignee[]
+  subtasks  Subtask[]
 
-  subtasks Subtask[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -184,42 +217,36 @@ model Subtask {
   taskId String
   task   Task   @relation(fields: [taskId], references: [id])
 
-  order Int
-
+  order    Int
   priority String?
 
-  // 🔥 NEW STATUS SYSTEM
-  status Int @default(0) // 0=Pending, 1=Ongoing, 2=Done
+  status Int @default(0)
 
-  // 📅 PROJECTED
   projectedStartDate DateTime?
   projectedEndDate   DateTime?
 
-  // 📅 ACTUAL (AUTO)
   actualStartDate DateTime?
   actualEndDate   DateTime?
 
-  // 💰 BUDGET
   budgetAllocated Float?
   budgetPercent   Float?
 
-  // 📊 PROGRESS
   progress Float @default(0)
 
   remarks String?
 
   createdBy String
-  creator   User @relation("SubtaskCreator", fields: [createdBy], references: [id])
+  creator   User   @relation("SubtaskCreator", fields: [createdBy], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   checklists  Checklist[]
   assignees   SubtaskAssignee[]
   comments    Comment[]
   attachments Attachment[]
-  activities  ActivityLog[] @relation("SubtaskActivity")
+  activities  ActivityLog[]     @relation("SubtaskActivity")
 
   progressLogs ProgressLog[]
 
@@ -231,10 +258,11 @@ model Subtask {
 //////////////////////////
 
 model ProgressLog {
-  id                String   @id @default(uuid())
-  subtaskId         String
-  date              DateTime
+  id        String  @id @default(uuid())
+  subtaskId String
+  userId    String?
 
+  date              DateTime
   dailyPercent      Float
   cumulativePercent Float
 
@@ -243,10 +271,15 @@ model ProgressLog {
   latitude  Float?
   longitude Float?
 
+  location      String?
+  dayNumber     Int?
+  attachmentUrl String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   subtask Subtask @relation(fields: [subtaskId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
 
   @@unique([subtaskId, date])
 }
@@ -333,4 +366,61 @@ model ActivityLog {
   subtask Subtask? @relation("SubtaskActivity", fields: [subtaskId], references: [id])
 
   @@index([entityType, entityId])
+}
+
+//////////////////////////
+// REPORTING
+//////////////////////////
+
+model DailyReport {
+  id        String @id @default(uuid())
+  userId    String
+  projectId String
+
+  dayNumber Int
+  date      DateTime
+  location  String
+  remarks   String?
+
+  attachments String[]
+
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model WeeklyReport {
+  id     String @id @default(uuid())
+  userId String
+
+  title    String
+  dateFrom DateTime
+  dateTo   DateTime
+
+  remarks     String?
+  attachments String[]
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//////////////////////////
+// S-CURVE SNAPSHOT
+//////////////////////////
+
+model ProjectTimeline {
+  id        String @id @default(uuid())
+  projectId String
+
+  date DateTime
+
+  planned Float
+  actual  Float
+
+  variance  Float
+  daysAhead Float
+
+  project Project @relation(fields: [projectId], references: [id])
 }

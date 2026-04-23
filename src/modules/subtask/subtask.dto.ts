@@ -16,6 +16,7 @@ export interface CreateSubtaskDTO {
   budgetPercent?: number;
 
   remarks?: string;
+  userIds?: string[];
 }
 
 // =========================
@@ -51,6 +52,7 @@ export interface UpdateSubtaskDTO {
   budgetPercent?: number;
 
   remarks?: string;
+  userIds?: string[];
 }
 
 // =========================
@@ -76,4 +78,8 @@ export interface DeleteChecklistItemParamsDTO {
 // =========================
 export interface GetSubtaskByIdParamsDTO {
   id: string;
+}
+
+export interface AssignSubtaskDTO {
+  userIds: string[];
 }

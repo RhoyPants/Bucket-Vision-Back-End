@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createModule } from "./module.controller";
+import { createModule, getModules } from "./module.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -10,6 +10,12 @@ router.post(
   authenticate,
   authorize("MODULES", "CREATE"), // 🔥 protect it
   createModule
+);
+router.get(
+  "/",
+  authenticate,
+  authorize("MODULES", "READ"),
+  getModules
 );
 
 export default router;
