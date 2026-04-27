@@ -22,7 +22,6 @@ model User {
 
   role Role @relation(fields: [roleId], references: [id])
 
-  managedProjects Project[] @relation("ProjectManager")
   projects        Project[] @relation("ProjectOwner")
   createdSubtasks Subtask[] @relation("SubtaskCreator")
 
@@ -37,9 +36,14 @@ model User {
   managers UserHierarchy[] @relation("UserMembers")
   members  UserHierarchy[] @relation("UserManagers")
 
-  progressLogs  ProgressLog[]
-  dailyReports  DailyReport[]
-  weeklyReports WeeklyReport[]
+  // 🔥 PROJECT: Project membership
+  projectMembers ProjectMember[]
+
+  progressLogs      ProgressLog[]
+  dailyReports      DailyReport[]
+  weeklyReports     WeeklyReport[]
+  dailyReports_recv DailyReportReceiver[]
+  weeklyReports_recv WeeklyReportReceiver[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,6 +88,26 @@ model RolePermission {
 }
 
 //////////////////////////
+// PROJECT MEMBER ROLES
+//////////////////////////
+
+model ProjectMember {
+  id        String @id @default(uuid())
+  projectId String
+  userId    String
+  role      String  // "OWNER", "SUB_OWNER", "MEMBER"
+
+  project Project @relation(fields: [projectId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+//////////////////////////
 // ORG CHART HIERARCHY
 //////////////////////////
 
@@ -115,9 +139,6 @@ model Project {
   businessUnit String?
   entity       String?
 
-  managerId String?
-  manager   User?   @relation("ProjectManager", fields: [managerId], references: [id])
-
   startDate       DateTime?
   expectedEndDate DateTime?
   actualStartDate DateTime?
@@ -136,6 +157,9 @@ model Project {
 
   categories  Category[]
   attachments Attachment[]
+
+  // 🔥 NEW: Project Members (Owner, SubOwner, Members)
+  projectMembers ProjectMember[]
 
   // 🔥 NEW
   dailyReports DailyReport[]
@@ -386,8 +410,20 @@ model DailyReport {
 
   createdAt DateTime @default(now())
 
-  user    User    @relation(fields: [userId], references: [id])
-  project Project @relation(fields: [projectId], references: [id])
+  user      User                 @relation(fields: [userId], references: [id])
+  project   Project              @relation(fields: [projectId], references: [id])
+  receivers DailyReportReceiver[]
+}
+
+model DailyReportReceiver {
+  reportId String
+  userId   String
+  read     Boolean @default(false)
+
+  report DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id])
+
+  @@id([reportId, userId])
 }
 
 model WeeklyReport {
@@ -403,7 +439,19 @@ model WeeklyReport {
 
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user      User                  @relation(fields: [userId], references: [id])
+  receivers WeeklyReportReceiver[]
+}
+
+model WeeklyReportReceiver {
+  reportId String
+  userId   String
+  read     Boolean @default(false)
+
+  report WeeklyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id])
+
+  @@id([reportId, userId])
 }
 
 //////////////////////////

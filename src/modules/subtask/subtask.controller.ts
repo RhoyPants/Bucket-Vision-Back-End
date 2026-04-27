@@ -88,16 +88,39 @@ export class SubtaskController {
 
       // 🔥 ASSIGN USERS (ONLY ADDITION)
       if (userIds && userIds.length > 0) {
-        const validRelations = await prisma.userHierarchy.findMany({
+        // Get project ID via task -> category -> project
+        const task = await prisma.task.findUnique({
+          where: { id: taskId },
+          include: { category: true }
+        });
+
+        if (!task) {
+          return res.status(404).json({
+            message: "Task not found"
+          });
+        }
+
+        const category = await prisma.category.findUnique({
+          where: { id: task.categoryId }
+        });
+
+        if (!category) {
+          return res.status(404).json({
+            message: "Category not found"
+          });
+        }
+
+        // 🔥 VALIDATE: users must be engaged in project
+        const validMembers = await prisma.projectMember.findMany({
           where: {
-            managerId: userId,
-            memberId: { in: userIds },
+            projectId: category.projectId,
+            userId: { in: userIds },
           },
         });
 
-        if (validRelations.length !== userIds.length) {
+        if (validMembers.length !== userIds.length) {
           return res.status(403).json({
-            message: "Invalid assignment: some users are not under you",
+            message: "Invalid assignment: some users are not engaged in this project",
           });
         }
 
@@ -152,6 +175,7 @@ export class SubtaskController {
   ) {
     try {
       const { id } = req.params;
+      const userId = (req as any).user?.id;
 
       const {
         title,
@@ -162,8 +186,10 @@ export class SubtaskController {
         budgetAllocated,
         budgetPercent,
         remarks,
+        userIds,
       } = req.body;
 
+      // 🔥 UPDATE SUBTASK FIELDS
       const updated = await prisma.subtask.update({
         where: { id },
         data: {
@@ -184,6 +210,70 @@ export class SubtaskController {
           budgetPercent,
         },
       });
+
+      // 🔥 UPDATE ASSIGNEES (if provided)
+      if (userIds !== undefined) {
+        // Get subtask with task and category info for project validation
+        const subtask = await prisma.subtask.findUnique({
+          where: { id },
+          include: {
+            task: { include: { category: true } }
+          }
+        });
+
+        if (!subtask) {
+          return res.status(404).json({ message: "Subtask not found" });
+        }
+
+        if (userIds.length > 0) {
+          // 🔒 VALIDATE: users must be engaged in project
+          const validMembers = await prisma.projectMember.findMany({
+            where: {
+              projectId: subtask.task.category.projectId,
+              userId: { in: userIds },
+            },
+          });
+
+          if (validMembers.length !== userIds.length) {
+            return res.status(403).json({
+              message: "Invalid assignment: some users are not engaged in this project",
+            });
+          }
+
+          // Delete old assignees and create new ones
+          await prisma.subtaskAssignee.deleteMany({
+            where: { subtaskId: id }
+          });
+
+          await prisma.subtaskAssignee.createMany({
+            data: userIds.map((uid: string) => ({
+              subtaskId: id,
+              userId: uid,
+            })),
+            skipDuplicates: true,
+          });
+        } else {
+          // Remove all assignees if empty array
+          await prisma.subtaskAssignee.deleteMany({
+            where: { subtaskId: id }
+          });
+        }
+
+        // 🔥 OPTIONAL: Activity Log
+        if (userId) {
+          await prisma.activityLog.create({
+            data: {
+              userId,
+              action: "UPDATE_SUBTASK",
+              entityType: "SUBTASK",
+              entityId: id,
+              metadata: {
+                assignedUserIds: userIds,
+              },
+            },
+          });
+        }
+      }
 
       res.json(updated);
     } catch (error: any) {
@@ -369,74 +459,108 @@ export class SubtaskController {
       res.status(400).json({ message: error.message });
     }
   }
-  static async assign(req: any, res: any) {
-    try {
-      const { id: subtaskId } = req.params;
-      const { userIds } = req.body;
-      const currentUserId = req.user.userId;
+}
 
-      if (!userIds || userIds.length === 0) {
-        return res.status(400).json({
-          message: "No users provided",
-        });
+// 🔥 TASK BOARD - Get my assigned subtasks with filters
+export async function getMyTaskBoard(req: any, res: any) {
+  try {
+    const userId = req.user.id;
+    const { projectId, categoryId, taskId, search } = req.query;
+
+    // Build filter conditions
+    const whereConditions: any = {
+      assignees: {
+        some: { userId }
       }
+    };
 
-      // ✅ Check subtask exists
-      const subtask = await prisma.subtask.findUnique({
-        where: { id: subtaskId },
-      });
-
-      if (!subtask) {
-        return res.status(404).json({
-          message: "Subtask not found",
-        });
-      }
-
-      // 🔒 VALIDATION: only allow manager's members
-      const validRelations = await prisma.userHierarchy.findMany({
-        where: {
-          managerId: currentUserId,
-          memberId: { in: userIds },
-        },
-      });
-
-      if (validRelations.length !== userIds.length) {
-        return res.status(403).json({
-          message:
-            "Invalid assignment: some users are not under your management",
-        });
-      }
-
-      // ✅ SAVE (skip duplicates)
-      await prisma.subtaskAssignee.createMany({
-        data: userIds.map((userId: string) => ({
-          subtaskId,
-          userId,
-        })),
-        skipDuplicates: true,
-      });
-
-      // 🔥 OPTIONAL: Activity Log
-      await prisma.activityLog.create({
-        data: {
-          userId: currentUserId,
-          action: "ASSIGN_SUBTASK",
-          entityType: "SUBTASK",
-          entityId: subtaskId,
-          metadata: {
-            assignedUserIds: userIds,
-          },
-        },
-      });
-
-      res.json({
-        success: true,
-        message: "Users assigned successfully",
-      });
-    } catch (err: any) {
-      res.status(500).json({
-        message: err.message,
-      });
+    // Build task filter conditions (nested properly)
+    const taskFilter: any = {};
+    
+    if (projectId) {
+      taskFilter.category = { projectId };
     }
+    
+    if (categoryId) {
+      taskFilter.categoryId = categoryId;
+    }
+    
+    // Apply task filter only if needed
+    if (Object.keys(taskFilter).length > 0) {
+      whereConditions.task = taskFilter;
+    }
+
+    if (taskId) {
+      whereConditions.taskId = taskId;
+    }
+
+    // Optional: search filter (if backend supports it)
+    if (search) {
+      whereConditions.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const subtasks = await prisma.subtask.findMany({
+      where: whereConditions,
+      include: {
+        task: {
+          include: {
+            category: {
+              include: {
+                project: {
+                  select: {
+                    id: true,
+                    name: true,
+                    description: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
+        progressLogs: {
+          where: { userId },
+          orderBy: { date: 'desc' },
+          take: 1
+        },
+        checklists: true,
+        comments: {
+          include: {
+            user: {
+              select: { name: true }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { task: { category: { projectId: 'asc' } } },
+        { task: { categoryId: 'asc' } },
+        { taskId: 'asc' },
+        { createdAt: 'asc' }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: subtasks,
+      total: subtasks.length
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message
+    });
   }
 }

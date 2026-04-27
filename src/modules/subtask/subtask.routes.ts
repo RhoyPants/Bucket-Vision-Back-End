@@ -1,9 +1,17 @@
 import { Router } from "express";
-import { SubtaskController } from "./subtask.controller";
+import { SubtaskController, getMyTaskBoard } from "./subtask.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
 const router = Router();
+
+// 🔥 MY TASK BOARD (with optional filters)
+router.get(
+  "/board/my",
+  authenticate,
+  authorize("SUBTASKS", "READ"),
+  getMyTaskBoard
+);
 
 // GET (Kanban View)
 router.get(
@@ -83,13 +91,6 @@ router.get(
 //   authenticate,
 //   authorize("SUBTASKS", "READ"),
   SubtaskController.getByTask,
-);
-
-router.post(
-  "/:id/assign",
-  authenticate,
-  authorize("SUBTASKS", "UPDATE"),
-  SubtaskController.assign
 );
 
 export default router;

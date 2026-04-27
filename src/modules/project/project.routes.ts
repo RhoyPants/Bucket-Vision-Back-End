@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ProjectController } from "./project.controller";
+import { ProjectController, assignProjectMember, getProjectMembers, removeProjectMember, getProjectEngagedUsers } from "./project.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -59,6 +59,40 @@ router.get(
   authenticate,
   authorize("PROJECTS", "READ"),
   ProjectController.getDashboard,
+);
+
+// 🔥 PROJECT MEMBER MANAGEMENT
+
+// Get all project members (grouped by role)
+router.get(
+  "/:projectId/members",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  getProjectMembers
+);
+
+// Get all engaged users in project (for subtask assignment dropdown)
+router.get(
+  "/:projectId/engaged-users",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  getProjectEngagedUsers
+);
+
+// Assign user to project with role (SUB_OWNER or MEMBER)
+router.post(
+  "/:projectId/assign-member",
+  authenticate,
+  authorize("PROJECTS", "UPDATE"),
+  assignProjectMember
+);
+
+// Remove user from project
+router.post(
+  "/:projectId/remove-member",
+  authenticate,
+  authorize("PROJECTS", "UPDATE"),
+  removeProjectMember
 );
 
 export default router;
