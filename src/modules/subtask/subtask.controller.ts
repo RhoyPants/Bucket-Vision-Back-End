@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { SubtaskService } from "./subtask.service";
+import { generateProjectTimeline } from "../timeline/timeline.service";
 
 import {
   CreateSubtaskDTO,
@@ -134,6 +135,19 @@ export class SubtaskController {
       }
 
       await recomputeTask(taskId);
+
+      // Regenerate s-curve after creating subtask
+      try {
+        const task = await prisma.task.findUnique({
+          where: { id: taskId },
+          include: { category: true }
+        });
+        if (task?.category?.projectId) {
+          await generateProjectTimeline(task.category.projectId, "daily");
+        }
+      } catch (timelineError) {
+        console.warn("⚠️ Timeline regeneration failed:", timelineError);
+      }
 
       res.json(subtask);
     } catch (error: any) {
@@ -275,6 +289,25 @@ export class SubtaskController {
         }
       }
 
+      // Recompute task progress and regenerate s-curve
+      const subtask = await prisma.subtask.findUnique({
+        where: { id },
+        include: { task: { include: { category: true } } }
+      });
+
+      if (subtask) {
+        await recomputeTask(subtask.taskId);
+
+        // Regenerate s-curve after updating subtask
+        try {
+          if (subtask.task?.category?.projectId) {
+            await generateProjectTimeline(subtask.task.category.projectId, "daily");
+          }
+        } catch (timelineError) {
+          console.warn("⚠️ Timeline regeneration failed:", timelineError);
+        }
+      }
+
       res.json(updated);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -282,16 +315,24 @@ export class SubtaskController {
   }
 
   // ========================================
-  // DELETE
+  // DELETE (FULL CASCADE CLEANUP + S-CURVE)
   // ========================================
   static async delete(req: Request<{ id: string }>, res: Response) {
     try {
       const { id } = req.params;
 
-      // 🔥 1. GET SUBTASK FIRST
+      // 🔥 1. GET SUBTASK WITH FULL CONTEXT
       const subtask = await prisma.subtask.findUnique({
         where: { id },
-        select: { taskId: true },
+        include: {
+          task: {
+            include: {
+              category: {
+                select: { projectId: true },
+              },
+            },
+          },
+        },
       });
 
       if (!subtask) {
@@ -299,9 +340,30 @@ export class SubtaskController {
       }
 
       const taskId = subtask.taskId;
+      const projectId = subtask.task.category.projectId;
 
-      // 🔥 2. DELETE PROGRESS LOGS FIRST
+      // 🔥 2. DELETE ALL SUBTASK CHILDREN (BOTTOM-UP)
       await prisma.progressLog.deleteMany({
+        where: { subtaskId: id },
+      });
+
+      await prisma.checklist.deleteMany({
+        where: { subtaskId: id },
+      });
+
+      await prisma.subtaskAssignee.deleteMany({
+        where: { subtaskId: id },
+      });
+
+      await prisma.comment.deleteMany({
+        where: { subtaskId: id },
+      });
+
+      await prisma.attachment.deleteMany({
+        where: { subtaskId: id },
+      });
+
+      await prisma.activityLog.deleteMany({
         where: { subtaskId: id },
       });
 
@@ -311,34 +373,22 @@ export class SubtaskController {
       });
 
       // 🔥 4. RECOMPUTE TASK PROGRESS
-      const subtasks = await prisma.subtask.findMany({
-        where: { taskId },
-      });
+      await recomputeTask(taskId);
 
-      let totalWeight = 0;
-      let weightedProgress = 0;
-
-      for (const s of subtasks) {
-        const weight = s.budgetPercent || 0;
-        const progress = s.progress || 0;
-
-        weightedProgress += progress * weight;
-        totalWeight += weight;
+      // 🔥 5. REGENERATE S-CURVE
+      try {
+        await generateProjectTimeline(projectId, "daily");
+      } catch (timelineError) {
+        console.warn("⚠️ Timeline regeneration failed:", timelineError);
+        // Don't fail the delete operation
       }
 
-      const newProgress = totalWeight > 0 ? weightedProgress / totalWeight : 0;
-
-      await prisma.task.update({
-        where: { id: taskId },
-        data: {
-          progress: newProgress,
-        },
-      });
-
       res.json({
-        message: "Subtask deleted and progress recalculated",
+        success: true,
+        message: "Subtask deleted successfully (full cascade + s-curve updated)",
       });
     } catch (error: any) {
+      console.error("❌ Subtask delete error:", error);
       res.status(400).json({ message: error.message });
     }
   }

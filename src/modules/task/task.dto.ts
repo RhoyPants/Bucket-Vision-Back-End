@@ -4,6 +4,7 @@
 export interface CreateTaskDTO {
   title: string;
   description?: string;
+  order?: number;
 
   categoryId: string; // 🔥 REPLACED
 
@@ -31,6 +32,7 @@ export interface GetTasksByCategoryParamsDTO {
 export interface UpdateTaskDTO {
   title?: string;
   description?: string;
+  order?: number;
 
   budgetAllocated?: number;
   budgetPercent?: number;

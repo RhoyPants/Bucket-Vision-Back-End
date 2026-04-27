@@ -178,6 +178,7 @@ model Category {
   id          String  @id @default(uuid())
   name        String
   description String?
+  order       Int     @default(0)
 
   projectId String
   project   Project @relation(fields: [projectId], references: [id])
@@ -212,6 +213,7 @@ model Task {
   id          String  @id @default(uuid())
   title       String
   description String?
+  order       Int     @default(0)
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])

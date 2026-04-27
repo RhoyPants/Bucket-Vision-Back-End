@@ -4,6 +4,7 @@
 export interface CreateCategoryDTO {
   name: string;
   description?: string;
+  order?: number;
 
   projectId: string;
 
@@ -31,6 +32,7 @@ export interface GetCategoriesByProjectParamsDTO {
 export interface UpdateCategoryDTO {
   name?: string;
   description?: string;
+  order?: number;
 
   budgetAllocated?: number;
   budgetPercent?: number;

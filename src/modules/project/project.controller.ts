@@ -132,7 +132,9 @@ static async getDashboard(
       const project = await prisma.project.findUnique({
         where: { id },
         include: {
-          categories: true // 🔥 FIXED
+          categories: {
+            orderBy: { order: "asc" }
+          }
         }
       });
 
@@ -158,10 +160,13 @@ static async getDashboard(
         where: { id },
         include: {
           categories: {
+            orderBy: { order: "asc" },
             include: {
               tasks: {
+                orderBy: { order: "asc" },
                 include: {
                   subtasks: {
+                    orderBy: { order: "asc" },
                     include: {
                       progressLogs: true,
                       checklists: true,
