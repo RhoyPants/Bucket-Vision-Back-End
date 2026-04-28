@@ -20,6 +20,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "https://bucket-vision-1qyoromn3-rhoypants-projects.vercel.app",
+      "https://bucket-vision-exp.vercel.app/"
     ],
     methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"],
     allowedHeaders: ["Content-Type","Authorization"],
