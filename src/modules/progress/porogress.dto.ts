@@ -6,14 +6,23 @@ export interface CreateProgressDTO {
   subtaskId: string;
   date: Date;
   dailyPercent: number;
+  userId?: string;
   remarks?: string;
   photoUrl?: string;
-  latitude?: any;
-  longitude?: any;
+  latitude?: number;
+  longitude?: number;
+  location?: string;
+  dayNumber?: number;
 }
 
 export interface UpdateProgressDTO {
-  dailyPercent: number;
+  dailyPercent?: number;
+  remarks?: string;
+  photoUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  location?: string;
+  dayNumber?: number;
 }
 
 export interface UpdateProgressParamsDTO {

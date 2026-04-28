@@ -18,6 +18,36 @@ router.get(
 );
 
 // ========================================
+// 📊 GET SUBTASK WITH FULL DETAILS
+// ========================================
+router.get(
+  "/subtask/:subtaskId/details",
+  authenticate,
+  authorize("SUBTASKS", "READ"),
+  ProgressController.getSubtaskWithDetails
+);
+
+// ========================================
+// 📋 GET TASK WITH SUBTASKS & PROGRESS
+// ========================================
+router.get(
+  "/task/:taskId/details",
+  authenticate,
+  authorize("TASKS", "READ"),
+  ProgressController.getTaskWithProgress
+);
+
+// ========================================
+// 📈 GET PROJECT OVERVIEW
+// ========================================
+router.get(
+  "/project/:projectId/overview",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  ProgressController.getProjectOverview
+);
+
+// ========================================
 // ➕ ADD / UPDATE DAILY PROGRESS
 // (calendar input)
 // ========================================
@@ -36,6 +66,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("SUBTASKS", "UPDATE"),
+  upload.single("photo"),
   ProgressController.updateProgress
 );
 
