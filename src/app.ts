@@ -15,18 +15,25 @@ import weeklyReportRoutes from "./modules/weekly-report/weekly-report.routes";
 import timelineRoutes from "./modules/timeline/timeline.routes";
 
 const app = express();
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://bucket-vision-1qyoromn3-rhoypants-projects.vercel.app",
-      "https://bucket-vision-exp.vercel.app/"
-    ],
-    methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"],
-    allowedHeaders: ["Content-Type","Authorization"],
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: [
+//       "http://localhost:3000",
+//       "https://bucket-vision-1qyoromn3-rhoypants-projects.vercel.app",
+//       "https://bucket-vision-exp.vercel.app/"
+//     ],
+//     methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"],
+//     allowedHeaders: ["Content-Type","Authorization"],
+//     credentials: true,
+//   })
+// );
+
+app.use(cors({
+ origin: true,
+ credentials: true,
+ methods: "*",
+ allowedHeaders: "*"
+}));
 
 app.use(express.json());
 
