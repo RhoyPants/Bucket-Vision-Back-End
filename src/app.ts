@@ -15,11 +15,17 @@ import weeklyReportRoutes from "./modules/weekly-report/weekly-report.routes";
 import timelineRoutes from "./modules/timeline/timeline.routes";
 
 const app = express();
-app.use(cors({
-  origin: "http://localhost:3000",
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://bucket-vision-1qyoromn3-rhoypants-projects.vercel.app",
+    ],
+    methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"],
+    allowedHeaders: ["Content-Type","Authorization"],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
