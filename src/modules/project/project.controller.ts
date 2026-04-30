@@ -112,7 +112,20 @@ static async getDashboard(
 
       const projects = await prisma.project.findMany({
         where: { ownerId: userId },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
+        include: {
+          projectMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          }
+        }
       });
 
       res.json(projects);
@@ -134,6 +147,17 @@ static async getDashboard(
         include: {
           categories: {
             orderBy: { order: "asc" }
+          },
+          projectMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            }
           }
         }
       });

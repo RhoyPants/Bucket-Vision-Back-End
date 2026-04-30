@@ -44,3 +44,18 @@ export interface DailyReportFilterDTO {
   dateTo?: Date | string;
   search?: string;
 }
+
+// =========================
+// SUMMARY DTO
+// =========================
+export interface DailyReportSummaryDTO {
+  totalSubmitted: number;
+  totalPending: number;
+  totalReviewed: number;
+  lateReports: number;
+  todayHighlights: {
+    submittedCount: number;
+    lateCount: number;
+    onTimeCount: number;
+  };
+}

@@ -5,6 +5,7 @@ import {
   UpdateDailyReportDTO,
   DailyReportParamsDTO,
   DailyReportFilterDTO,
+  DailyReportSummaryDTO,
 } from "./daily-report.dto";
 
 export class DailyReportController {
@@ -507,6 +508,72 @@ export class DailyReportController {
         success: true,
         message: "Report marked as read",
         data: updated,
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  // ========================================
+  // GET SUMMARY/DASHBOARD
+  // ========================================
+  static async getSummary(req: Request, res: Response) {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Get all reports submitted today
+      const todayReports = await prisma.dailyReport.findMany({
+        where: {
+          date: {
+            gte: today,
+            lte: endOfDay,
+          },
+        },
+        include: {
+          receivers: true,
+        },
+      });
+
+      // Count late reports (submitted after expected end date if any)
+      const lateReports = todayReports.filter((report) => {
+        const daysSinceCreation = Math.floor(
+          (new Date().getTime() - report.date.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        // Consider report late if created more than 1 day ago
+        return daysSinceCreation > 1;
+      });
+
+      // Count reviewed reports (all receivers have read it)
+      const reviewedReports = todayReports.filter((report) => {
+        if (report.receivers.length === 0) return false;
+        return report.receivers.every((receiver) => receiver.read);
+      });
+
+      // Count pending reports (at least one receiver hasn't read it)
+      const pendingReports = todayReports.filter((report) => {
+        if (report.receivers.length === 0) return false;
+        return !report.receivers.every((receiver) => receiver.read);
+      });
+
+      const summary: DailyReportSummaryDTO = {
+        totalSubmitted: todayReports.length,
+        totalPending: pendingReports.length,
+        totalReviewed: reviewedReports.length,
+        lateReports: lateReports.length,
+        todayHighlights: {
+          submittedCount: todayReports.length,
+          lateCount: lateReports.length,
+          onTimeCount: todayReports.length - lateReports.length,
+        },
+      };
+
+      res.json({
+        success: true,
+        data: summary,
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });

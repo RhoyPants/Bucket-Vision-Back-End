@@ -37,6 +37,14 @@ router.get(
   DailyReportController.getMySubmitted
 );
 
+// GET SUMMARY/DASHBOARD
+router.get(
+  "/summary",
+  authenticate,
+  authorize("DAILY_REPORTS", "READ"),
+  DailyReportController.getSummary
+);
+
 // GET BY PROJECT
 router.get(
   "/project/:projectId",

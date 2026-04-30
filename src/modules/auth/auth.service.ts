@@ -58,3 +58,71 @@ export const refreshAccessToken = async (token: string) => {
     throw new Error("Invalid or expired refresh token");
   }
 };
+
+export const logoutUser = async (userId: string) => {
+  // Clear refresh token from database
+  await prisma.user.update({
+    where: { id: userId },
+    data: { refreshToken: null },
+  });
+
+  return { message: "Logged out successfully" };
+};
+
+export const getUserInfo = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      isActive: true,
+      role: {
+        select: {
+          id: true,
+          name: true,
+          rolePermissions: {
+            select: {
+              module: {
+                select: {
+                  id: true,
+                  name: true,
+                  path: true,
+                },
+              },
+              permission: {
+                select: {
+                  id: true,
+                  action: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  // Transform permissions into a structured format
+  const permissions: Record<string, string[]> = {};
+  user.role.rolePermissions.forEach((rp) => {
+    const moduleName = rp.module.name;
+    if (!permissions[moduleName]) {
+      permissions[moduleName] = [];
+    }
+    permissions[moduleName].push(rp.permission.action);
+  });
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      isActive: user.isActive,
+      role: user.role.name,
+    },
+    permissions, // { USERS: ["CREATE", "READ", "UPDATE", "DELETE"], ... }
+  };
+};

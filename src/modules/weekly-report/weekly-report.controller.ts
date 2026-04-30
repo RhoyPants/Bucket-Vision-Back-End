@@ -338,7 +338,7 @@ export class WeeklyReportController {
       currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
       currentWeekEnd.setHours(23, 59, 59, 999);
 
-      // Get all reports submitted this week
+      // Get all reports submitted this week with receivers
       const thisWeekReports = await prisma.weeklyReport.findMany({
         where: {
           createdAt: {
@@ -350,6 +350,7 @@ export class WeeklyReportController {
           user: {
             select: { id: true, name: true },
           },
+          receivers: true,
         },
       });
 
@@ -361,10 +362,22 @@ export class WeeklyReportController {
         return daysOverdue > 0;
       });
 
+      // Count reviewed reports (all receivers have read it)
+      const reviewedReports = thisWeekReports.filter((report) => {
+        if (report.receivers.length === 0) return false; // No receivers = not reviewed
+        return report.receivers.every((receiver) => receiver.read);
+      });
+
+      // Count pending reports (at least one receiver hasn't read it)
+      const pendingReports = thisWeekReports.filter((report) => {
+        if (report.receivers.length === 0) return false;
+        return !report.receivers.every((receiver) => receiver.read);
+      });
+
       const summary: WeeklyReportSummaryDTO = {
         totalSubmitted: thisWeekReports.length,
-        totalPending: 0, // Could be calculated from project requirements
-        totalReviewed: 0, // Could add a status field to WeeklyReport
+        totalPending: pendingReports.length,
+        totalReviewed: reviewedReports.length,
         lateReports: lateReports.length,
         thisWeekHighlights: {
           submittedCount: thisWeekReports.length,
