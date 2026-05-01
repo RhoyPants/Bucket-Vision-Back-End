@@ -100,23 +100,23 @@ async function recomputeTaskProgress(taskId: string) {
   const task = await prisma.task.update({
     where: { id: taskId },
     data: { progress },
-    include: { category: true },
+    include: { scope: true },
   });
 
-  await recomputeCategoryProgress(task.categoryId);
+  await recomputescopeProgress(task.scopeId);
 }
 
 /**
- * 🔥 CATEGORY LEVEL COMPUTATION
+ * 🔥 scope LEVEL COMPUTATION
  */
-async function recomputeCategoryProgress(categoryId: string) {
+async function recomputescopeProgress(scopeId: string) {
   const tasks = await prisma.task.findMany({
-    where: { categoryId },
+    where: { scopeId },
   });
 
   if (!tasks.length) {
-    await prisma.category.update({
-      where: { id: categoryId },
+    await prisma.scope.update({
+      where: { id: scopeId },
       data: { progress: 0 },
     });
     return;
@@ -135,19 +135,19 @@ async function recomputeCategoryProgress(categoryId: string) {
   const progress =
     totalWeight > 0 ? weightedSum / totalWeight : 0;
 
-  const category = await prisma.category.update({
-    where: { id: categoryId },
+  const scope = await prisma.scope.update({
+    where: { id: scopeId },
     data: { progress },
   });
 
-  await recomputeProjectProgress(category.projectId);
+  await recomputeProjectProgress(scope.projectId);
 }
 
 /**
  * 🔥 PROJECT LEVEL COMPUTATION
  */
 async function recomputeProjectProgress(projectId: string) {
-  const categories = await prisma.category.findMany({
+  const categories = await prisma.scope.findMany({
     where: { projectId },
   });
 

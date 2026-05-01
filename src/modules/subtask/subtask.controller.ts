@@ -89,10 +89,10 @@ export class SubtaskController {
 
       // 🔥 ASSIGN USERS (ONLY ADDITION)
       if (userIds && userIds.length > 0) {
-        // Get project ID via task -> category -> project
+        // Get project ID via task -> scope -> project
         const task = await prisma.task.findUnique({
           where: { id: taskId },
-          include: { category: true }
+          include: { scope: true }
         });
 
         if (!task) {
@@ -101,20 +101,20 @@ export class SubtaskController {
           });
         }
 
-        const category = await prisma.category.findUnique({
-          where: { id: task.categoryId }
+        const scope = await prisma.scope.findUnique({
+          where: { id: task.scopeId }
         });
 
-        if (!category) {
+        if (!scope) {
           return res.status(404).json({
-            message: "Category not found"
+            message: "scope not found"
           });
         }
 
         // 🔥 VALIDATE: users must be engaged in project
         const validMembers = await prisma.projectMember.findMany({
           where: {
-            projectId: category.projectId,
+            projectId: scope.projectId,
             userId: { in: userIds },
           },
         });
@@ -140,10 +140,10 @@ export class SubtaskController {
       try {
         const task = await prisma.task.findUnique({
           where: { id: taskId },
-          include: { category: true }
+          include: { scope: true }
         });
-        if (task?.category?.projectId) {
-          await generateProjectTimeline(task.category.projectId, "daily");
+        if (task?.scope?.projectId) {
+          await generateProjectTimeline(task.scope.projectId, "daily");
         }
       } catch (timelineError) {
         console.warn("⚠️ Timeline regeneration failed:", timelineError);
@@ -227,11 +227,11 @@ export class SubtaskController {
 
       // 🔥 UPDATE ASSIGNEES (if provided)
       if (userIds !== undefined) {
-        // Get subtask with task and category info for project validation
+        // Get subtask with task and scope info for project validation
         const subtask = await prisma.subtask.findUnique({
           where: { id },
           include: {
-            task: { include: { category: true } }
+            task: { include: { scope: true } }
           }
         });
 
@@ -243,7 +243,7 @@ export class SubtaskController {
           // 🔒 VALIDATE: users must be engaged in project
           const validMembers = await prisma.projectMember.findMany({
             where: {
-              projectId: subtask.task.category.projectId,
+              projectId: subtask.task.scope.projectId,
               userId: { in: userIds },
             },
           });
@@ -292,7 +292,7 @@ export class SubtaskController {
       // Recompute task progress and regenerate s-curve
       const subtask = await prisma.subtask.findUnique({
         where: { id },
-        include: { task: { include: { category: true } } }
+        include: { task: { include: { scope: true } } }
       });
 
       if (subtask) {
@@ -300,8 +300,8 @@ export class SubtaskController {
 
         // Regenerate s-curve after updating subtask
         try {
-          if (subtask.task?.category?.projectId) {
-            await generateProjectTimeline(subtask.task.category.projectId, "daily");
+          if (subtask.task?.scope?.projectId) {
+            await generateProjectTimeline(subtask.task.scope.projectId, "daily");
           }
         } catch (timelineError) {
           console.warn("⚠️ Timeline regeneration failed:", timelineError);
@@ -327,7 +327,7 @@ export class SubtaskController {
         include: {
           task: {
             include: {
-              category: {
+              scope: {
                 select: { projectId: true },
               },
             },
@@ -340,7 +340,7 @@ export class SubtaskController {
       }
 
       const taskId = subtask.taskId;
-      const projectId = subtask.task.category.projectId;
+      const projectId = subtask.task.scope.projectId;
 
       // 🔥 2. DELETE ALL SUBTASK CHILDREN (BOTTOM-UP)
       await prisma.progressLog.deleteMany({
@@ -515,7 +515,7 @@ export class SubtaskController {
 export async function getMyTaskBoard(req: any, res: any) {
   try {
     const userId = req.user.id;
-    const { projectId, categoryId, taskId, search } = req.query;
+    const { projectId, scopeId, taskId, search } = req.query;
 
     // Build filter conditions
     const whereConditions: any = {
@@ -528,11 +528,11 @@ export async function getMyTaskBoard(req: any, res: any) {
     const taskFilter: any = {};
     
     if (projectId) {
-      taskFilter.category = { projectId };
+      taskFilter.scope = { projectId };
     }
     
-    if (categoryId) {
-      taskFilter.categoryId = categoryId;
+    if (scopeId) {
+      taskFilter.scopeId = scopeId;
     }
     
     // Apply task filter only if needed
@@ -557,7 +557,7 @@ export async function getMyTaskBoard(req: any, res: any) {
       include: {
         task: {
           include: {
-            category: {
+            scope: {
               include: {
                 project: {
                   select: {
@@ -596,8 +596,8 @@ export async function getMyTaskBoard(req: any, res: any) {
         }
       },
       orderBy: [
-        { task: { category: { projectId: 'asc' } } },
-        { task: { categoryId: 'asc' } },
+        { task: { scope: { projectId: 'asc' } } },
+        { task: { scopeId: 'asc' } },
         { taskId: 'asc' },
         { createdAt: 'asc' }
       ]

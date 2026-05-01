@@ -8,6 +8,31 @@ datasource db {
 }
 
 //////////////////////////
+// ENUMS
+//////////////////////////
+
+enum ProjectStatus {
+  DRAFT
+  FOR_REVIEW
+  FOR_APPROVAL
+  ACTIVE
+  INACTIVE
+  REJECTED
+  NEEDS_REVISION
+}
+
+enum ApprovalLevel {
+  BU_HEAD
+  OP
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+//////////////////////////
 // USER + RBAC
 //////////////////////////
 
@@ -19,6 +44,10 @@ model User {
   roleId       String
   refreshToken String?
   isActive     Boolean @default(true)
+
+  // 🔥 NEW: Department & Approver assignment
+  departmentId String?
+  approverId   String?
 
   role Role @relation(fields: [roleId], references: [id])
 
@@ -44,6 +73,11 @@ model User {
   weeklyReports     WeeklyReport[]
   dailyReports_recv DailyReportReceiver[]
   weeklyReports_recv WeeklyReportReceiver[]
+
+  // 🔥 NEW: Approvals & Notifications
+  approvals      ProjectApproval[]
+  approvalAuditLogs ApprovalAuditLog[] @relation("ApprovedBy")
+  notifications  Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -148,40 +182,66 @@ model Project {
   priority    String?
   duration    Int?
 
-  pin String? @unique
+  pin String?
 
   progress Float @default(0)
 
   ownerId String
   owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
 
-  categories  Category[]
-  attachments Attachment[]
+  // 🔥 NEW: Project Status & Versioning
+  status           ProjectStatus @default(DRAFT)
+  versionNumber    Int           @default(1)
+  versionLabel     String?
+  isActive         Boolean       @default(false)
+  isLatestVersion  Boolean       @default(true)
+  isLocked         Boolean       @default(false)
+  requiresApproval Boolean       @default(true)
 
-  // 🔥 NEW: Project Members (Owner, SubOwner, Members)
-  projectMembers ProjectMember[]
+  // 🔥 ROOT PROJECT (groups all versions together)
+  rootProjectId String?
+  rootProject   Project?  @relation("RootProject", fields: [rootProjectId], references: [id])
+  versions      Project[] @relation("RootProject")
 
-  // 🔥 NEW
-  dailyReports DailyReport[]
-  timelines    ProjectTimeline[]
+  // 🔥 PARENT PROJECT (previous version)
+  parentProjectId String?
+  parentProject   Project?  @relation("ProjectVersion", fields: [parentProjectId], references: [id])
+  children        Project[] @relation("ProjectVersion")
+
+  scopes          Scope[]
+  attachments     Attachment[]
+  projectMembers  ProjectMember[]
+  dailyReports    DailyReport[]
+  weeklyReports   WeeklyReport[]
+  timelines       ProjectTimeline[]
+
+  // 🔥 NEW: Approvals
+  approvals        ProjectApproval[]
+  approvalAuditLogs ApprovalAuditLog[] @relation("ApprovalAudit")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  @@index([status])
+  @@index([isActive])
+  @@index([pin])
+  @@index([rootProjectId])
+  @@index([parentProjectId])
 }
 
 //////////////////////////
-// CATEGORY
+// SCOPE (formerly Category)
 //////////////////////////
 
-model Category {
+model Scope {
   id          String  @id @default(uuid())
   name        String
   description String?
   order       Int     @default(0)
 
   projectId String
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   budgetAllocated Float?
   budgetPercent   Float?
@@ -193,6 +253,8 @@ model Category {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  @@index([projectId])
 }
 
 //////////////////////////
@@ -215,8 +277,8 @@ model Task {
   description String?
   order       Int     @default(0)
 
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  scopeId String
+  scope   Scope @relation(fields: [scopeId], references: [id], onDelete: Cascade)
 
   budgetAllocated Float?
   budgetPercent   Float?
@@ -229,6 +291,8 @@ model Task {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  @@index([scopeId])
 }
 
 //////////////////////////
@@ -432,6 +496,8 @@ model WeeklyReport {
   id     String @id @default(uuid())
   userId String
 
+  projectId String?
+
   title    String
   dateFrom DateTime
   dateTo   DateTime
@@ -441,8 +507,11 @@ model WeeklyReport {
 
   createdAt DateTime @default(now())
 
-  user      User                  @relation(fields: [userId], references: [id])
+  user      User                   @relation(fields: [userId], references: [id])
+  project   Project?               @relation(fields: [projectId], references: [id])
   receivers WeeklyReportReceiver[]
+
+  @@index([projectId])
 }
 
 model WeeklyReportReceiver {
@@ -454,6 +523,93 @@ model WeeklyReportReceiver {
   user   User         @relation(fields: [userId], references: [id])
 
   @@id([reportId, userId])
+}
+
+//////////////////////////
+// APPROVAL SYSTEM
+//////////////////////////
+
+model ProjectApproval {
+  id        String @id @default(uuid())
+  projectId String
+
+  level   ApprovalLevel
+  order   Int                @default(0)
+  isFinal Boolean            @default(false)
+  status  ApprovalStatus     @default(PENDING)
+
+  approverId String
+  approver   User            @relation(fields: [approverId], references: [id])
+
+  remarks String?
+  actedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([approverId])
+  @@index([status])
+  @@index([level])
+}
+
+//////////////////////////
+// NOTIFICATIONS
+//////////////////////////
+
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+
+  type    String
+  message String
+
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+//////////////////////////
+// APPROVAL AUDIT LOG
+//////////////////////////
+
+model ApprovalAuditLog {
+  id              String  @id @default(uuid())
+  projectId       String
+  approverId      String
+  level           ApprovalLevel
+  action          String // "SUBMITTED", "APPROVED", "REJECTED", "RESUBMITTED"
+  previousStatus  ProjectStatus?
+  newStatus       ProjectStatus?
+  remarks         String?
+  
+  project         Project @relation("ApprovalAudit", fields: [projectId], references: [id], onDelete: Cascade)
+  approver        User    @relation("ApprovedBy", fields: [approverId], references: [id])
+
+  createdAt       DateTime @default(now())
+
+  @@index([projectId])
+  @@index([approverId])
+  @@index([createdAt])
+}
+
+//////////////////////////
+// SYSTEM SETTINGS
+//////////////////////////
+
+model SystemSetting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 //////////////////////////

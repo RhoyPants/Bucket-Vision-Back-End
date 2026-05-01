@@ -145,7 +145,7 @@ static async getDashboard(
       const project = await prisma.project.findUnique({
         where: { id },
         include: {
-          categories: {
+          scopes: {
             orderBy: { order: "asc" }
           },
           projectMembers: {
@@ -183,7 +183,7 @@ static async getDashboard(
       const project = await prisma.project.findUnique({
         where: { id },
         include: {
-          categories: {
+          scopes: {
             orderBy: { order: "asc" },
             include: {
               tasks: {
@@ -289,7 +289,7 @@ static async delete(
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        categories: {
+        scopes: {
           include: {
             tasks: {
               include: {
@@ -306,8 +306,8 @@ static async delete(
     }
 
     // 🔥 2. DELETE EVERYTHING BOTTOM → TOP
-    for (const category of project.categories) {
-      for (const task of category.tasks) {
+    for (const scope of project.scopes) {
+      for (const task of scope.tasks) {
         for (const subtask of task.subtasks) {
           
           // --- CHILD TABLES (SUBTASK RELATED) ---
@@ -352,9 +352,9 @@ static async delete(
         });
       }
 
-      // --- CATEGORY ---
-      await prisma.category.delete({
-        where: { id: category.id },
+      // --- scope ---
+      await prisma.scope.delete({
+        where: { id: scope.id },
       });
     }
 

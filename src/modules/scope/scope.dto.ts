@@ -1,7 +1,7 @@
 // =========================
 // CREATE
 // =========================
-export interface CreateCategoryDTO {
+export interface CreateScopeDTO {
   name: string;
   description?: string;
   order?: number;
@@ -15,21 +15,21 @@ export interface CreateCategoryDTO {
 // =========================
 // PARAMS
 // =========================
-export interface CategoryParamsDTO {
+export interface ScopeParamsDTO {
   id: string;
 }
 
 // =========================
 // GET BY PROJECT
 // =========================
-export interface GetCategoriesByProjectParamsDTO {
+export interface GetScopesByProjectParamsDTO {
   projectId: string;
 }
 
 // =========================
 // UPDATE
 // =========================
-export interface UpdateCategoryDTO {
+export interface UpdateScopeDTO {
   name?: string;
   description?: string;
   order?: number;

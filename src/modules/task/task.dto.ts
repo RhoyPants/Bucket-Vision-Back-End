@@ -6,7 +6,7 @@ export interface CreateTaskDTO {
   description?: string;
   order?: number;
 
-  categoryId: string; // 🔥 REPLACED
+  scopeId: string; // 🔥 RENAMED FROM categoryId
 
   budgetAllocated?: number;
   budgetPercent?: number;
@@ -20,10 +20,10 @@ export interface TaskParamsDTO {
 }
 
 // =========================
-// GET BY CATEGORY
-// =========================
-export interface GetTasksByCategoryParamsDTO {
-  categoryId: string;
+// GET BY SCOPE
+//=========================
+export interface GetTasksByScopeParamsDTO {
+  scopeId: string;
 }
 
 // =========================

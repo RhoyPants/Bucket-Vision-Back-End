@@ -8,7 +8,7 @@ export async function getProjectDashboard(projectId: string) {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
-      categories: {
+      scopes: {
         include: {
           tasks: {
             include: {
@@ -28,7 +28,7 @@ export async function getProjectDashboard(projectId: string) {
   let totalTasks = 0;
   let totalSubtasks = 0;
 
-  for (const c of project.categories) {
+  for (const c of project.scopes) {
     totalTasks += c.tasks.length;
 
     for (const t of c.tasks) {
@@ -65,7 +65,7 @@ export async function getProjectDashboard(projectId: string) {
   // ========================================
   let usedBudget = 0;
 
-  for (const c of project.categories) {
+  for (const c of project.scopes) {
     for (const t of c.tasks) {
       for (const st of t.subtasks) {
         const percent = st.progress || 0;
@@ -94,7 +94,7 @@ export async function getProjectDashboard(projectId: string) {
     usedBudget: Number(usedBudget.toFixed(2)),
     remainingBudget: Number(remainingBudget.toFixed(2)),
 
-    categories: project.categories.length,
+    scopes: project.scopes.length,
     tasks: totalTasks,
     subtasks: totalSubtasks,
   };

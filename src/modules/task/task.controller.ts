@@ -6,16 +6,16 @@ import {
   CreateTaskDTO,
   TaskParamsDTO,
   UpdateTaskDTO,
-  GetTasksByCategoryParamsDTO,
+  GetTasksByScopeParamsDTO,
 } from "./task.dto";
-async function recomputeCategoryProgress(categoryId: string) {
+async function recomputeScopeProgress(scopeId: string) {
   const tasks = await prisma.task.findMany({
-    where: { categoryId },
+    where: { scopeId },
   });
 
   if (tasks.length === 0) {
-    await prisma.category.update({
-      where: { id: categoryId },
+    await prisma.scope.update({
+      where: { id: scopeId },
       data: { progress: 0 },
     });
     return;
@@ -33,44 +33,43 @@ async function recomputeCategoryProgress(categoryId: string) {
 
   const progress = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
-  const category = await prisma.category.update({
-    where: { id: categoryId },
+  const scope = await prisma.scope.update({
+    where: { id: scopeId },
     data: { progress },
   });
 
   // 🔥 CASCADE TO PROJECT
-  const categories = await prisma.category.findMany({
-    where: { projectId: category.projectId },
+  const scopes = await prisma.scope.findMany({
+    where: { projectId: scope.projectId },
   });
 
   let total = 0;
   let sum = 0;
 
-  for (const c of categories) {
-    const weight = c.budgetPercent ?? 1;
+  for (const s of scopes) {
+    const weight = s.budgetPercent ?? 1;
     total += weight;
-    sum += (c.progress || 0) * weight;
+    sum += (s.progress || 0) * weight;
   }
 
   const projectProgress = total > 0 ? sum / total : 0;
 
   await prisma.project.update({
-    where: { id: category.projectId },
+    where: { id: scope.projectId },
     data: { progress: projectProgress },
   });
 }
 export class TaskController {
-  // CREATE TASK
   static async create(req: Request<{}, {}, CreateTaskDTO>, res: Response) {
     try {
-      const { title, description, categoryId, budgetAllocated, budgetPercent, order } =
+      const { title, description, scopeId, budgetAllocated, budgetPercent, order } =
         req.body;
 
       // Calculate next order if not provided
       let nextOrder = order ?? 0;
       if (order === undefined) {
         const maxOrder = await prisma.task.findFirst({
-          where: { categoryId },
+          where: { scopeId },
           orderBy: { order: "desc" },
           select: { order: true }
         });
@@ -81,23 +80,23 @@ export class TaskController {
         data: {
           title,
           description,
-          categoryId,
+          scopeId,
           order: nextOrder,
           budgetAllocated,
           budgetPercent,
         },
       });
 
-      await recomputeCategoryProgress(categoryId);
+      await recomputeScopeProgress(scopeId);
 
       // 🔥 REGENERATE S-CURVE AFTER CREATE
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
+      const scope = await prisma.scope.findUnique({
+        where: { id: scopeId },
         select: { projectId: true },
       });
-      if (category?.projectId) {
+      if (scope?.projectId) {
         try {
-          await generateProjectTimeline(category.projectId, "daily");
+          await generateProjectTimeline(scope.projectId, "daily");
         } catch (timelineError) {
           console.warn("⚠️ Timeline regeneration failed:", timelineError);
         }
@@ -109,16 +108,16 @@ export class TaskController {
     }
   }
 
-  // 🔥 GET TASKS BY CATEGORY (FIXED)
-  static async getByCategory(
-    req: Request<GetTasksByCategoryParamsDTO>,
+  // 🔥 GET TASKS BY SCOPE (FIXED)
+  static async getByScope(
+    req: Request<GetTasksByScopeParamsDTO>,
     res: Response,
   ) {
     try {
-      const { categoryId } = req.params;
+      const { scopeId } = req.params;
 
       const tasks = await prisma.task.findMany({
-        where: { categoryId },
+        where: { scopeId },
         orderBy: {
           order: "asc",
         },
@@ -180,16 +179,16 @@ export class TaskController {
         },
       });
 
-      // Get category and project info for s-curve regeneration
+      // Get scope and project info for s-curve regeneration
       const task = await prisma.task.findUnique({
         where: { id },
-        include: { category: true }
+        include: { scope: true }
       });
 
       if (task) {
         // Regenerate s-curve after updating task
         try {
-          await generateProjectTimeline(task.category.projectId, "daily");
+          await generateProjectTimeline(task.scope.projectId, "daily");
         } catch (timelineError) {
           console.warn("⚠️ Timeline regeneration failed:", timelineError);
         }
@@ -217,11 +216,11 @@ export class TaskController {
         return res.status(404).json({ message: "Task not found" });
       }
 
-      const categoryId = existing.categoryId;
+      const scopeId = existing.scopeId;
       
       // Get projectId for s-curve regeneration
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
+      const scope = await prisma.scope.findUnique({
+        where: { id: scopeId },
         select: { projectId: true },
       });
 
@@ -263,13 +262,13 @@ export class TaskController {
         where: { id },
       });
 
-      // 🔥 RECOMPUTE CATEGORY PROGRESS
-      await recomputeCategoryProgress(categoryId);
+      // 🔥 RECOMPUTE SCOPE PROGRESS
+      await recomputeScopeProgress(scopeId);
 
       // 🔥 REGENERATE S-CURVE
-      if (category?.projectId) {
+      if (scope?.projectId) {
         try {
-          await generateProjectTimeline(category.projectId, "daily");
+          await generateProjectTimeline(scope.projectId, "daily");
         } catch (timelineError) {
           console.warn("⚠️ Timeline regeneration failed:", timelineError);
           // Don't fail the delete operation

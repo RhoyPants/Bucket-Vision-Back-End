@@ -3,17 +3,17 @@ import prisma from "../../config/prisma";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 
 import {
-  CreateCategoryDTO,
-  CategoryParamsDTO,
-  UpdateCategoryDTO,
-  GetCategoriesByProjectParamsDTO
-} from "./category.dto";
+  CreateScopeDTO,
+  ScopeParamsDTO,
+  UpdateScopeDTO,
+  GetScopesByProjectParamsDTO
+} from "./scope.dto";
 
-export class CategoryController {
+export class ScopeController {
 
   // CREATE
   static async create(
-    req: Request<{}, {}, CreateCategoryDTO>,
+    req: Request<{}, {}, CreateScopeDTO>,
     res: Response
   ) {
     try {
@@ -29,7 +29,7 @@ export class CategoryController {
       // Calculate next order if not provided
       let nextOrder = order ?? 0;
       if (order === undefined) {
-        const maxOrder = await prisma.category.findFirst({
+        const maxOrder = await prisma.scope.findFirst({
           where: { projectId },
           orderBy: { order: "desc" },
           select: { order: true }
@@ -37,7 +37,7 @@ export class CategoryController {
         nextOrder = (maxOrder?.order ?? -1) + 1;
       }
 
-      const category = await prisma.category.create({
+      const scope = await prisma.scope.create({
         data: {
           name,
           description,
@@ -56,7 +56,7 @@ export class CategoryController {
         // Don't fail the create operation
       }
 
-      res.json(category);
+      res.json(scope);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -64,13 +64,13 @@ export class CategoryController {
 
   // GET BY PROJECT
   static async getByProject(
-    req: Request<GetCategoriesByProjectParamsDTO>,
+    req: Request<GetScopesByProjectParamsDTO>,
     res: Response
   ) {
     try {
       const { projectId } = req.params;
 
-      const categories = await prisma.category.findMany({
+      const scopes = await prisma.scope.findMany({
         where: { projectId },
         include: {
           tasks: {
@@ -82,7 +82,7 @@ export class CategoryController {
         }
       });
 
-      res.json(categories);
+      res.json(scopes);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -90,13 +90,13 @@ export class CategoryController {
 
   // GET SINGLE
   static async getById(
-    req: Request<CategoryParamsDTO>,
+    req: Request<ScopeParamsDTO>,
     res: Response
   ) {
     try {
       const { id } = req.params;
 
-      const category = await prisma.category.findUnique({
+      const scope = await prisma.scope.findUnique({
         where: { id },
         include: {
           tasks: {
@@ -107,11 +107,11 @@ export class CategoryController {
         }
       });
 
-      if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+      if (!scope) {
+        return res.status(404).json({ message: "Scope not found" });
       }
 
-      res.json(category);
+      res.json(scope);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -119,7 +119,7 @@ export class CategoryController {
 
   // UPDATE
   static async update(
-    req: Request<CategoryParamsDTO, {}, UpdateCategoryDTO>,
+    req: Request<ScopeParamsDTO, {}, UpdateScopeDTO>,
     res: Response
   ) {
     try {
@@ -133,7 +133,7 @@ export class CategoryController {
         order
       } = req.body;
 
-      const updated = await prisma.category.update({
+      const updated = await prisma.scope.update({
         where: { id },
         data: {
           ...(name && { name }),
@@ -144,7 +144,7 @@ export class CategoryController {
         }
       });
 
-      // Regenerate s-curve after updating category
+      // Regenerate s-curve after updating scope
       try {
         await generateProjectTimeline(updated.projectId, "daily");
       } catch (timelineError) {
@@ -159,14 +159,14 @@ export class CategoryController {
 
   // DELETE (FULL CASCADE CLEANUP)
   static async delete(
-    req: Request<CategoryParamsDTO>,
+    req: Request<ScopeParamsDTO>,
     res: Response
   ) {
     try {
       const { id } = req.params;
 
-      // Get category with full tree to know projectId
-      const category = await prisma.category.findUnique({
+      // Get scope with full tree to know projectId
+      const scope = await prisma.scope.findUnique({
         where: { id },
         include: {
           tasks: {
@@ -177,14 +177,14 @@ export class CategoryController {
         },
       });
 
-      if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+      if (!scope) {
+        return res.status(404).json({ message: "Scope not found" });
       }
 
-      const projectId = category.projectId;
+      const projectId = scope.projectId;
 
       // 🔥 DELETE BOTTOM → TOP
-      for (const task of category.tasks) {
+      for (const task of scope.tasks) {
         for (const subtask of task.subtasks) {
           // Delete all subtask children
           await prisma.progressLog.deleteMany({
@@ -223,8 +223,8 @@ export class CategoryController {
         });
       }
 
-      // Delete category
-      await prisma.category.delete({
+      // Delete scope
+      await prisma.scope.delete({
         where: { id },
       });
 
@@ -238,10 +238,10 @@ export class CategoryController {
 
       res.json({
         success: true,
-        message: "Category deleted successfully (full cascade cleanup + s-curve updated)",
+        message: "Scope deleted successfully (full cascade cleanup + s-curve updated)",
       });
     } catch (error: any) {
-      console.error("❌ Category delete error:", error);
+      console.error("❌ Scope delete error:", error);
       res.status(400).json({ message: error.message });
     }
   }

@@ -37,7 +37,7 @@ export async function getSCurve(projectId: string) {
   const subtasks = await prisma.subtask.findMany({
     where: {
       task: {
-        category: {
+        scope: {
           projectId,
         },
       },
@@ -45,7 +45,7 @@ export async function getSCurve(projectId: string) {
     include: {
       task: {
         include: {
-          category: true,
+          scope: true,
         },
       },
       progressLogs: true, // 🔥 IMPORTANT
@@ -77,7 +77,7 @@ export async function getSCurve(projectId: string) {
 
       const weight =
         (sub.budgetPercent ||
-          sub.task?.category?.budgetPercent ||
+          sub.task?.scope?.budgetPercent ||
           1) / 100;
 
       plannedWeightSum += weight;
@@ -117,7 +117,7 @@ export async function getSCurve(projectId: string) {
     for (const sub of subtasks) {
       const weight =
         (sub.budgetPercent ||
-          sub.task?.category?.budgetPercent ||
+          sub.task?.scope?.budgetPercent ||
           1) / 100;
 
       totalWeight += weight;

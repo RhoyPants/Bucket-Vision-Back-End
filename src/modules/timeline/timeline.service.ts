@@ -52,7 +52,7 @@ export async function calculateActualProgress(
   const subtasks = await prisma.subtask.findMany({
     where: {
       task: {
-        category: {
+        scope: {
           projectId,
         },
       },
@@ -67,7 +67,7 @@ export async function calculateActualProgress(
       },
       task: {
         include: {
-          category: true,
+          scope: true,
         },
       },
     },

@@ -8,11 +8,12 @@ import moduleRoutes from "./modules/module/module.routes";
 import projectRoutes from "./modules/project/project.routes";
 import taskRoutes from "./modules/task/task.routes";
 import subtaskRoutes from "./modules/subtask/subtask.routes";
-import categoryRoutes from "./modules/category/category.routes";
+import scopeRoutes from "./modules/scope/scope.routes";
 import progressRoutes from "./modules/progress/progress.routes";
 import dailyReportRoutes from "./modules/daily-report/daily-report.routes";
 import weeklyReportRoutes from "./modules/weekly-report/weekly-report.routes";
 import timelineRoutes from "./modules/timeline/timeline.routes";
+import approvalRoutes from "./modules/approval/approval.routes";
 
 const app = express();
 app.use(cors({
@@ -33,11 +34,12 @@ app.use("/api/modules", moduleRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/subtasks", subtaskRoutes);
-app.use("/api/categories", categoryRoutes);
+app.use("/api/scopes", scopeRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/daily-reports", dailyReportRoutes);
 app.use("/api/weekly-reports", weeklyReportRoutes);
 app.use("/api/timeline", timelineRoutes);
+app.use("/api/approvals", approvalRoutes);
 
 
 

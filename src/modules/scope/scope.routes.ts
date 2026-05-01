@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CategoryController } from "./category.controller";
+import { ScopeController } from "./scope.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -10,15 +10,15 @@ router.get(
   "/project/:projectId",
   authenticate,
   authorize("PROJECTS", "READ"),
-  CategoryController.getByProject
+  ScopeController.getByProject
 );
 
-// GET SINGLE CATEGORY
+// GET SINGLE SCOPE
 router.get(
   "/:id",
   authenticate,
   authorize("PROJECTS", "READ"),
-  CategoryController.getById
+  ScopeController.getById
 );
 
 // CREATE
@@ -26,7 +26,7 @@ router.post(
   "/",
   authenticate,
   authorize("PROJECTS", "UPDATE"),
-  CategoryController.create
+  ScopeController.create
 );
 
 // UPDATE
@@ -34,7 +34,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("PROJECTS", "UPDATE"),
-  CategoryController.update
+  ScopeController.update
 );
 
 // DELETE
@@ -42,7 +42,7 @@ router.delete(
   "/:id",
   authenticate,
   authorize("PROJECTS", "DELETE"),
-  CategoryController.delete
+  ScopeController.delete
 );
 
 export default router;
