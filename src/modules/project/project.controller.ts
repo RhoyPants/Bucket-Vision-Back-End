@@ -109,24 +109,64 @@ static async getDashboard(
   static async getAll(req: Request, res: Response) {
     try {
       const userId = (req as any).user.id;
+      const userRoleId = (req as any).user.roleId;
 
-      const projects = await prisma.project.findMany({
-        where: { ownerId: userId },
-        orderBy: { createdAt: "desc" },
-        include: {
-          projectMembers: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true
+      // Check if user is SUPER_ADMIN
+      const userRole = await (prisma as any).role.findUnique({
+        where: { id: userRoleId }
+      });
+
+      let projects;
+
+      if (userRole?.name === "SUPERADMIN") {
+        // SUPER_ADMIN sees all projects
+        projects = await prisma.project.findMany({
+          orderBy: { createdAt: "desc" },
+          include: {
+            projectMembers: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true
+                  }
                 }
               }
             }
           }
-        }
-      });
+        });
+      } else {
+        // Regular users see: projects they own + projects they're members of
+        projects = await prisma.project.findMany({
+          where: {
+            OR: [
+              { ownerId: userId }, // User is owner
+              {
+                projectMembers: {
+                  some: {
+                    userId: userId // User is member (SUB_OWNER or MEMBER)
+                  }
+                }
+              }
+            ]
+          },
+          orderBy: { createdAt: "desc" },
+          include: {
+            projectMembers: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
 
       res.json(projects);
     } catch (error: any) {
@@ -213,6 +253,78 @@ static async getDashboard(
       res.json(project);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
+    }
+  }
+
+  // GET FULL PROJECT FOR APPROVAL VIEW
+  static async getFullForApproval(
+    req: Request<ProjectParamsDTO>,
+    res: Response
+  ) {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id },
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          scopes: {
+            orderBy: { order: "asc" },
+            include: {
+              tasks: {
+                orderBy: { order: "asc" },
+                include: {
+                  subtasks: {
+                    orderBy: { order: "asc" },
+                    include: {
+                      progressLogs: true,
+                      checklists: true,
+                      assignees: {
+                        include: { user: { select: { id: true, name: true, email: true } } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Check if user has access: either owner or approver
+      const isOwner = project.ownerId === userId;
+      
+      if (!isOwner) {
+        // Check if user is an approver in this project's approval chain
+        const isApprover = await prisma.projectApproval.findFirst({
+          where: {
+            projectId: id,
+            approverId: userId
+          }
+        });
+
+        if (!isApprover) {
+          return res.status(403).json({
+            error: "Access denied - you are not an approver for this project"
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        data: project
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -625,6 +737,133 @@ export async function getProjectEngagedUsers(req: any, res: any) {
   } catch (err: any) {
     res.status(500).json({
       message: err.message
+    });
+  }
+}
+
+// 🔥 UPDATE PROJECT MEMBER ROLE (PATCH endpoint)
+export async function updateProjectMemberRole(req: any, res: any) {
+  try {
+    const { projectId, userId } = req.params;
+    const { newRole } = req.body;
+    const requesterId = (req as any).user.id;
+
+    // ✅ VALIDATION: newRole must be valid
+    if (!newRole || !["SUB_OWNER", "MEMBER"].includes(newRole)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "INVALID_ROLE",
+          message: "Invalid role. Must be 'SUB_OWNER' or 'MEMBER'"
+        }
+      });
+    }
+
+    // ✅ CHECK: Project exists
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "PROJECT_NOT_FOUND",
+          message: "Project not found"
+        }
+      });
+    }
+
+    // ✅ PERMISSION: Only project owner can modify member roles
+    const requesterMember = await prisma.projectMember.findFirst({
+      where: {
+        projectId,
+        userId: requesterId
+      }
+    });
+
+    if (!requesterMember || requesterMember.role !== "OWNER") {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: "INSUFFICIENT_PERMISSIONS",
+          message: "Only project owner can modify member roles"
+        }
+      });
+    }
+
+    // ✅ CHECK: Member exists in project
+    const member = await prisma.projectMember.findFirst({
+      where: {
+        projectId,
+        userId
+      },
+      include: {
+        user: { include: { role: true } }
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "MEMBER_NOT_FOUND",
+          message: "User is not a member of this project"
+        }
+      });
+    }
+
+    // ✅ PREVENT: Cannot change OWNER role
+    if (member.role === "OWNER") {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: "CANNOT_MODIFY_OWNER",
+          message: "Cannot change role of project owner"
+        }
+      });
+    }
+
+    // 🔥 UPDATE: Member role (real-time draft auto-save)
+    const updated = await prisma.projectMember.update({
+      where: { id: member.id },
+      data: {
+        role: newRole
+      },
+      include: {
+        user: { include: { role: true } }
+      }
+    });
+
+    // 🔥 FORMAT RESPONSE
+    return res.status(200).json({
+      success: true,
+      message: `Member role updated successfully to ${newRole}`,
+      data: {
+        projectMemberId: updated.id,
+        projectId: updated.projectId,
+        userId: updated.userId,
+        projectRole: updated.role,
+        user: {
+          id: updated.user.id,
+          name: updated.user.name,
+          email: updated.user.email,
+          role: {
+            id: updated.user.role?.id,
+            name: updated.user.role?.name
+          }
+        },
+        updatedAt: updated.createdAt // Using createdAt as we don't have updatedAt in schema yet
+      }
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: err.message || "Failed to update member role"
+      }
     });
   }
 }

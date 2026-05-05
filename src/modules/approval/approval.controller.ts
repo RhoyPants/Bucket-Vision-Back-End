@@ -170,6 +170,74 @@ export class ApprovalController {
       });
     }
   }
+
+  /**
+   * GET /api/approvals/pending-projects
+   * 
+   * Returns projects awaiting current user's approval, respecting sequential workflow
+   * 
+   * Response:
+   * {
+   *   "success": true,
+   *   "data": [
+   *     {
+   *       "id": "project-uuid",
+   *       "name": "Project Name",
+   *       "status": "FOR_REVIEW" | "FOR_APPROVAL",
+   *       "owner": { "id", "name", "email" },
+   *       "pendingApprovalLevel": "BU_HEAD" | "OP",
+   *       "pendingApprovalOrder": 1 | 2,
+   *       ...
+   *     }
+   *   ],
+   *   "count": 3,
+   *   "message": "3 projects awaiting your approval"
+   * }
+   */
+  async getPendingProjectsForApproval(req: Request, res: Response): Promise<void> {
+    try {
+      // Extract user from JWT token (set by auth middleware)
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: "Unauthorized - User ID not found"
+        });
+        return;
+      }
+
+      // Optional pagination params
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100); // Max 100
+      const skip = parseInt(req.query.skip as string) || 0;
+
+      console.log(`🔍 Getting pending projects for user ${userId} (limit=${limit}, skip=${skip})`);
+
+      // Call service to get pending projects
+      const pending = await approvalService.getPendingProjectsForApproval(userId);
+
+      // Apply pagination if needed
+      const paginatedResults = pending.slice(skip, skip + limit);
+
+      res.status(200).json({
+        success: true,
+        data: paginatedResults,
+        count: pending.length,
+        limit,
+        skip,
+        message: `${pending.length} project(s) awaiting your approval`
+      });
+
+    } catch (error: any) {
+      console.error("❌ Controller error in getPendingProjectsForApproval:", error);
+
+      res.status(400).json({
+        success: false,
+        error: error.message || "Failed to fetch pending projects",
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  }
 }
 
 export const approvalController = new ApprovalController();

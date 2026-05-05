@@ -219,6 +219,11 @@ model Project {
   approvals        ProjectApproval[]
   approvalAuditLogs ApprovalAuditLog[] @relation("ApprovalAudit")
 
+  // 🔥 NEW: Approval Flow Configuration
+  approvalFlowId  String?
+  approvalFlow    ApprovalFlow?  @relation(fields: [approvalFlowId], references: [id])
+  approvalEnabled Boolean        @default(true)  // Can disable per project
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -228,6 +233,7 @@ model Project {
   @@index([pin])
   @@index([rootProjectId])
   @@index([parentProjectId])
+  @@index([approvalFlowId])
 }
 
 //////////////////////////
@@ -341,6 +347,47 @@ model Subtask {
   progressLogs ProgressLog[]
 
   @@index([taskId])
+}
+
+//////////////////////////
+// APPROVAL FLOW SYSTEM
+//////////////////////////
+
+model ApprovalFlow {
+  id          String  @id @default(uuid())
+  name        String  @unique  // "BU_HEAD → OP", "Director → BU_HEAD → OP"
+  description String?
+  isDefault   Boolean @default(false)
+  isActive    Boolean @default(true)
+
+  steps   ApprovalStep[]
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isDefault])
+  @@index([isActive])
+}
+
+model ApprovalStep {
+  id    String @id @default(uuid())
+  flowId String
+
+  order Int
+  role  String  // "BU_HEAD", "OP", "DIRECTOR", "FINANCE", etc.
+
+  // Control how approval works at this step
+  requiresAll Int @default(1)  // 0 = Any one approver, 1 = All approvers with role must approve
+  canReject   Boolean @default(true)  // Can this step reject?
+
+  flow ApprovalFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([flowId, order])
+  @@index([flowId])
 }
 
 //////////////////////////

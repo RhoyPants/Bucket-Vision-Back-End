@@ -675,12 +675,81 @@ async function main() {
 
   console.log("✅ Versioned projects created (v1 + v2)");
 
+  //////////////////////////////
+  // APPROVAL FLOWS (Dynamic workflow configuration)
+  //////////////////////////////
+  
+  // Default Flow: BU_HEAD → OP
+  const defaultFlow = await prisma.approvalFlow.upsert({
+    where: { name: "BU_HEAD → OP" },
+    update: {},
+    create: {
+      name: "BU_HEAD → OP",
+      description: "Standard approval workflow: BU Head review then OP final approval",
+      isDefault: true,
+      isActive: true,
+      steps: {
+        create: [
+          {
+            order: 1,
+            role: "BU_HEAD",
+            requiresAll: 1,  // All BU_HEAD users must approve
+            canReject: true
+          },
+          {
+            order: 2,
+            role: "OP",
+            requiresAll: 0,  // Any one OP user can approve
+            canReject: true
+          }
+        ]
+      }
+    }
+  });
+
+  // Optional Flow: Director → BU_HEAD → OP
+  const directorFlow = await prisma.approvalFlow.upsert({
+    where: { name: "Director → BU_HEAD → OP" },
+    update: {},
+    create: {
+      name: "Director → BU_HEAD → OP",
+      description: "Extended workflow for high-risk projects",
+      isDefault: false,
+      isActive: true,
+      steps: {
+        create: [
+          {
+            order: 1,
+            role: "DIRECTOR",
+            requiresAll: 0,
+            canReject: true
+          },
+          {
+            order: 2,
+            role: "BU_HEAD",
+            requiresAll: 1,
+            canReject: true
+          },
+          {
+            order: 3,
+            role: "OP",
+            requiresAll: 0,
+            canReject: true
+          }
+        ]
+      }
+    }
+  });
+
+  console.log("✅ Approval flows created (1 default)");
+
   console.log("\n✅✅✅ SEEDING COMPLETED SUCCESSFULLY!\n");
   console.log("📊 Summary:");
   console.log(`   Modules: ${modules.length}`);
   console.log(`   Roles: ${roles.length} (all with FULL permissions)`);
   console.log(`   Users: 6`);
   console.log(`   Projects: 4 (1 active, 1 draft, 1 pending, 2 versioned)`);
+  console.log(`   Approval Flows: 2 (1 default available for assignment)`);
   console.log(`\n🔑 Test Login Credentials:`);
   console.log(`   superadmin@test.com / password123`);
   console.log(`   pic@test.com / password123`);

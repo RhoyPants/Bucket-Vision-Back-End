@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ProjectController, assignProjectMember, getProjectMembers, removeProjectMember, getProjectEngagedUsers } from "./project.controller";
+import { ProjectController, assignProjectMember, getProjectMembers, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole } from "./project.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -53,6 +53,13 @@ router.get(
   ProjectController.getFull,
 );
 
+// FULL PROJECT FOR APPROVAL VIEW (approvers can see full details)
+router.get(
+  "/:id/view-for-approval",
+  authenticate,
+  ProjectController.getFullForApproval,
+);
+
 // PROJECT DASHBOARD
 router.get(
   "/:id/dashboard",
@@ -85,6 +92,14 @@ router.post(
   authenticate,
   authorize("PROJECTS", "UPDATE"),
   assignProjectMember
+);
+
+// 🔥 UPDATE member role (SUB_OWNER ↔ MEMBER) with draft auto-save
+router.patch(
+  "/:projectId/members/:userId/role",
+  authenticate,
+  authorize("PROJECTS", "UPDATE"),
+  updateProjectMemberRole
 );
 
 // Remove user from project

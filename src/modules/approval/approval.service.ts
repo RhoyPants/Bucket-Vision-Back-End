@@ -104,18 +104,23 @@ export class ApprovalService {
   }
 
   /**
-   * Submit project for approval
+   * Submit project for approval using configured approval flow
    */
-  async submitProjectForApproval(projectId: string, userId: string): Promise<any> {
+  async submitProjectForApprovalUsingFlow(projectId: string, userId: string): Promise<any> {
     // Validate project
     const validationError = await this.validateProjectForSubmission(projectId);
     if (validationError) {
       throw new Error(validationError);
     }
 
-    const project = await prisma.project.findUnique({
+    const project = await (prisma.project.findUnique as any)({
       where: { id: projectId },
-      include: { owner: { include: { role: true } } },
+      include: {
+        owner: { include: { role: true } },
+        approvalFlow: {
+          include: { steps: { orderBy: { order: "asc" } } }
+        }
+      }
     });
 
     if (!project) {
@@ -128,9 +133,40 @@ export class ApprovalService {
       );
     }
 
-    // Check if approval is enabled
-    const approvalEnabled = await this.isApprovalEnabled();
+    // Check if approval is disabled for this project
+    if (!(project as any).approvalEnabled) {
+      // Auto-approve: skip workflow, activate project directly
+      const updated = await prisma.project.update({
+        where: { id: projectId },
+        data: {
+          status: "ACTIVE",
+          isActive: true,
+        }
+      });
 
+      // Log audit
+      await this.logApprovalAction(
+        projectId,
+        userId,
+        "SUBMITTED",
+        project.status,
+        "ACTIVE",
+        null,
+        "Auto-approved (approval disabled for this project)"
+      );
+
+      // Notify PIC
+      await this.notifyProjectOwner(
+        projectId,
+        "Project auto-approved (approval is disabled)",
+        "APPROVED"
+      );
+
+      return updated;
+    }
+
+    // Check if approval system is enabled globally
+    const approvalEnabled = await this.isApprovalEnabled();
     if (!approvalEnabled) {
       // Auto-approve: skip workflow, activate project directly
       const updated = await prisma.project.update({
@@ -138,14 +174,26 @@ export class ApprovalService {
         data: {
           status: "ACTIVE",
           isActive: true,
-        },
+        }
       });
 
       // Log audit
-      await this.logApprovalAction(projectId, userId, "SUBMITTED", project.status, "ACTIVE", null, "Auto-approved (system disabled approval)");
+      await this.logApprovalAction(
+        projectId,
+        userId,
+        "SUBMITTED",
+        project.status,
+        "ACTIVE",
+        null,
+        "Auto-approved (system has approval disabled)"
+      );
 
       // Notify PIC
-      await this.notifyProjectOwner(projectId, "Project auto-approved (system has approval disabled)", "APPROVED");
+      await this.notifyProjectOwner(
+        projectId,
+        "Project auto-approved (system has approval disabled)",
+        "APPROVED"
+      );
 
       return updated;
     }
@@ -153,113 +201,78 @@ export class ApprovalService {
     // Delete old approvals if resubmitting (from NEEDS_REVISION)
     if (project.status === "NEEDS_REVISION") {
       await prisma.projectApproval.deleteMany({
-        where: { projectId },
+        where: { projectId }
       });
     }
 
-    // Determine if owner is BU Head
-    const ownerIsBUHead = project.owner?.role?.name === "BU_HEAD";
+    // Get approval flow (use project's assigned flow or default)
+    let flow = (project as any).approvalFlow;
 
-    let nextStatus = "FOR_REVIEW";
-    let createdApprovals: any[] = [];
-
-    if (ownerIsBUHead) {
-      // Skip BU level, go directly to OP
-      nextStatus = "FOR_APPROVAL";
-
-      const opRole = await prisma.role.findUnique({
-        where: { name: "OP" },
-      });
-      const opUser = await prisma.user.findFirst({
-        where: { roleId: opRole?.id, isActive: true },
+    if (!flow) {
+      // Use default flow
+      flow = await (prisma as any).approvalFlow.findFirst({
+        where: { isDefault: true, isActive: true },
+        include: { steps: { orderBy: { order: "asc" } } }
       });
 
-      if (!opUser) {
-        throw new Error("OP user not found in system");
+      if (!flow) {
+        throw new Error("No approval flow available. Please configure a default flow.");
       }
 
-      createdApprovals = [
-        await prisma.projectApproval.create({
+      // Assign default flow to project
+      await (prisma.project.update as any)({
+        where: { id: projectId },
+        data: { approvalFlowId: flow.id }
+      });
+    }
+
+    // Create approvals based on flow steps
+    const createdApprovals: any[] = [];
+
+    for (const step of flow.steps) {
+      // Get users with the required role
+      const approvers = await this.getUsersByRoleInFlow(step.role);
+
+      if (approvers.length === 0) {
+        throw new Error(`No users found with role "${step.role}" for approval flow step ${step.order}`);
+      }
+
+      // Create approval record for each approver (if requiresAll) or first one
+      const approverIds = step.requiresAll ? approvers.map(a => a.id) : [approvers[0].id];
+
+      for (const approverId of approverIds) {
+        const approval = await prisma.projectApproval.create({
           data: {
             projectId,
-            approverId: opUser.id,
-            level: "OP",
-            order: 0,
+            approverId,
+            level: step.role as ApprovalLevel,  // Cast to ApprovalLevel enum
+            order: step.order,
             status: "PENDING",
-            isFinal: true,
+            isFinal: step.order === flow.steps.length
           },
-        }),
-      ];
+          include: { approver: true }
+        });
 
-      // Notify OP
-      await this.notifyApprover(
-        opUser.id,
-        projectId,
-        `Project "${project.name}" (v${project.versionNumber}) is ready for OP approval. Owner is BU Head, skipped BU level.`
-      );
-    } else {
-      // Go through normal BU -> OP flow
-      nextStatus = "FOR_REVIEW";
+        createdApprovals.push(approval);
 
-      const buHeads = await this.determineBUHeads();
-
-      if (buHeads.length === 0) {
-        throw new Error("No BU Heads found in system");
-      }
-
-      // Create BU Head approvals
-      for (let i = 0; i < buHeads.length; i++) {
-        createdApprovals.push(
-          await prisma.projectApproval.create({
-            data: {
-              projectId,
-              approverId: buHeads[i].id,
-              level: "BU_HEAD",
-              order: i,
-              status: "PENDING",
-              isFinal: false,
-            },
-          })
-        );
-
-        // Notify each BU Head
+        // Notify approver
         await this.notifyApprover(
-          buHeads[i].id,
+          approverId,
           projectId,
-          `Project "${project.name}" (v${project.versionNumber}) is pending your BU Head review`
-        );
-      }
-
-      // Create OP approval (will be triggered after all BU approvals)
-      const opRole = await prisma.role.findUnique({
-        where: { name: "OP" },
-      });
-      const opUser = await prisma.user.findFirst({
-        where: { roleId: opRole?.id, isActive: true },
-      });
-
-      if (opUser) {
-        createdApprovals.push(
-          await prisma.projectApproval.create({
-            data: {
-              projectId,
-              approverId: opUser.id,
-              level: "OP",
-              order: buHeads.length,
-              status: "PENDING",
-              isFinal: true,
-            },
-          })
+          `Project "${project.name}" (v${project.versionNumber}) is pending your approval (Step ${step.order}: ${step.role})`
         );
       }
     }
 
-    // Update project status
+    // Update project status to FOR_REVIEW (first step) or FOR_APPROVAL (if skipping)
+    const firstStep = flow.steps[0];
+    const nextStatus = firstStep.role === "OP" ? "FOR_APPROVAL" : "FOR_REVIEW";
+
     const updated = await prisma.project.update({
       where: { id: projectId },
       data: {
-        status: nextStatus as ProjectStatus,
-      },
+        status: nextStatus as ProjectStatus
+      }
     });
 
     // Log audit
@@ -269,13 +282,45 @@ export class ApprovalService {
       "SUBMITTED",
       project.status,
       nextStatus as ProjectStatus,
-      null
+      null,
+      `Submitted using flow: ${flow.name}`
     );
 
     return {
       project: updated,
       approvals: createdApprovals,
+      flow: {
+        id: flow.id,
+        name: flow.name,
+        steps: flow.steps.map((s: any) => ({ order: s.order, role: s.role }))
+      }
     };
+  }
+
+  /**
+   * Get users with specific role for approval
+   */
+  async getUsersByRoleInFlow(role: string): Promise<any[]> {
+    // Try direct role match first
+    const users = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        role: {
+          name: role
+        }
+      },
+      include: { role: true }
+    });
+
+    return users;
+  }
+
+  /**
+   * Submit project for approval (delegates to flow-based method)
+   */
+  async submitProjectForApproval(projectId: string, userId: string): Promise<any> {
+    // Use the new flow-based system
+    return await this.submitProjectForApprovalUsingFlow(projectId, userId);
   }
 
   /**
@@ -514,10 +559,17 @@ export class ApprovalService {
       where: { projectId },
       include: {
         approver: {
-          select: { id: true, name: true, email: true },
-        },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: {
+              select: { name: true }
+            }
+          }
+        }
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" }
     });
   }
 
@@ -598,6 +650,119 @@ export class ApprovalService {
       });
     } catch (error) {
       console.error("Failed to create notification:", error);
+    }
+  }
+
+  /**
+   * Get pending projects for current user's approval
+   * Respects sequential approval flow - user only sees projects when it's their turn
+   * 
+   * Example Flow: BU_HEAD (order=1) → FINANCE (order=2) → OP (order=3)
+   * - BU_HEAD sees it immediately (order=1, no previous approvals needed)
+   * - FINANCE only sees it after BU_HEAD approves (all order<2 must be APPROVED)
+   * - OP only sees it after FINANCE approves (all order<3 must be APPROVED)
+   */
+  async getPendingProjectsForApproval(userId: string): Promise<any[]> {
+    try {
+      // Step 1: Get all PENDING approvals for this user
+      const pendingApprovals = await prisma.projectApproval.findMany({
+        where: {
+          approverId: userId,
+          status: "PENDING"
+        },
+        include: {
+          project: true
+        },
+        orderBy: [{ createdAt: 'desc' }]
+      });
+
+      if (pendingApprovals.length === 0) {
+        return [];
+      }
+
+      // Step 2: Filter - Only show projects where ALL PREVIOUS APPROVALS are already APPROVED
+      // This ensures sequential workflow (must approve in order)
+      const eligibleApprovals: any[] = [];
+
+      for (const currentApproval of pendingApprovals) {
+        // Get all approvals for this project that have LOWER order (previous steps)
+        const previousApprovals = await prisma.projectApproval.findMany({
+          where: {
+            projectId: currentApproval.projectId,
+            order: { lt: currentApproval.order }
+          }
+        });
+
+        // Check if ALL previous approvals are APPROVED
+        const allPreviousApproved = previousApprovals.every(
+          (approval: any) => approval.status === "APPROVED"
+        );
+
+        // Only add if all previous steps are approved (or if this is the first step, previousApprovals will be empty)
+        if (allPreviousApproved) {
+          eligibleApprovals.push(currentApproval);
+        }
+      }
+
+      if (eligibleApprovals.length === 0) {
+        return [];
+      }
+
+      // Step 3: Extract unique project IDs
+      const projectIds = Array.from(new Set(eligibleApprovals.map((a: any) => a.projectId))) as string[];
+
+      // Step 4: Fetch FULL project data with all relationships
+      const projects = await prisma.project.findMany({
+        where: {
+          id: { in: projectIds }
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          projectMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          },
+          scopes: {
+            include: {
+              tasks: true
+            }
+          }
+        },
+        orderBy: [{ createdAt: 'desc' }]
+      });
+
+      // Step 5: Enrich projects with approval metadata
+      // Add the approval level, order, and ID so frontend knows what role is approving
+      const enrichedProjects = projects.map((project: any) => {
+        const approval = eligibleApprovals.find((a: any) => a.projectId === project.id);
+        return {
+          ...project,
+          // Approval metadata:
+          pendingApprovalId: approval?.id,
+          pendingApprovalLevel: approval?.level,
+          pendingApprovalOrder: approval?.order,
+          pendingApprovalIsFinal: approval?.isFinal
+        };
+      });
+
+      return enrichedProjects;
+
+    } catch (error: any) {
+      console.error("❌ Error in getPendingProjectsForApproval:", error);
+      throw new Error(`Failed to fetch pending projects: ${error.message}`);
     }
   }
 }

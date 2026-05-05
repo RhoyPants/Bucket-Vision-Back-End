@@ -14,6 +14,9 @@ import dailyReportRoutes from "./modules/daily-report/daily-report.routes";
 import weeklyReportRoutes from "./modules/weekly-report/weekly-report.routes";
 import timelineRoutes from "./modules/timeline/timeline.routes";
 import approvalRoutes from "./modules/approval/approval.routes";
+import approvalFlowRoutes from "./modules/approval/approval.flow.routes";
+import adminProjectApprovalRoutes from "./modules/approval/admin.project.approval.routes";
+import versioningRoutes from "./modules/versioning/versioning.routes";
 
 const app = express();
 app.use(cors({
@@ -40,6 +43,9 @@ app.use("/api/daily-reports", dailyReportRoutes);
 app.use("/api/weekly-reports", weeklyReportRoutes);
 app.use("/api/timeline", timelineRoutes);
 app.use("/api/approvals", approvalRoutes);
+app.use("/api/admin/approval-flows", approvalFlowRoutes);
+app.use("/api/admin/projects", adminProjectApprovalRoutes);
+app.use("/api/versioning", versioningRoutes);
 
 
 
