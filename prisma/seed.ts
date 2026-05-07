@@ -54,7 +54,7 @@ async function main() {
     ),
   );
 
-  console.log("✅ Modules created (14 total)");
+  console.log("✅ Modules created (13 total)");
 
   //////////////////////////////
   // ROLES
@@ -728,7 +728,7 @@ const realProject =
             name: "General Requirements",
             description:
               "Mobilization, supervision, hauling and temporary facilities",
-            progress: 0,
+            progress: 67,
             budgetAllocated: 110835,
             budgetPercent: 6.05,
 
@@ -740,7 +740,7 @@ const realProject =
                   description:
                     "Site mobilization and project preparation activities",
                   order: 1,
-                  progress: 0,
+                  progress: 67,
                   budgetAllocated: 110835,
                   budgetPercent: 6.05,
 
@@ -750,7 +750,8 @@ const realProject =
                         title: "Site Mobilization",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 67,
+                        status: 1,
                         projectedStartDate: new Date("2024-07-18"),
                         projectedEndDate: new Date("2024-08-28"),
                       },
@@ -767,7 +768,7 @@ const realProject =
           {
             name: "Civil & Architectural",
             description: "Main civil and architectural works",
-            progress: 0,
+            progress: 62,
             budgetAllocated: 1721568.33,
             budgetPercent: 93.95,
 
@@ -780,7 +781,7 @@ const realProject =
                   title: "Dismantling Works",
                   description: "Removal of existing wall and structures",
                   order: 1,
-                  progress: 0,
+                  progress: 100,
                   budgetAllocated: 10341,
                   budgetPercent: 0.56,
 
@@ -790,7 +791,8 @@ const realProject =
                         title: "Dismantling of Existing Wall",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 100,
+                        status: 2,
                         projectedStartDate: new Date("2024-07-18"),
                         projectedEndDate: new Date("2024-07-19"),
                         actualStartDate: new Date("2024-07-18"),
@@ -807,7 +809,7 @@ const realProject =
                   title: "Wall Partition & Finishing Works",
                   description: "Partition installation and wall finishing",
                   order: 2,
-                  progress: 0,
+                  progress: 56,
                   budgetAllocated: 100461.17,
                   budgetPercent: 5.48,
 
@@ -817,7 +819,8 @@ const realProject =
                         title: "Wall Partition (Single)",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 100,
+                        status: 2,
                         projectedStartDate: new Date("2024-07-19"),
                         projectedEndDate: new Date("2024-07-28"),
                       },
@@ -825,7 +828,8 @@ const realProject =
                         title: "Wall Partition (Double)",
                         order: 2,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 44,
+                        status: 1,
                         projectedStartDate: new Date("2024-07-25"),
                         projectedEndDate: new Date("2024-08-01"),
                       },
@@ -833,7 +837,8 @@ const realProject =
                         title: "WF-2 Skimcoat Superfine Gray",
                         order: 3,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 44,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-09"),
                         projectedEndDate: new Date("2024-08-22"),
                       },
@@ -841,7 +846,8 @@ const realProject =
                         title: "WF-3 Wall Cladding",
                         order: 4,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 34,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-11"),
                         projectedEndDate: new Date("2024-08-15"),
                       },
@@ -850,6 +856,7 @@ const realProject =
                         order: 5,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-02"),
                         projectedEndDate: new Date("2024-08-18"),
                       },
@@ -864,7 +871,7 @@ const realProject =
                   title: "Ceiling Works",
                   description: "Gypsum board and ceiling painting",
                   order: 3,
-                  progress: 0,
+                  progress: 40,
                   budgetAllocated: 52299,
                   budgetPercent: 2.85,
 
@@ -875,7 +882,8 @@ const realProject =
                           "9mm Moisture Resistant Gypsum Board on Metal Framing",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 50,
+                        status: 1,
                         projectedStartDate: new Date("2024-07-30"),
                         projectedEndDate: new Date("2024-08-18"),
                       },
@@ -884,6 +892,7 @@ const realProject =
                         order: 2,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-18"),
                         projectedEndDate: new Date("2024-08-24"),
                       },
@@ -898,7 +907,7 @@ const realProject =
                   title: "Flooring Works",
                   description: "EPS, waterproofing, topping and tile installation",
                   order: 4,
-                  progress: 0,
+                  progress: 30,
                   budgetAllocated: 95170.01,
                   budgetPercent: 5.19,
 
@@ -908,7 +917,8 @@ const realProject =
                         title: "Installation of EPS",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 100,
+                        status: 2,
                         projectedStartDate: new Date("2024-07-29"),
                         projectedEndDate: new Date("2024-07-30"),
                       },
@@ -916,7 +926,8 @@ const realProject =
                         title: "Installation of Waterproofing",
                         order: 2,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 100,
+                        status: 2,
                         projectedStartDate: new Date("2024-07-30"),
                         projectedEndDate: new Date("2024-07-31"),
                       },
@@ -924,7 +935,8 @@ const realProject =
                         title: "Floor Topping",
                         order: 3,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 80,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-02"),
                         projectedEndDate: new Date("2024-08-04"),
                       },
@@ -933,6 +945,7 @@ const realProject =
                         order: 4,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-05"),
                         projectedEndDate: new Date("2024-08-06"),
                       },
@@ -941,6 +954,7 @@ const realProject =
                         order: 5,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-06"),
                         projectedEndDate: new Date("2024-08-07"),
                       },
@@ -949,6 +963,7 @@ const realProject =
                         order: 6,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-07"),
                         projectedEndDate: new Date("2024-08-18"),
                       },
@@ -963,7 +978,7 @@ const realProject =
                   title: "Electrical Works",
                   description: "Electrical roughing-ins and fixtures",
                   order: 5,
-                  progress: 0,
+                  progress: 55,
                   budgetAllocated: 247136.18,
                   budgetPercent: 13.49,
 
@@ -973,7 +988,8 @@ const realProject =
                         title: "Pipes and Conduits Roughing-ins",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 98,
+                        status: 1,
                         projectedStartDate: new Date("2024-07-22"),
                         projectedEndDate: new Date("2024-08-10"),
                       },
@@ -981,7 +997,8 @@ const realProject =
                         title: "Wires and Cables",
                         order: 2,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 60,
+                        status: 1,
                         projectedStartDate: new Date("2024-07-25"),
                         projectedEndDate: new Date("2024-08-10"),
                       },
@@ -990,6 +1007,7 @@ const realProject =
                         order: 3,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-22"),
                         projectedEndDate: new Date("2024-08-23"),
                       },
@@ -998,6 +1016,7 @@ const realProject =
                         order: 4,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-24"),
                         projectedEndDate: new Date("2024-08-25"),
                       },
@@ -1012,7 +1031,7 @@ const realProject =
                   title: "Cabinetry / Stainless / Showcase",
                   description: "Cabinets, stainless works and showcase",
                   order: 6,
-                  progress: 0,
+                  progress: 72,
                   budgetAllocated: 816410.8,
                   budgetPercent: 44.55,
 
@@ -1022,7 +1041,8 @@ const realProject =
                         title: "Overhead Cabinet at Refrigerator & Savory",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 100,
+                        status: 2,
                         projectedStartDate: new Date("2024-08-08"),
                         projectedEndDate: new Date("2024-08-09"),
                       },
@@ -1030,7 +1050,8 @@ const realProject =
                         title: "Overhead Cabinet at Service Area",
                         order: 2,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 100,
+                        status: 2,
                         projectedStartDate: new Date("2024-08-09"),
                         projectedEndDate: new Date("2024-08-10"),
                       },
@@ -1038,7 +1059,8 @@ const realProject =
                         title: "Office Cabinet",
                         order: 3,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 70,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-08"),
                         projectedEndDate: new Date("2024-08-10"),
                       },
@@ -1046,7 +1068,8 @@ const realProject =
                         title: "Stainless Steel & Signages",
                         order: 4,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 80,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-11"),
                         projectedEndDate: new Date("2024-08-26"),
                       },
@@ -1054,7 +1077,8 @@ const realProject =
                         title: "Showcase",
                         order: 5,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 60,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-15"),
                         projectedEndDate: new Date("2024-08-26"),
                       },
@@ -1069,7 +1093,7 @@ const realProject =
                   title: "Mechanical Works",
                   description: "Mechanical piping and supports",
                   order: 7,
-                  progress: 0,
+                  progress: 45,
                   budgetAllocated: 144208.94,
                   budgetPercent: 7.87,
 
@@ -1079,7 +1103,8 @@ const realProject =
                         title: "Piping, Hangers & Supports",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 45,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-10"),
                         projectedEndDate: new Date("2024-08-18"),
                       },
@@ -1094,7 +1119,7 @@ const realProject =
                   title: "Plumbing Works",
                   description: "Full plumbing installation",
                   order: 8,
-                  progress: 0,
+                  progress: 65,
                   budgetAllocated: 96924.6,
                   budgetPercent: 5.29,
 
@@ -1104,7 +1129,8 @@ const realProject =
                         title: "Plumbing Works",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 65,
+                        status: 1,
                         projectedStartDate: new Date("2024-07-18"),
                         projectedEndDate: new Date("2024-08-26"),
                       },
@@ -1119,7 +1145,7 @@ const realProject =
                   title: "Auxiliary Works",
                   description: "Additional project auxiliary works",
                   order: 9,
-                  progress: 0,
+                  progress: 20,
                   budgetAllocated: 48595.95,
                   budgetPercent: 2.65,
 
@@ -1129,7 +1155,8 @@ const realProject =
                         title: "Auxiliary Works",
                         order: 1,
                         createdBy: pic.id,
-                        progress: 0,
+                        progress: 20,
+                        status: 1,
                         projectedStartDate: new Date("2024-08-15"),
                         projectedEndDate: new Date("2024-08-25"),
                       },
@@ -1155,6 +1182,7 @@ const realProject =
                         order: 1,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-26"),
                         projectedEndDate: new Date("2024-08-26"),
                       },
@@ -1163,6 +1191,7 @@ const realProject =
                         order: 2,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-26"),
                         projectedEndDate: new Date("2024-08-27"),
                       },
@@ -1171,6 +1200,7 @@ const realProject =
                         order: 3,
                         createdBy: pic.id,
                         progress: 0,
+                        status: 0,
                         projectedStartDate: new Date("2024-08-28"),
                         projectedEndDate: new Date("2024-08-28"),
                       },
@@ -1226,6 +1256,104 @@ const realProject =
     }));
 
 console.log("✅ Real construction project created");
+
+  //////////////////////////////
+  // PROGRESS LOGS (Calendar-based daily progress)
+  //////////////////////////////
+
+  // Fetch all subtasks from the real project
+  const allTasks = await prisma.task.findMany({
+    where: {
+      scope: {
+        projectId: realProject.id,
+      },
+    },
+    include: {
+      subtasks: true,
+    },
+  });
+
+  // Create progress logs for each subtask
+  for (const task of allTasks) {
+    for (const subtask of task.subtasks) {
+      if (subtask.progress > 0 && subtask.projectedStartDate && subtask.projectedEndDate) {
+        // Calculate days between start and end date
+        const startDate = new Date(subtask.projectedStartDate);
+        const endDate = new Date(subtask.projectedEndDate);
+        const daysCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        // Create daily progress logs
+        let cumulativeProgress = 0;
+        for (let dayOffset = 0; dayOffset < daysCount; dayOffset++) {
+          const logDate = new Date(startDate);
+          logDate.setDate(logDate.getDate() + dayOffset);
+
+          // Calculate daily increment - gradually reach target progress
+          const dailyIncrement = Math.min(
+            subtask.progress / daysCount,
+            subtask.progress - cumulativeProgress
+          );
+          
+          cumulativeProgress = Math.min(cumulativeProgress + dailyIncrement, subtask.progress);
+
+          // Only create log if there's actual progress
+          if (dailyIncrement > 0 || dayOffset === daysCount - 1) {
+            try {
+              await prisma.progressLog.upsert({
+                where: {
+                  subtaskId_date: {
+                    subtaskId: subtask.id,
+                    date: logDate,
+                  },
+                },
+                update: {
+                  dailyPercent: dailyIncrement,
+                  cumulativePercent: cumulativeProgress,
+                },
+                create: {
+                  subtaskId: subtask.id,
+                  userId: leader.id,
+                  date: logDate,
+                  dailyPercent: dailyIncrement,
+                  cumulativePercent: cumulativeProgress,
+                  location: (realProject.location as any)?.city || "Manuel Roxas Blvd, Manila",
+                  dayNumber: dayOffset + 1,
+                },
+              });
+            } catch (err) {
+              // Skip duplicate or constraint errors
+            }
+          }
+        }
+      }
+    }
+  }
+
+  console.log("✅ Progress logs created from calendar dates");
+
+  //////////////////////////////
+  // UPDATE SUBTASK STATUS (Based on progress percentage)
+  //////////////////////////////
+
+  // Update all subtasks with correct status based on progress
+  for (const task of allTasks) {
+    for (const subtask of task.subtasks) {
+      let newStatus = 0; // default: pending
+      
+      if (subtask.progress === 100) {
+        newStatus = 2; // completed
+      } else if (subtask.progress > 0) {
+        newStatus = 1; // ongoing
+      }
+
+      await prisma.subtask.update({
+        where: { id: subtask.id },
+        data: { status: newStatus },
+      });
+    }
+  }
+
+  console.log("✅ Subtask status updated based on progress");
 
   //////////////////////////////
   // APPROVAL FLOWS (Dynamic workflow configuration)

@@ -17,6 +17,7 @@ import approvalRoutes from "./modules/approval/approval.routes";
 import approvalFlowRoutes from "./modules/approval/approval.flow.routes";
 import adminProjectApprovalRoutes from "./modules/approval/admin.project.approval.routes";
 import versioningRoutes from "./modules/versioning/versioning.routes";
+import calendarRoutes from "./modules/calendar/calendar.routes";
 
 const app = express();
 app.use(cors({
@@ -50,6 +51,7 @@ app.use("/api/approvals", approvalRoutes);
 app.use("/api/admin/approval-flows", approvalFlowRoutes);
 app.use("/api/admin/projects", adminProjectApprovalRoutes);
 app.use("/api/versioning", versioningRoutes);
+app.use("/api/calendar", calendarRoutes);
 
 
 
