@@ -135,12 +135,29 @@ export class ApprovalService {
 
     // Check if approval is disabled for this project
     if (!(project as any).approvalEnabled) {
+      // Archive old versions if this is a new version
+      if (project.rootProjectId) {
+        await prisma.project.updateMany({
+          where: {
+            rootProjectId: project.rootProjectId,
+            NOT: { id: projectId },
+          },
+          data: {
+            status: "ARCHIVED" as ProjectStatus,
+            isActive: false,
+            isLatestVersion: false,
+            isLocked: true,
+          },
+        });
+      }
+
       // Auto-approve: skip workflow, activate project directly
       const updated = await prisma.project.update({
         where: { id: projectId },
         data: {
           status: "ACTIVE",
           isActive: true,
+          isLatestVersion: true,
         }
       });
 
@@ -168,12 +185,29 @@ export class ApprovalService {
     // Check if approval system is enabled globally
     const approvalEnabled = await this.isApprovalEnabled();
     if (!approvalEnabled) {
+      // Archive old versions if this is a new version
+      if (project.rootProjectId) {
+        await prisma.project.updateMany({
+          where: {
+            rootProjectId: project.rootProjectId,
+            NOT: { id: projectId },
+          },
+          data: {
+            status: "ARCHIVED" as ProjectStatus,
+            isActive: false,
+            isLatestVersion: false,
+            isLocked: true,
+          },
+        });
+      }
+
       // Auto-approve: skip workflow, activate project directly
       const updated = await prisma.project.update({
         where: { id: projectId },
         data: {
           status: "ACTIVE",
           isActive: true,
+          isLatestVersion: true,
         }
       });
 
@@ -390,7 +424,7 @@ export class ApprovalService {
       // OP approval -> Project goes ACTIVE
       newProjectStatus = "ACTIVE";
 
-      // Handle versioning: deactivate old versions
+      // Handle versioning: archive old versions when new version is approved
       if (project.rootProjectId) {
         await prisma.project.updateMany({
           where: {
@@ -398,6 +432,7 @@ export class ApprovalService {
             NOT: { id: projectId },
           },
           data: {
+            status: "ARCHIVED" as ProjectStatus,
             isActive: false,
             isLatestVersion: false,
             isLocked: true,

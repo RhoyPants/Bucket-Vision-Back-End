@@ -1,0 +1,786 @@
+import prisma from "../../config/prisma";
+import { ProjectStatus } from "@prisma/client";
+
+export interface VersionAmendments {
+  projectedEndDate?: Date;
+  startDate?: Date;
+  totalBudget?: number;
+  remarks?: string;
+}
+
+export class VersioningService {
+  /**
+   * Create a new version of an active project
+   * Clones ALL progress, reports, attachments, and team data
+   * Updates only timeline/budget/remarks
+   */
+  async createNewVersion(
+    projectId: string,
+    amendments: VersionAmendments,
+    userId: string
+  ): Promise<any> {
+    // Fetch source project with all related data
+    const source = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        scopes: {
+          include: {
+            tasks: {
+              include: {
+                subtasks: {
+                  include: {
+                    progressLogs: true,
+                    assignees: true,
+                  },
+                },
+                assignees: true,
+              },
+            },
+          },
+        },
+        projectMembers: true,
+        dailyReports: true,
+        weeklyReports: true,
+        attachments: true,
+        timelines: true,
+        approvals: true,
+      },
+    });
+
+    if (!source) {
+      throw new Error("Project not found");
+    }
+
+    if (!source.isActive) {
+      throw new Error("Can only create version from active project");
+    }
+
+    // Check if a draft version already exists
+    const existingDraft = await prisma.project.findFirst({
+      where: {
+        rootProjectId: source.rootProjectId ?? source.id,
+        status: "DRAFT",
+        NOT: { id: projectId },
+      },
+    });
+
+    if (existingDraft) {
+      throw new Error(
+        `Version v${existingDraft.versionNumber} is already in DRAFT status. Submit or delete it first.`
+      );
+    }
+
+    // Create new project version (header only)
+    const newProject = await prisma.project.create({
+      data: {
+        name: source.name,
+        description:
+          amendments.remarks && amendments.remarks.trim()
+            ? `${source.description}\n\n[Amendment v${source.versionNumber + 1}]: ${amendments.remarks}`
+            : source.description,
+
+        pin: source.pin, // SAME PIN
+        ownerId: source.ownerId,
+        location: source.location ? source.location : undefined,
+        businessUnit: source.businessUnit,
+        entity: source.entity,
+
+        // TIMELINE: UPDATE with amendments or keep existing
+        startDate: amendments.startDate ?? source.startDate,
+        expectedEndDate: amendments.projectedEndDate ?? source.expectedEndDate,
+        actualStartDate: source.actualStartDate, // PRESERVE actual work
+        actualEndDate: source.actualEndDate, // PRESERVE actual work
+
+        // BUDGET: UPDATE with amendment
+        totalBudget: amendments.totalBudget ?? source.totalBudget,
+        priority: source.priority,
+        duration: source.duration,
+
+        // PROGRESS: Will be recalculated from cloned tasks
+        progress: source.progress,
+
+        // VERSIONING
+        versionNumber: source.versionNumber + 1,
+        versionLabel: `v${source.versionNumber + 1}`,
+        parentProjectId: source.id, // Link to previous version
+        rootProjectId: source.rootProjectId ?? source.id, // Link to root
+
+        // STATUS
+        status: "DRAFT" as ProjectStatus, // Needs re-approval
+        isActive: false,
+        isLatestVersion: true, // Only this is latest until approved
+        isLocked: false,
+        requiresApproval: true,
+      },
+    });
+
+    console.log(`✅ Created new project version: v${newProject.versionNumber} (${newProject.id})`);
+
+    // CLONE SCOPES → TASKS → SUBTASKS (with all progress data)
+    for (const scope of source.scopes) {
+      const newScope = await prisma.scope.create({
+        data: {
+          name: scope.name,
+          description: scope.description,
+          progress: scope.progress, // CARRY OVER current progress
+          budgetAllocated: scope.budgetAllocated,
+          budgetPercent: scope.budgetPercent,
+          projectId: newProject.id,
+        },
+      });
+
+      for (const task of scope.tasks) {
+        const newTask = await prisma.task.create({
+          data: {
+            title: task.title,
+            description: task.description,
+            order: task.order,
+            progress: task.progress, // CARRY OVER progress
+            budgetAllocated: task.budgetAllocated,
+            budgetPercent: task.budgetPercent,
+            scopeId: newScope.id,
+          },
+        });
+
+        // Clone all subtasks with their progress logs
+        for (const subtask of task.subtasks) {
+          const newSubtask = await prisma.subtask.create({
+            data: {
+              title: subtask.title,
+              description: subtask.description,
+              order: subtask.order,
+              progress: subtask.progress, // CARRY OVER progress
+              status: subtask.status, // CARRY OVER kanban status
+              priority: subtask.priority,
+
+              // PRESERVE ACTUAL DATES
+              projectedStartDate: subtask.projectedStartDate,
+              projectedEndDate: subtask.projectedEndDate,
+              actualStartDate: subtask.actualStartDate,
+              actualEndDate: subtask.actualEndDate,
+
+              budgetAllocated: subtask.budgetAllocated,
+              budgetPercent: subtask.budgetPercent,
+
+              createdBy: subtask.createdBy,
+              taskId: newTask.id,
+            },
+          });
+
+          // Clone progress logs (audit trail of progress)
+          for (const log of subtask.progressLogs) {
+            await prisma.progressLog.create({
+              data: {
+                subtaskId: newSubtask.id,
+                userId: log.userId,
+                date: log.date,
+                dailyPercent: log.dailyPercent,
+                cumulativePercent: log.cumulativePercent,
+                remarks: log.remarks,
+                photoUrl: log.photoUrl,
+                latitude: log.latitude,
+                longitude: log.longitude,
+                location: log.location,
+                dayNumber: log.dayNumber,
+                attachmentUrl: log.attachmentUrl,
+              },
+            });
+          }
+
+          // Clone subtask assignees
+          for (const assignee of subtask.assignees) {
+            await prisma.subtaskAssignee.create({
+              data: {
+                subtaskId: newSubtask.id,
+                userId: assignee.userId,
+              },
+            });
+          }
+        }
+
+        // Clone task assignees
+        for (const assignee of task.assignees) {
+          await prisma.taskAssignee.create({
+            data: {
+              taskId: newTask.id,
+              userId: assignee.userId,
+            },
+          });
+        }
+      }
+    }
+
+    console.log(`✅ Cloned ${source.scopes.length} scopes with all tasks & subtasks`);
+
+    // CLONE PROJECT MEMBERS (same team)
+    for (const member of source.projectMembers) {
+      await prisma.projectMember.create({
+        data: {
+          projectId: newProject.id,
+          userId: member.userId,
+          role: member.role,
+        },
+      });
+    }
+
+    console.log(`✅ Cloned ${source.projectMembers.length} team members`);
+
+    // CLONE ATTACHMENTS (documents, reports, etc.)
+    for (const attachment of source.attachments) {
+      await prisma.attachment.create({
+        data: {
+          fileUrl: attachment.fileUrl,
+          fileName: attachment.fileName,
+          projectId: newProject.id,
+          uploadedBy: attachment.uploadedBy,
+        },
+      });
+    }
+
+    console.log(`✅ Cloned ${source.attachments.length} attachments`);
+
+    // CLONE PROJECT TIMELINES (S-Curve history)
+    for (const timeline of source.timelines) {
+      await prisma.projectTimeline.create({
+        data: {
+          projectId: newProject.id,
+          date: timeline.date,
+          planned: timeline.planned,
+          actual: timeline.actual,
+          variance: timeline.variance,
+          daysAhead: timeline.daysAhead,
+        },
+      });
+    }
+
+    console.log(`✅ Cloned ${source.timelines.length} timeline snapshots`);
+
+    // CLONE DAILY REPORTS
+    for (const report of source.dailyReports) {
+      await prisma.dailyReport.create({
+        data: {
+          projectId: newProject.id,
+          userId: report.userId,
+          dayNumber: report.dayNumber,
+          date: report.date,
+          location: report.location,
+          remarks: report.remarks,
+          attachments: report.attachments,
+        },
+      });
+    }
+
+    console.log(`✅ Cloned ${source.dailyReports.length} daily reports`);
+
+    // CLONE WEEKLY REPORTS
+    for (const report of source.weeklyReports) {
+      await prisma.weeklyReport.create({
+        data: {
+          projectId: newProject.id,
+          userId: report.userId,
+          title: report.title,
+          dateFrom: report.dateFrom,
+          dateTo: report.dateTo,
+          remarks: report.remarks,
+          attachments: report.attachments,
+        },
+      });
+    }
+
+    console.log(`✅ Cloned ${source.weeklyReports.length} weekly reports`);
+
+    // NOTE: Approval records are NOT cloned
+    // v2 starts fresh with DRAFT status and will go through approval flow again
+
+    // Create initial audit log entry
+    await prisma.approvalAuditLog.create({
+      data: {
+        projectId: newProject.id,
+        approverId: userId,
+        action: "VERSION_CREATED",
+        level: "BU_HEAD",
+        previousStatus: "DRAFT",
+        newStatus: "DRAFT",
+        remarks:
+          amendments.remarks || `Version created from v${source.versionNumber}`,
+      },
+    });
+
+    // Notify project owner
+    await this.notifyVersionCreated(newProject.id, source.name, source.versionNumber);
+
+    return {
+      newProject,
+      summary: {
+        scopesCloned: source.scopes.length,
+        tasksCloned: source.scopes.reduce((sum, s) => sum + s.tasks.length, 0),
+        subtasksCloned: source.scopes.reduce(
+          (sum, s) => sum + s.tasks.reduce((t, task) => t + task.subtasks.length, 0),
+          0
+        ),
+        teamMembersCloned: source.projectMembers.length,
+        attachmentsCloned: source.attachments.length,
+        reportsCloned: source.dailyReports.length + source.weeklyReports.length,
+        timelinesCloned: source.timelines.length,
+      },
+    };
+  }
+
+  /**
+   * Get full detail of a specific version
+   */
+  async getVersionDetail(projectId: string): Promise<any> {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true },
+        },
+        scopes: {
+          orderBy: { order: "asc" },
+          include: {
+            tasks: {
+              orderBy: { order: "asc" },
+              include: {
+                assignees: {
+                  include: {
+                    user: { select: { id: true, name: true, email: true } },
+                  },
+                },
+                subtasks: {
+                  orderBy: { order: "asc" },
+                  include: {
+                    assignees: {
+                      include: {
+                        user: { select: { id: true, name: true, email: true } },
+                      },
+                    },
+                    progressLogs: {
+                      orderBy: { date: "asc" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        projectMembers: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
+        timelines: {
+          orderBy: { date: "asc" },
+        },
+        dailyReports: {
+          orderBy: { date: "asc" },
+        },
+        weeklyReports: {
+          orderBy: { dateFrom: "asc" },
+        },
+        attachments: {
+          orderBy: { id: "asc" },
+        },
+        approvals: {
+          include: {
+            approver: { select: { id: true, name: true, email: true } },
+          },
+        },
+        approvalAuditLogs: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            approver: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new Error("Version not found");
+    }
+
+    return project;
+  }
+
+  /**
+   * Get all versions of a project (by PIN)
+   */
+  async getProjectVersions(pin: string): Promise<any[]> {
+    return await prisma.project.findMany({
+      where: { pin },
+      select: {
+        id: true,
+        name: true,
+        versionNumber: true,
+        versionLabel: true,
+        status: true,
+        isActive: true,
+        isLatestVersion: true,
+        isLocked: true,
+        totalBudget: true,
+        expectedEndDate: true,
+        progress: true,
+        createdAt: true,
+      },
+      orderBy: { versionNumber: "desc" },
+    });
+  }
+
+  /**
+   * Get version history for a specific project (including root)
+   */
+  async getVersionHistory(projectId: string): Promise<any[]> {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const rootId = project.rootProjectId ?? project.id;
+
+    return await prisma.project.findMany({
+      where: { rootProjectId: rootId },
+      select: {
+        id: true,
+        versionNumber: true,
+        versionLabel: true,
+        status: true,
+        isActive: true,
+        isLocked: true,
+        totalBudget: true,
+        expectedEndDate: true,
+        progress: true,
+        description: true,
+        createdAt: true,
+        _count: {
+          select: { scopes: true, approvals: true },
+        },
+      },
+      orderBy: { versionNumber: "desc" },
+    });
+  }
+
+  /**
+   * Enhanced Compare: Two versions with Summary + Hierarchical Tree
+   * Returns structure-by-structure comparison with change indicators
+   */
+  async compareVersions(versionId1: string, versionId2: string): Promise<any> {
+    const [v1, v2] = await Promise.all([
+      prisma.project.findUnique({
+        where: { id: versionId1 },
+        include: {
+          scopes: {
+            orderBy: { order: "asc" },
+            include: {
+              tasks: {
+                orderBy: { order: "asc" },
+                include: { subtasks: { orderBy: { order: "asc" } } },
+              },
+            },
+          },
+        },
+      }),
+      prisma.project.findUnique({
+        where: { id: versionId2 },
+        include: {
+          scopes: {
+            orderBy: { order: "asc" },
+            include: {
+              tasks: {
+                orderBy: { order: "asc" },
+                include: { subtasks: { orderBy: { order: "asc" } } },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (!v1 || !v2) {
+      throw new Error("One or both versions not found");
+    }
+
+    // Helper: Track which fields changed
+    const trackFieldChanges = (obj1: any, obj2: any, fields: string[]): string[] => {
+      return fields.filter(
+        (field) => JSON.stringify(obj1[field]) !== JSON.stringify(obj2[field])
+      );
+    };
+
+    // Helper: Determine change status
+    const getChangeStatus = (changed: boolean): "UNCHANGED" | "MODIFIED" => {
+      return changed ? "MODIFIED" : "UNCHANGED";
+    };
+
+    // Build scope comparison
+    const scopesMap = new Map(v1.scopes.map((s: any) => [s.id, s]));
+    let scopesChanged = 0;
+    let tasksChanged = 0;
+    let subtasksChanged = 0;
+
+    const scopes = v2.scopes.map((s2: any) => {
+      const s1 = scopesMap.get(s2.id);
+
+      // Compare scope-level fields
+      const scopeFields = ["progress", "budgetAllocated", "budgetPercent"];
+      const changedScopeFields = s1
+        ? trackFieldChanges(s1, s2, scopeFields)
+        : scopeFields; // New scope = all fields changed
+      const scopeChanged = changedScopeFields.length > 0;
+
+      if (scopeChanged) scopesChanged++;
+
+      // Build task comparison
+      const tasksMap = new Map((s1?.tasks ?? []).map((t: any) => [t.id, t]));
+      const tasks = s2.tasks.map((t2: any) => {
+        const t1 = tasksMap.get(t2.id) as any;
+
+        // Compare task-level fields
+        const taskFields = ["progress", "budgetAllocated", "budgetPercent"];
+        const changedTaskFields = t1
+          ? trackFieldChanges(t1, t2, taskFields)
+          : taskFields; // New task = all fields changed
+        const taskChanged = changedTaskFields.length > 0;
+
+        if (taskChanged) tasksChanged++;
+
+        // Build subtask comparison
+        const subtasksMap = new Map((t1?.subtasks ?? []).map((st: any) => [st.id, st]));
+        const subtasks = t2.subtasks.map((st2: any) => {
+          const st1 = subtasksMap.get(st2.id) as any;
+
+          // Compare subtask-level fields
+          const subtaskFields = [
+            "progress",
+            "status",
+            "priority",
+            "projectedStartDate",
+            "projectedEndDate",
+            "actualStartDate",
+            "actualEndDate",
+            "budgetAllocated",
+            "budgetPercent",
+          ];
+          const changedSubtaskFields = st1
+            ? trackFieldChanges(st1, st2, subtaskFields)
+            : subtaskFields; // New subtask = all fields changed
+          const subtaskChanged = changedSubtaskFields.length > 0;
+
+          if (subtaskChanged) subtasksChanged++;
+
+          return {
+            id: st2.id,
+            title: st2.title,
+            changeStatus: getChangeStatus(subtaskChanged),
+            changedFields: changedSubtaskFields,
+            v1: st1
+              ? {
+                  progress: st1.progress,
+                  status: st1.status,
+                  priority: st1.priority,
+                  budgetAllocated: st1.budgetAllocated,
+                  projectedStartDate: st1.projectedStartDate,
+                  projectedEndDate: st1.projectedEndDate,
+                  actualStartDate: st1.actualStartDate,
+                  actualEndDate: st1.actualEndDate,
+                }
+              : null,
+            v2: {
+              progress: st2.progress,
+              status: st2.status,
+              priority: st2.priority,
+              budgetAllocated: st2.budgetAllocated,
+              projectedStartDate: st2.projectedStartDate,
+              projectedEndDate: st2.projectedEndDate,
+              actualStartDate: st2.actualStartDate,
+              actualEndDate: st2.actualEndDate,
+            },
+          };
+        });
+
+        return {
+          id: t2.id,
+          title: t2.title,
+          changeStatus: getChangeStatus(taskChanged),
+          changedFields: changedTaskFields,
+          v1: t1
+            ? {
+                progress: (t1 as any).progress,
+                budgetAllocated: (t1 as any).budgetAllocated,
+              }
+            : null,
+          v2: {
+            progress: t2.progress,
+            budgetAllocated: t2.budgetAllocated,
+          },
+          subtasks,
+        };
+      });
+
+      return {
+        id: s2.id,
+        name: s2.name,
+        changeStatus: getChangeStatus(scopeChanged),
+        changedFields: changedScopeFields,
+        v1: s1
+          ? {
+              progress: s1.progress,
+              budgetAllocated: s1.budgetAllocated,
+            }
+          : null,
+        v2: {
+          progress: s2.progress,
+          budgetAllocated: s2.budgetAllocated,
+        },
+        tasks,
+      };
+    });
+
+    // Calculate summary
+    return {
+      summary: {
+        scopesChanged,
+        tasksChanged,
+        subtasksChanged,
+        headerChanges: {
+          budgetDiff: (v2.totalBudget ?? 0) - (v1.totalBudget ?? 0),
+          endDateDiff:
+            v2.expectedEndDate && v1.expectedEndDate
+              ? Math.ceil(
+                  (v2.expectedEndDate.getTime() - v1.expectedEndDate.getTime()) /
+                    (1000 * 60 * 60 * 24)
+                )
+              : null,
+          progressDiff: parseFloat((v2.progress - v1.progress).toFixed(2)),
+        },
+      },
+      versions: {
+        v1: {
+          versionNumber: v1.versionNumber,
+          versionLabel: v1.versionLabel,
+          status: v1.status,
+          totalBudget: v1.totalBudget,
+          expectedEndDate: v1.expectedEndDate,
+          progress: v1.progress,
+        },
+        v2: {
+          versionNumber: v2.versionNumber,
+          versionLabel: v2.versionLabel,
+          status: v2.status,
+          totalBudget: v2.totalBudget,
+          expectedEndDate: v2.expectedEndDate,
+          progress: v2.progress,
+        },
+      },
+      scopes,
+    };
+  }
+
+  /**
+   * Get active version for a PIN
+   */
+  async getActiveVersionByPin(pin: string): Promise<any> {
+    return await prisma.project.findFirst({
+      where: { pin, isActive: true },
+      include: {
+        scopes: {
+          include: {
+            tasks: {
+              include: { subtasks: true },
+            },
+          },
+        },
+        owner: {
+          select: { id: true, name: true, email: true },
+        },
+        approvals: true,
+      },
+    });
+  }
+
+  /**
+   * Delete draft version (if not submitted for approval)
+   */
+  async deleteDraftVersion(projectId: string): Promise<any> {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    if (project.status !== "DRAFT") {
+      throw new Error("Can only delete draft versions");
+    }
+
+    // Delete all related data (relies on cascade deletes in schema)
+    const deleted = await prisma.project.delete({
+      where: { id: projectId },
+    });
+
+    await this.notifyVersionDeleted(deleted.id, deleted.name, deleted.versionNumber);
+
+    return deleted;
+  }
+
+  /**
+   * Private: Notify about version creation
+   */
+  private async notifyVersionCreated(
+    projectId: string,
+    projectName: string,
+    previousVersion: number
+  ): Promise<void> {
+    try {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) return;
+
+      await prisma.notification.create({
+        data: {
+          userId: project.ownerId,
+          type: "VERSION_CREATED",
+          message: `New version v${previousVersion + 1} of "${projectName}" created. All previous data (progress, reports, team) has been carried forward.`,
+          isRead: false,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to create notification:", error);
+    }
+  }
+
+  /**
+   * Private: Notify about version deletion
+   */
+  private async notifyVersionDeleted(
+    projectId: string,
+    projectName: string,
+    versionNumber: number
+  ): Promise<void> {
+    try {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) return;
+
+      await prisma.notification.create({
+        data: {
+          userId: project.ownerId,
+          type: "VERSION_DELETED",
+          message: `Draft version v${versionNumber} of "${projectName}" has been deleted.`,
+          isRead: false,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to create notification:", error);
+    }
+  }
+}
+
+export const versioningService = new VersioningService();

@@ -17,8 +17,8 @@ async function main() {
         where: { action },
         update: {},
         create: { action },
-      })
-    )
+      }),
+    ),
   );
 
   console.log("✅ Permissions created");
@@ -30,6 +30,7 @@ async function main() {
     { name: "AUTH", path: "/auth" },
     { name: "USERS", path: "/users" },
     { name: "ROLES", path: "/roles" },
+    { name: "MODULES", path: "/modules" },
     { name: "PROJECTS", path: "/projects" },
     { name: "SCOPES", path: "/scopes" },
     { name: "TASKS", path: "/tasks" },
@@ -48,8 +49,8 @@ async function main() {
         where: { name: mod.name },
         update: {},
         create: mod,
-      })
-    )
+      }),
+    ),
   );
 
   console.log("✅ Modules created (13 total)");
@@ -65,8 +66,8 @@ async function main() {
         where: { name },
         update: {},
         create: { name },
-      })
-    )
+      }),
+    ),
   );
 
   console.log("✅ Roles created (6 total)");
@@ -184,7 +185,7 @@ async function main() {
   //////////////////////////////
   // ORG HIERARCHY
   //////////////////////////////
-  
+
   await prisma.userHierarchy.upsert({
     where: {
       managerId_memberId: {
@@ -235,182 +236,184 @@ async function main() {
     where: { pin: "PROJ-001" },
   });
 
-  const activeProject = existingProject1 || (await prisma.project.create({
-    data: {
-      name: "Hospital Construction - Phase 1",
-      description: "Main structure and foundation work",
-      pin: "PROJ-001",
-      location: { city: "Manila", zone: "Zone A" },
-      businessUnit: "Infrastructure",
-      entity: "Building Division",
-      ownerId: pic.id,
-      status: "ACTIVE",
-      versionNumber: 1,
-      isActive: true,
-      isLatestVersion: true,
-      isLocked: false,
-      requiresApproval: true,
-      startDate: new Date("2026-01-15"),
-      expectedEndDate: new Date("2026-06-30"),
-      totalBudget: 5000000,
-      priority: "HIGH",
+  const activeProject =
+    existingProject1 ||
+    (await prisma.project.create({
+      data: {
+        name: "Hospital Construction - Phase 1",
+        description: "Main structure and foundation work",
+        pin: "PROJ-001",
+        location: { city: "Manila", zone: "Zone A" },
+        businessUnit: "Infrastructure",
+        entity: "Building Division",
+        ownerId: pic.id,
+        status: "ACTIVE",
+        versionNumber: 1,
+        isActive: true,
+        isLatestVersion: true,
+        isLocked: false,
+        requiresApproval: true,
+        startDate: new Date("2026-01-15"),
+        expectedEndDate: new Date("2026-06-30"),
+        totalBudget: 5000000,
+        priority: "HIGH",
 
-      scopes: {
-        create: [
-          {
-            name: "Foundation Work",
-            description: "Excavation and concrete foundation",
-            progress: 75,
-            budgetAllocated: 1500000,
-            budgetPercent: 30,
-            tasks: {
-              create: [
-                {
-                  title: "Soil Excavation",
-                  description: "Clearing and excavating site",
-                  order: 1,
-                  progress: 100,
-                  budgetAllocated: 500000,
-                  budgetPercent: 10,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Site survey",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 100,
-                        projectedStartDate: new Date("2026-01-15"),
-                        projectedEndDate: new Date("2026-01-25"),
-                        actualStartDate: new Date("2026-01-15"),
-                        actualEndDate: new Date("2026-01-24"),
-                      },
-                      {
-                        title: "Soil removal",
-                        order: 2,
-                        createdBy: pic.id,
-                        progress: 100,
-                        projectedStartDate: new Date("2026-01-26"),
-                        projectedEndDate: new Date("2026-02-15"),
-                        actualStartDate: new Date("2026-01-26"),
-                        actualEndDate: new Date("2026-02-14"),
-                      },
-                    ],
+        scopes: {
+          create: [
+            {
+              name: "Foundation Work",
+              description: "Excavation and concrete foundation",
+              progress: 75,
+              budgetAllocated: 1500000,
+              budgetPercent: 30,
+              tasks: {
+                create: [
+                  {
+                    title: "Soil Excavation",
+                    description: "Clearing and excavating site",
+                    order: 1,
+                    progress: 100,
+                    budgetAllocated: 500000,
+                    budgetPercent: 10,
+                    subtasks: {
+                      create: [
+                        {
+                          title: "Site survey",
+                          order: 1,
+                          createdBy: pic.id,
+                          progress: 100,
+                          projectedStartDate: new Date("2026-01-15"),
+                          projectedEndDate: new Date("2026-01-25"),
+                          actualStartDate: new Date("2026-01-15"),
+                          actualEndDate: new Date("2026-01-24"),
+                        },
+                        {
+                          title: "Soil removal",
+                          order: 2,
+                          createdBy: pic.id,
+                          progress: 100,
+                          projectedStartDate: new Date("2026-01-26"),
+                          projectedEndDate: new Date("2026-02-15"),
+                          actualStartDate: new Date("2026-01-26"),
+                          actualEndDate: new Date("2026-02-14"),
+                        },
+                      ],
+                    },
                   },
-                },
-                {
-                  title: "Foundation Concrete",
-                  description: "Pouring concrete foundation",
-                  order: 2,
-                  progress: 60,
-                  budgetAllocated: 1000000,
-                  budgetPercent: 20,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Rebar placement",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 100,
-                        projectedStartDate: new Date("2026-02-16"),
-                        projectedEndDate: new Date("2026-02-28"),
-                      },
-                      {
-                        title: "Concrete pouring",
-                        order: 2,
-                        createdBy: pic.id,
-                        progress: 50,
-                        projectedStartDate: new Date("2026-03-01"),
-                        projectedEndDate: new Date("2026-03-15"),
-                      },
-                    ],
+                  {
+                    title: "Foundation Concrete",
+                    description: "Pouring concrete foundation",
+                    order: 2,
+                    progress: 60,
+                    budgetAllocated: 1000000,
+                    budgetPercent: 20,
+                    subtasks: {
+                      create: [
+                        {
+                          title: "Rebar placement",
+                          order: 1,
+                          createdBy: pic.id,
+                          progress: 100,
+                          projectedStartDate: new Date("2026-02-16"),
+                          projectedEndDate: new Date("2026-02-28"),
+                        },
+                        {
+                          title: "Concrete pouring",
+                          order: 2,
+                          createdBy: pic.id,
+                          progress: 50,
+                          projectedStartDate: new Date("2026-03-01"),
+                          projectedEndDate: new Date("2026-03-15"),
+                        },
+                      ],
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-          {
-            name: "Structural Work",
-            description: "Steel frame and columns",
-            progress: 40,
-            budgetAllocated: 2500000,
-            budgetPercent: 50,
-            tasks: {
-              create: [
-                {
-                  title: "Steel Frame Installation",
-                  description: "Install main steel columns",
-                  order: 1,
-                  progress: 40,
-                  budgetAllocated: 2500000,
-                  budgetPercent: 50,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Column layout",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 100,
-                        projectedStartDate: new Date("2026-03-16"),
-                        projectedEndDate: new Date("2026-03-30"),
-                      },
-                      {
-                        title: "Beam connection",
-                        order: 2,
-                        createdBy: pic.id,
-                        progress: 30,
-                        projectedStartDate: new Date("2026-04-01"),
-                        projectedEndDate: new Date("2026-04-30"),
-                      },
-                    ],
+            {
+              name: "Structural Work",
+              description: "Steel frame and columns",
+              progress: 40,
+              budgetAllocated: 2500000,
+              budgetPercent: 50,
+              tasks: {
+                create: [
+                  {
+                    title: "Steel Frame Installation",
+                    description: "Install main steel columns",
+                    order: 1,
+                    progress: 40,
+                    budgetAllocated: 2500000,
+                    budgetPercent: 50,
+                    subtasks: {
+                      create: [
+                        {
+                          title: "Column layout",
+                          order: 1,
+                          createdBy: pic.id,
+                          progress: 100,
+                          projectedStartDate: new Date("2026-03-16"),
+                          projectedEndDate: new Date("2026-03-30"),
+                        },
+                        {
+                          title: "Beam connection",
+                          order: 2,
+                          createdBy: pic.id,
+                          progress: 30,
+                          projectedStartDate: new Date("2026-04-01"),
+                          projectedEndDate: new Date("2026-04-30"),
+                        },
+                      ],
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-      },
+          ],
+        },
 
-      projectMembers: {
-        create: [
-          {
-            userId: pic.id,
-            role: "OWNER",
-          },
-          {
-            userId: leader.id,
-            role: "SUB_OWNER",
-          },
-          {
-            userId: member.id,
-            role: "MEMBER",
-          },
-        ],
-      },
+        projectMembers: {
+          create: [
+            {
+              userId: pic.id,
+              role: "OWNER",
+            },
+            {
+              userId: leader.id,
+              role: "SUB_OWNER",
+            },
+            {
+              userId: member.id,
+              role: "MEMBER",
+            },
+          ],
+        },
 
-      approvals: {
-        create: [
-          {
-            level: "BU_HEAD",
-            order: 0,
-            status: "APPROVED",
-            approverId: buHead.id,
-            actedAt: new Date("2026-01-10"),
-            remarks: "Approved - Good planning",
-            isFinal: false,
-          },
-          {
-            level: "OP",
-            order: 1,
-            status: "APPROVED",
-            approverId: op.id,
-            actedAt: new Date("2026-01-12"),
-            remarks: "Final approval given",
-            isFinal: true,
-          },
-        ],
+        approvals: {
+          create: [
+            {
+              level: "BU_HEAD",
+              order: 0,
+              status: "APPROVED",
+              approverId: buHead.id,
+              actedAt: new Date("2026-01-10"),
+              remarks: "Approved - Good planning",
+              isFinal: false,
+            },
+            {
+              level: "OP",
+              order: 1,
+              status: "APPROVED",
+              approverId: op.id,
+              actedAt: new Date("2026-01-12"),
+              remarks: "Final approval given",
+              isFinal: true,
+            },
+          ],
+        },
       },
-    },
-  }));
+    }));
 
   console.log("✅ Active project created");
 
@@ -422,49 +425,51 @@ async function main() {
     where: { pin: "PROJ-002" },
   });
 
-  const draftProject = existingProject2 || (await prisma.project.create({
-    data: {
-      name: "School Building - Planning Phase",
-      description: "New school construction project (draft)",
-      pin: "PROJ-002",
-      ownerId: pic.id,
-      status: "DRAFT",
-      versionNumber: 1,
-      isActive: false,
-      isLatestVersion: true,
-      isLocked: false,
-      requiresApproval: true,
-      totalBudget: 3000000,
+  const draftProject =
+    existingProject2 ||
+    (await prisma.project.create({
+      data: {
+        name: "School Building - Planning Phase",
+        description: "New school construction project (draft)",
+        pin: "PROJ-002",
+        ownerId: pic.id,
+        status: "DRAFT",
+        versionNumber: 1,
+        isActive: false,
+        isLatestVersion: true,
+        isLocked: false,
+        requiresApproval: true,
+        totalBudget: 3000000,
 
-      scopes: {
-        create: [
-          {
-            name: "Classroom Block",
-            progress: 0,
-            tasks: {
-              create: [
-                {
-                  title: "Design & Planning",
-                  order: 1,
-                  progress: 0,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Architectural design",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 0,
-                      },
-                    ],
+        scopes: {
+          create: [
+            {
+              name: "Classroom Block",
+              progress: 0,
+              tasks: {
+                create: [
+                  {
+                    title: "Design & Planning",
+                    order: 1,
+                    progress: 0,
+                    subtasks: {
+                      create: [
+                        {
+                          title: "Architectural design",
+                          order: 1,
+                          createdBy: pic.id,
+                          progress: 0,
+                        },
+                      ],
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
+          ],
+        },
       },
-    },
-  }));
+    }));
 
   console.log("✅ Draft project created");
 
@@ -476,61 +481,63 @@ async function main() {
     where: { pin: "PROJ-003" },
   });
 
-  const reviewProject = existingProject3 || (await prisma.project.create({
-    data: {
-      name: "Road Rehabilitation Project",
-      description: "Waiting for approval",
-      pin: "PROJ-003",
-      ownerId: pic.id,
-      status: "FOR_REVIEW",
-      versionNumber: 1,
-      isActive: false,
-      isLatestVersion: true,
-      isLocked: false,
-      requiresApproval: true,
-      totalBudget: 2000000,
+  const reviewProject =
+    existingProject3 ||
+    (await prisma.project.create({
+      data: {
+        name: "Road Rehabilitation Project",
+        description: "Waiting for approval",
+        pin: "PROJ-003",
+        ownerId: pic.id,
+        status: "FOR_REVIEW",
+        versionNumber: 1,
+        isActive: false,
+        isLatestVersion: true,
+        isLocked: false,
+        requiresApproval: true,
+        totalBudget: 2000000,
 
-      scopes: {
-        create: [
-          {
-            name: "Road Surface",
-            progress: 0,
-            tasks: {
-              create: [
-                {
-                  title: "Asphalt laying",
-                  order: 1,
-                  progress: 0,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Survey and marking",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 0,
-                      },
-                    ],
+        scopes: {
+          create: [
+            {
+              name: "Road Surface",
+              progress: 0,
+              tasks: {
+                create: [
+                  {
+                    title: "Asphalt laying",
+                    order: 1,
+                    progress: 0,
+                    subtasks: {
+                      create: [
+                        {
+                          title: "Survey and marking",
+                          order: 1,
+                          createdBy: pic.id,
+                          progress: 0,
+                        },
+                      ],
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-      },
+          ],
+        },
 
-      approvals: {
-        create: [
-          {
-            level: "BU_HEAD",
-            order: 0,
-            status: "PENDING",
-            approverId: buHead.id,
-            isFinal: false,
-          },
-        ],
+        approvals: {
+          create: [
+            {
+              level: "BU_HEAD",
+              order: 0,
+              status: "PENDING",
+              approverId: buHead.id,
+              isFinal: false,
+            },
+          ],
+        },
       },
-    },
-  }));
+    }));
 
   console.log("✅ For-review project created");
 
@@ -542,150 +549,153 @@ async function main() {
     where: { pin: "PROJ-004" },
   });
 
-  const v1Project = existingProject4 || (await prisma.project.create({
-    data: {
-      name: "Water Treatment Plant",
-      description: "Version 1 - Original plan",
-      pin: "PROJ-004",
-      versionNumber: 1,
-      ownerId: pic.id,
-      status: "ACTIVE",
-      isActive: false,
-      isLatestVersion: false,
-      isLocked: true,
-      requiresApproval: true,
-      totalBudget: 4500000,
+  const v1Project =
+    existingProject4 ||
+    (await prisma.project.create({
+      data: {
+        name: "Water Treatment Plant",
+        description: "Version 1 - Original plan",
+        pin: "PROJ-004",
+        versionNumber: 1,
+        ownerId: pic.id,
+        status: "ACTIVE",
+        isActive: false,
+        isLatestVersion: false,
+        isLocked: true,
+        requiresApproval: true,
+        totalBudget: 4500000,
 
-      scopes: {
-        create: [
-          {
-            name: "Treatment Tanks",
-            progress: 50,
-            tasks: {
-              create: [
-                {
-                  title: "Tank construction",
-                  order: 1,
-                  progress: 50,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Concrete work",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 50,
-                      },
-                    ],
+        scopes: {
+          create: [
+            {
+              name: "Treatment Tanks",
+              progress: 50,
+              tasks: {
+                create: [
+                  {
+                    title: "Tank construction",
+                    order: 1,
+                    progress: 50,
+                    subtasks: {
+                      create: [
+                        {
+                          title: "Concrete work",
+                          order: 1,
+                          createdBy: pic.id,
+                          progress: 50,
+                        },
+                      ],
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-      },
+          ],
+        },
 
-      approvals: {
-        create: [
-          {
-            level: "BU_HEAD",
-            order: 0,
-            status: "APPROVED",
-            approverId: buHead.id,
-            isFinal: false,
-          },
-          {
-            level: "OP",
-            order: 1,
-            status: "APPROVED",
-            approverId: op.id,
-            isFinal: true,
-          },
-        ],
+        approvals: {
+          create: [
+            {
+              level: "BU_HEAD",
+              order: 0,
+              status: "APPROVED",
+              approverId: buHead.id,
+              isFinal: false,
+            },
+            {
+              level: "OP",
+              order: 1,
+              status: "APPROVED",
+              approverId: op.id,
+              isFinal: true,
+            },
+          ],
+        },
       },
-    },
-  }));
+    }));
 
   // Create V2 as a child version
   const v2Project = existingProject4
     ? null
-    : (await prisma.project.create({
-    data: {
-      name: "Water Treatment Plant",
-      description: "Version 2 - Updated timeline (typhoon delay)",
-      pin: "PROJ-004",
-      versionNumber: 2,
-      ownerId: pic.id,
-      status: "ACTIVE",
-      isActive: true,
-      isLatestVersion: true,
-      isLocked: false,
-      requiresApproval: true,
-      totalBudget: 4800000, // increased budget
-      parentProjectId: v1Project.id,
-      rootProjectId: v1Project.id,
+    : await prisma.project.create({
+        data: {
+          name: "Water Treatment Plant",
+          description: "Version 2 - Updated timeline (typhoon delay)",
+          pin: "PROJ-004",
+          versionNumber: 2,
+          ownerId: pic.id,
+          status: "ACTIVE",
+          isActive: true,
+          isLatestVersion: true,
+          isLocked: false,
+          requiresApproval: true,
+          totalBudget: 4800000, // increased budget
+          parentProjectId: v1Project.id,
+          rootProjectId: v1Project.id,
 
-      scopes: {
-        create: [
-          {
-            name: "Treatment Tanks",
-            progress: 50,
-            tasks: {
-              create: [
-                {
-                  title: "Tank construction",
-                  order: 1,
-                  progress: 50,
-                  subtasks: {
-                    create: [
-                      {
-                        title: "Concrete work",
-                        order: 1,
-                        createdBy: pic.id,
-                        progress: 50,
+          scopes: {
+            create: [
+              {
+                name: "Treatment Tanks",
+                progress: 50,
+                tasks: {
+                  create: [
+                    {
+                      title: "Tank construction",
+                      order: 1,
+                      progress: 50,
+                      subtasks: {
+                        create: [
+                          {
+                            title: "Concrete work",
+                            order: 1,
+                            createdBy: pic.id,
+                            progress: 50,
+                          },
+                        ],
                       },
-                    ],
-                  },
+                    },
+                  ],
                 },
-              ],
-            },
+              },
+            ],
           },
-        ],
-      },
 
-      approvals: {
-        create: [
-          {
-            level: "BU_HEAD",
-            order: 0,
-            status: "APPROVED",
-            approverId: buHead.id,
-            isFinal: false,
+          approvals: {
+            create: [
+              {
+                level: "BU_HEAD",
+                order: 0,
+                status: "APPROVED",
+                approverId: buHead.id,
+                isFinal: false,
+              },
+              {
+                level: "OP",
+                order: 1,
+                status: "APPROVED",
+                approverId: op.id,
+                isFinal: true,
+              },
+            ],
           },
-          {
-            level: "OP",
-            order: 1,
-            status: "APPROVED",
-            approverId: op.id,
-            isFinal: true,
-          },
-        ],
-      },
-    },
-  }));
+        },
+      });
 
   console.log("✅ Versioned projects created (v1 + v2)");
 
   //////////////////////////////
   // APPROVAL FLOWS (Dynamic workflow configuration)
   //////////////////////////////
-  
+
   // Default Flow: BU_HEAD → OP
   const defaultFlow = await prisma.approvalFlow.upsert({
     where: { name: "BU_HEAD → OP" },
     update: {},
     create: {
       name: "BU_HEAD → OP",
-      description: "Standard approval workflow: BU Head review then OP final approval",
+      description:
+        "Standard approval workflow: BU Head review then OP final approval",
       isDefault: true,
       isActive: true,
       steps: {
@@ -693,18 +703,18 @@ async function main() {
           {
             order: 1,
             role: "BU_HEAD",
-            requiresAll: 1,  // All BU_HEAD users must approve
-            canReject: true
+            requiresAll: 1, // All BU_HEAD users must approve
+            canReject: true,
           },
           {
             order: 2,
             role: "OP",
-            requiresAll: 0,  // Any one OP user can approve
-            canReject: true
-          }
-        ]
-      }
-    }
+            requiresAll: 0, // Any one OP user can approve
+            canReject: true,
+          },
+        ],
+      },
+    },
   });
 
   // Optional Flow: Director → BU_HEAD → OP
@@ -722,23 +732,23 @@ async function main() {
             order: 1,
             role: "DIRECTOR",
             requiresAll: 0,
-            canReject: true
+            canReject: true,
           },
           {
             order: 2,
             role: "BU_HEAD",
             requiresAll: 1,
-            canReject: true
+            canReject: true,
           },
           {
             order: 3,
             role: "OP",
             requiresAll: 0,
-            canReject: true
-          }
-        ]
-      }
-    }
+            canReject: true,
+          },
+        ],
+      },
+    },
   });
 
   console.log("✅ Approval flows created (1 default)");
