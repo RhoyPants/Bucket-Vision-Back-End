@@ -105,6 +105,93 @@ export class SubtaskService {
   }
 
   // ========================================
+  // MOVE CHECKLIST (DRAG & DROP REORDER)
+  // ========================================
+  static async moveChecklist(
+    checklistId: string,
+    newOrder: number,
+    userId: string
+  ) {
+    return await prisma.$transaction(async (tx) => {
+      const checklist = await tx.checklist.findUnique({
+        where: { id: checklistId },
+      });
+
+      if (!checklist) throw new Error("Checklist not found");
+
+      const oldOrder = checklist.order;
+      const subtaskId = checklist.subtaskId;
+
+      // ✅ SAFETY: no movement
+      if (newOrder === oldOrder) {
+        return checklist;
+      }
+
+      // ========================================
+      // 🔥 SHIFT WITHIN SAME SUBTASK ONLY
+      // ========================================
+      if (newOrder > oldOrder) {
+        // moving DOWN
+        await tx.checklist.updateMany({
+          where: {
+            subtaskId,
+            order: {
+              gt: oldOrder,
+              lte: newOrder,
+            },
+          },
+          data: {
+            order: { decrement: 1 },
+          },
+        });
+      } else {
+        // moving UP
+        await tx.checklist.updateMany({
+          where: {
+            subtaskId,
+            order: {
+              gte: newOrder,
+              lt: oldOrder,
+            },
+          },
+          data: {
+            order: { increment: 1 },
+          },
+        });
+      }
+
+      // ========================================
+      // UPDATE TARGET ITEM
+      // ========================================
+      const updated = await tx.checklist.update({
+        where: { id: checklistId },
+        data: {
+          order: newOrder,
+        },
+      });
+
+      // ========================================
+      // 🔥 SAFETY REINDEX (ANTI-DUPLICATE)
+      // ========================================
+      const all = await tx.checklist.findMany({
+        where: { subtaskId },
+        orderBy: { order: "asc" },
+      });
+
+      for (let i = 0; i < all.length; i++) {
+        if (all[i].order !== i) {
+          await tx.checklist.update({
+            where: { id: all[i].id },
+            data: { order: i },
+          });
+        }
+      }
+
+      return updated;
+    });
+  }
+
+  // ========================================
   // TOGGLE CHECKLIST
   // ========================================
   static async toggleChecklist(checklistId: string, userId: string) {

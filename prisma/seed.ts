@@ -1356,11 +1356,44 @@ console.log("✅ Real construction project created");
   console.log("✅ Subtask status updated based on progress");
 
   //////////////////////////////
+  // WORK SCHEDULES (Days & Holidays Configuration)
+  //////////////////////////////
+  // GLOBAL HOLIDAYS (Company-wide)
+  //////////////////////////////
+
+  // Seed some common holidays
+  const newYearId = "holiday-2026-01-01";
+  await prisma.holiday.upsert({
+    where: { id: newYearId },
+    update: {},
+    create: {
+      id: newYearId,
+      date: new Date("2026-01-01"),
+      name: "New Year's Day",
+      description: "First day of the year",
+    },
+  });
+
+  const christmasId = "holiday-2026-12-25";
+  await prisma.holiday.upsert({
+    where: { id: christmasId },
+    update: {},
+    create: {
+      id: christmasId,
+      date: new Date("2026-12-25"),
+      name: "Christmas Day",
+      description: "Christmas holiday",
+    },
+  });
+
+  console.log("✅ Global holidays created (2 total)");
+
+  //////////////////////////////
   // APPROVAL FLOWS (Dynamic workflow configuration)
   //////////////////////////////
 
-  // Default Flow: BU_HEAD → OP
-  const defaultFlow = await prisma.approvalFlow.upsert({
+  // Default Flow: BU_HEAD → OP (SEQUENTIAL)
+  const defaultFlow = await (prisma as any).approvalFlow.upsert({
     where: { name: "BU_HEAD → OP" },
     update: {},
     create: {
@@ -1369,6 +1402,7 @@ console.log("✅ Real construction project created");
         "Standard approval workflow: BU Head review then OP final approval",
       isDefault: true,
       isActive: true,
+      executionMode: "SEQUENTIAL",  // 🔥 New: Sequential execution
       steps: {
         create: [
           {
@@ -1376,20 +1410,22 @@ console.log("✅ Real construction project created");
             role: "BU_HEAD",
             requiresAll: 1, // All BU_HEAD users must approve
             canReject: true,
+            useSpecificUsers: false,  // 🔥 New: Will use role-based
           },
           {
             order: 2,
             role: "OP",
             requiresAll: 0, // Any one OP user can approve
             canReject: true,
+            useSpecificUsers: false,  // 🔥 New: Will use role-based
           },
         ],
       },
     },
   });
 
-  // Optional Flow: Director → BU_HEAD → OP
-  const directorFlow = await prisma.approvalFlow.upsert({
+  // Optional Flow: Director → BU_HEAD → OP (SEQUENTIAL)
+  const directorFlow = await (prisma as any).approvalFlow.upsert({
     where: { name: "Director → BU_HEAD → OP" },
     update: {},
     create: {
@@ -1397,6 +1433,7 @@ console.log("✅ Real construction project created");
       description: "Extended workflow for high-risk projects",
       isDefault: false,
       isActive: true,
+      executionMode: "SEQUENTIAL",  // 🔥 New: Sequential execution
       steps: {
         create: [
           {
@@ -1404,25 +1441,28 @@ console.log("✅ Real construction project created");
             role: "DIRECTOR",
             requiresAll: 0,
             canReject: true,
+            useSpecificUsers: false,  // 🔥 New: Will use role-based
           },
           {
             order: 2,
             role: "BU_HEAD",
             requiresAll: 1,
             canReject: true,
+            useSpecificUsers: false,  // 🔥 New: Will use role-based
           },
           {
             order: 3,
             role: "OP",
             requiresAll: 0,
             canReject: true,
+            useSpecificUsers: false,  // 🔥 New: Will use role-based
           },
         ],
       },
     },
   });
 
-  console.log("✅ Approval flows created (1 default)");
+  console.log("✅ Approval flows created (2 total: 1 default)");
 
   console.log("\n✅✅✅ SEEDING COMPLETED SUCCESSFULLY!\n");
   console.log("📊 Summary:");

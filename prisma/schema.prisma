@@ -69,16 +69,17 @@ model User {
   // 🔥 PROJECT: Project membership
   projectMembers ProjectMember[]
 
-  progressLogs      ProgressLog[]
-  dailyReports      DailyReport[]
-  weeklyReports     WeeklyReport[]
-  dailyReports_recv DailyReportReceiver[]
+  progressLogs       ProgressLog[]
+  dailyReports       DailyReport[]
+  weeklyReports      WeeklyReport[]
+  dailyReports_recv  DailyReportReceiver[]
   weeklyReports_recv WeeklyReportReceiver[]
 
   // 🔥 NEW: Approvals & Notifications
-  approvals      ProjectApproval[]
+  approvals         ProjectApproval[]
   approvalAuditLogs ApprovalAuditLog[] @relation("ApprovedBy")
-  notifications  Notification[]
+  approvalStepUsers ApprovalStepUser[] @relation("ApprovalStepUsers")
+  notifications     Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -130,7 +131,7 @@ model ProjectMember {
   id        String @id @default(uuid())
   projectId String
   userId    String
-  role      String  // "OWNER", "SUB_OWNER", "MEMBER"
+  role      String // "OWNER", "SUB_OWNER", "MEMBER"
 
   project Project @relation(fields: [projectId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
@@ -147,9 +148,9 @@ model ProjectMember {
 //////////////////////////
 
 model UserHierarchy {
-  id       String @id @default(uuid())
+  id        String @id @default(uuid())
   managerId String
-  memberId String
+  memberId  String
 
   manager User @relation("UserMembers", fields: [managerId], references: [id])
   member  User @relation("UserManagers", fields: [memberId], references: [id])
@@ -209,21 +210,31 @@ model Project {
   parentProject   Project?  @relation("ProjectVersion", fields: [parentProjectId], references: [id])
   children        Project[] @relation("ProjectVersion")
 
-  scopes          Scope[]
-  attachments     Attachment[]
-  projectMembers  ProjectMember[]
-  dailyReports    DailyReport[]
-  weeklyReports   WeeklyReport[]
-  timelines       ProjectTimeline[]
+  scopes         Scope[]
+  attachments    Attachment[]
+  projectMembers ProjectMember[]
+  dailyReports   DailyReport[]
+  weeklyReports  WeeklyReport[]
+  timelines      ProjectTimeline[]
 
   // 🔥 NEW: Approvals
-  approvals        ProjectApproval[]
+  approvals         ProjectApproval[]
   approvalAuditLogs ApprovalAuditLog[] @relation("ApprovalAudit")
 
   // 🔥 NEW: Approval Flow Configuration
   approvalFlowId  String?
-  approvalFlow    ApprovalFlow?  @relation(fields: [approvalFlowId], references: [id])
-  approvalEnabled Boolean        @default(true)  // Can disable per project
+  approvalFlow    ApprovalFlow? @relation(fields: [approvalFlowId], references: [id])
+  approvalEnabled Boolean       @default(true) // Can disable per project
+
+  // 🔥 EMBEDDED: Work Schedule (days & holidays) - Per-project schedule configuration
+  monday          Boolean @default(true)
+  tuesday         Boolean @default(true)
+  wednesday       Boolean @default(true)
+  thursday        Boolean @default(true)
+  friday          Boolean @default(true)
+  saturday        Boolean @default(false)
+  sunday          Boolean @default(false)
+  includeHolidays Boolean @default(true)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -285,7 +296,7 @@ model Task {
   order       Int     @default(0)
 
   scopeId String
-  scope   Scope @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  scope   Scope  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
 
   budgetAllocated Float?
   budgetPercent   Float?
@@ -356,12 +367,15 @@ model Subtask {
 
 model ApprovalFlow {
   id          String  @id @default(uuid())
-  name        String  @unique  // "BU_HEAD → OP", "Director → BU_HEAD → OP"
+  name        String  @unique // "BU_HEAD → OP", "Director → BU_HEAD → OP"
   description String?
   isDefault   Boolean @default(false)
   isActive    Boolean @default(true)
 
-  steps   ApprovalStep[]
+  // 🔥 NEW: Execution mode (sequential or parallel)
+  executionMode String @default("SEQUENTIAL") // "SEQUENTIAL" or "PARALLEL"
+
+  steps    ApprovalStep[]
   projects Project[]
 
   createdAt DateTime @default(now())
@@ -372,15 +386,20 @@ model ApprovalFlow {
 }
 
 model ApprovalStep {
-  id    String @id @default(uuid())
+  id     String @id @default(uuid())
   flowId String
 
   order Int
-  role  String  // "BU_HEAD", "OP", "DIRECTOR", "FINANCE", etc.
+  role  String? // "BU_HEAD", "OP", "DIRECTOR", "FINANCE", etc. (optional if specific users assigned)
 
   // Control how approval works at this step
-  requiresAll Int @default(1)  // 0 = Any one approver, 1 = All approvers with role must approve
-  canReject   Boolean @default(true)  // Can this step reject?
+  requiresAll Int     @default(1) // 0 = Any one approver, 1 = All approvers with role must approve
+  canReject   Boolean @default(true) // Can this step reject?
+
+  // 🔥 NEW: Specific user assignment
+  // If filled, only these users can approve (overrides role-based)
+  assignedUsers    ApprovalStepUser[]
+  useSpecificUsers Boolean            @default(false) // Toggle between role-based vs user-specific
 
   flow ApprovalFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
 
@@ -389,6 +408,22 @@ model ApprovalStep {
 
   @@unique([flowId, order])
   @@index([flowId])
+}
+
+// 🔥 NEW: Approval step specific user assignments
+model ApprovalStepUser {
+  id     String @id @default(uuid())
+  stepId String
+  userId String
+
+  step ApprovalStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  user User         @relation("ApprovalStepUsers", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([stepId, userId])
+  @@index([stepId])
+  @@index([userId])
 }
 
 //////////////////////////
@@ -524,8 +559,8 @@ model DailyReport {
 
   createdAt DateTime @default(now())
 
-  user      User                 @relation(fields: [userId], references: [id])
-  project   Project              @relation(fields: [projectId], references: [id])
+  user      User                  @relation(fields: [userId], references: [id])
+  project   Project               @relation(fields: [projectId], references: [id])
   receivers DailyReportReceiver[]
 }
 
@@ -582,12 +617,12 @@ model ProjectApproval {
   projectId String
 
   level   ApprovalLevel
-  order   Int                @default(0)
-  isFinal Boolean            @default(false)
-  status  ApprovalStatus     @default(PENDING)
+  order   Int            @default(0)
+  isFinal Boolean        @default(false)
+  status  ApprovalStatus @default(PENDING)
 
   approverId String
-  approver   User            @relation(fields: [approverId], references: [id])
+  approver   User   @relation(fields: [approverId], references: [id])
 
   remarks String?
   actedAt DateTime?
@@ -628,19 +663,19 @@ model Notification {
 //////////////////////////
 
 model ApprovalAuditLog {
-  id              String  @id @default(uuid())
-  projectId       String
-  approverId      String
-  level           ApprovalLevel
-  action          String // "SUBMITTED", "APPROVED", "REJECTED", "RESUBMITTED"
-  previousStatus  ProjectStatus?
-  newStatus       ProjectStatus?
-  remarks         String?
-  
-  project         Project @relation("ApprovalAudit", fields: [projectId], references: [id], onDelete: Cascade)
-  approver        User    @relation("ApprovedBy", fields: [approverId], references: [id])
+  id             String         @id @default(uuid())
+  projectId      String
+  approverId     String
+  level          ApprovalLevel
+  action         String // "SUBMITTED", "APPROVED", "REJECTED", "RESUBMITTED"
+  previousStatus ProjectStatus?
+  newStatus      ProjectStatus?
+  remarks        String?
 
-  createdAt       DateTime @default(now())
+  project  Project @relation("ApprovalAudit", fields: [projectId], references: [id], onDelete: Cascade)
+  approver User    @relation("ApprovedBy", fields: [approverId], references: [id])
+
+  createdAt DateTime @default(now())
 
   @@index([projectId])
   @@index([approverId])
@@ -677,4 +712,20 @@ model ProjectTimeline {
   daysAhead Float
 
   project Project @relation(fields: [projectId], references: [id])
+}
+
+//////////////////////////
+// GLOBAL HOLIDAYS
+//////////////////////////
+
+model Holiday {
+  id          String   @id @default(uuid())
+  date        DateTime @unique // Unique date for global holidays
+  name        String // Holiday name (e.g., "Christmas", "New Year")
+  description String? // Optional description
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
 }

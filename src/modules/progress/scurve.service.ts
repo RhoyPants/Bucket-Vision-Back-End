@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
+import { DurationCalculator } from "../../utils/duration-calculator";
+import { HolidayService } from "../admin/holidays/holiday.service";
 
 const prisma = new PrismaClient();
 
 export async function getSCurve(projectId: string) {
   // ========================================
-  // 1. PROJECT
+  // 1. PROJECT (with embedded schedule)
   // ========================================
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -17,18 +19,50 @@ export async function getSCurve(projectId: string) {
   const start = new Date(project.startDate);
   const end = new Date(project.expectedEndDate);
 
-  const totalDays =
-    Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  // 🔥 FETCHED: Global holidays from database
+  const holidays = await HolidayService.getHolidaysInRange(start, end);
+
+  // 🔥 UPDATED: Use DurationCalculator for working days with project schedule + actual holidays
+  const scheduleConfig = {
+    monday: project.monday,
+    tuesday: project.tuesday,
+    wednesday: project.wednesday,
+    thursday: project.thursday,
+    friday: project.friday,
+    saturday: project.saturday,
+    sunday: project.sunday,
+    includeHolidays: project.includeHolidays,
+    holidays: holidays, // 🔥 ACTUAL GLOBAL HOLIDAYS FROM DATABASE
+  };
+
+  const totalWorkDays = DurationCalculator.calculateWorkDays(start, end, scheduleConfig);
 
   // ========================================
-  // 2. DATE RANGE
+  // 2. DATE RANGE (working days only)
   // ========================================
   const dates: Date[] = [];
+  const current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
 
-  for (let i = 0; i < totalDays; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    dates.push(d);
+  while (current <= end) {
+    // Only add working days
+    const dayOfWeek = current.getDay();
+    const workingDays = [
+      project.sunday,    // 0
+      project.monday,    // 1
+      project.tuesday,   // 2
+      project.wednesday, // 3
+      project.thursday,  // 4
+      project.friday,    // 5
+      project.saturday   // 6
+    ];
+
+    if (workingDays[dayOfWeek]) {
+      dates.push(new Date(current));
+    }
+
+    current.setDate(current.getDate() + 1);
   }
 
   // ========================================
@@ -91,16 +125,11 @@ export async function getSCurve(projectId: string) {
         continue;
       }
 
-      // DURING
-      const total =
-        (subEnd.getTime() - subStart.getTime()) /
-        (1000 * 60 * 60 * 24);
+      // DURING - Calculate using working days
+      const totalWorkDays = DurationCalculator.calculateWorkDays(subStart, subEnd, scheduleConfig);
+      const elapsedWorkDays = DurationCalculator.calculateWorkDays(subStart, date, scheduleConfig);
 
-      const elapsed =
-        (date.getTime() - subStart.getTime()) /
-        (1000 * 60 * 60 * 24);
-
-      const progress = total > 0 ? elapsed / total : 0;
+      const progress = totalWorkDays > 0 ? elapsedWorkDays / totalWorkDays : 0;
 
       plannedTotal += progress * weight;
     }

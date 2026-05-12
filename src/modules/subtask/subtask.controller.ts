@@ -11,6 +11,8 @@ import {
   DeleteSubtaskParamsDTO,
   ToggleChecklistParamsDTO,
   DeleteChecklistItemParamsDTO,
+  EditChecklistParamsDTO,
+  EditChecklistDTO,
   GetSubtaskByIdParamsDTO,
 } from "./subtask.dto";
 
@@ -420,6 +422,30 @@ export class SubtaskController {
   }
 
   // ========================================
+  // MOVE CHECKLIST (DRAG & DROP)
+  // ========================================
+  static async moveChecklist(req: Request, res: Response) {
+    try {
+      const checklistId = Array.isArray(req.params.checklistId)
+        ? req.params.checklistId[0]
+        : req.params.checklistId;
+
+      const { newOrder } = req.body;
+      const userId = (req as any).user.id;
+
+      const result = await SubtaskService.moveChecklist(
+        checklistId,
+        newOrder,
+        userId,
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  // ========================================
   // TOGGLE CHECKLIST
   // ========================================
   static async toggleChecklist(
@@ -456,6 +482,33 @@ export class SubtaskController {
           subtaskId,
           order: (last?.order || 0) + 1,
         },
+      });
+
+      res.json(checklist);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  // ========================================
+  // EDIT CHECKLIST
+  // ========================================
+  static async editChecklist(
+    req: Request<DeleteChecklistItemParamsDTO, {}, EditChecklistDTO>,
+    res: Response,
+  ) {
+    try {
+      const { checklistId } = req.params;
+      const { title, isCompleted, order } = req.body;
+
+      const updateData: any = {};
+      if (title !== undefined) updateData.title = title;
+      if (isCompleted !== undefined) updateData.isCompleted = isCompleted;
+      if (order !== undefined) updateData.order = order;
+
+      const checklist = await prisma.checklist.update({
+        where: { id: checklistId },
+        data: updateData,
       });
 
       res.json(checklist);

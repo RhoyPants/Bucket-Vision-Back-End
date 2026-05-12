@@ -61,6 +61,22 @@ router.patch(
   SubtaskController.toggleChecklist,
 );
 
+// MOVE CHECKLIST (DRAG & DROP)
+router.patch(
+  "/checklists/:checklistId/move",
+  authenticate,
+  authorize("SUBTASKS", "UPDATE"),
+  SubtaskController.moveChecklist,
+);
+
+// EDIT CHECKLIST
+router.patch(
+  "/checklists/:checklistId",
+  authenticate,
+  authorize("SUBTASKS", "UPDATE"),
+  SubtaskController.editChecklist,
+);
+
 // CREATE CHECKLIST
 router.post(
   "/checklists",

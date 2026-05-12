@@ -73,6 +73,16 @@ export interface DeleteChecklistItemParamsDTO {
   checklistId: string;
 }
 
+export interface EditChecklistParamsDTO {
+  checklistId: string;
+}
+
+export interface EditChecklistDTO {
+  title?: string;
+  isCompleted?: boolean;
+  order?: number;
+}
+
 // =========================
 // GET BY ID
 // =========================

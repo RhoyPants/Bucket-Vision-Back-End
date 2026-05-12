@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { ApprovalFlowService } from "./approval.flow.service";
-import prisma from "../../config/prisma";
+import { ApprovalFlowService } from "../approval-flows/approval.flow.service";
+import prisma from "../../../config/prisma";
 
 export class AdminProjectApprovalController {
   /**

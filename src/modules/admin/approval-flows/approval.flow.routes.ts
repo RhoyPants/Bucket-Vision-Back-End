@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ApprovalFlowController } from "./approval.flow.controller";
-import { authenticate } from "../../middleware/auth.middleware";
-import { authorize } from "../../middleware/rbac.middleware";
+import { authenticate } from "../../../middleware/auth.middleware";
+import { authorize } from "../../../middleware/rbac.middleware";
 
 const router = Router();
 
