@@ -1,0 +1,417 @@
+[
+    {
+        "prov_code": "13000",
+        "prov_name": "NCR",
+        "reg_code": "13"
+    },
+    {
+        "prov_code": "14001",
+        "prov_name": "Abra",
+        "reg_code": "14"
+    },
+    {
+        "prov_code": "14011",
+        "prov_name": "Benguet",
+        "reg_code": "14"
+    },
+    {
+        "prov_code": "14027",
+        "prov_name": "Ifugao",
+        "reg_code": "14"
+    },
+    {
+        "prov_code": "14032",
+        "prov_name": "Kalinga",
+        "reg_code": "14"
+    },
+    {
+        "prov_code": "14044",
+        "prov_name": "Mountain Province",
+        "reg_code": "14"
+    },
+    {
+        "prov_code": "14081",
+        "prov_name": "Apayao",
+        "reg_code": "14"
+    },
+    {
+        "prov_code": "01028",
+        "prov_name": "Ilocos Norte",
+        "reg_code": "01"
+    },
+    {
+        "prov_code": "01029",
+        "prov_name": "Ilocos Sur",
+        "reg_code": "01"
+    },
+    {
+        "prov_code": "01033",
+        "prov_name": "La Union",
+        "reg_code": "01"
+    },
+    {
+        "prov_code": "01055",
+        "prov_name": "Pangasinan",
+        "reg_code": "01"
+    },
+    {
+        "prov_code": "02009",
+        "prov_name": "Batanes",
+        "reg_code": "02"
+    },
+    {
+        "prov_code": "02015",
+        "prov_name": "Cagayan",
+        "reg_code": "02"
+    },
+    {
+        "prov_code": "02031",
+        "prov_name": "Isabela",
+        "reg_code": "02"
+    },
+    {
+        "prov_code": "02050",
+        "prov_name": "Nueva Vizcaya",
+        "reg_code": "02"
+    },
+    {
+        "prov_code": "02057",
+        "prov_name": "Quirino",
+        "reg_code": "02"
+    },
+    {
+        "prov_code": "03008",
+        "prov_name": "Bataan",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "03014",
+        "prov_name": "Bulacan",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "03049",
+        "prov_name": "Nueva Ecija",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "03054",
+        "prov_name": "Pampanga",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "03069",
+        "prov_name": "Tarlac",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "03071",
+        "prov_name": "Zambales",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "03077",
+        "prov_name": "Aurora",
+        "reg_code": "03"
+    },
+    {
+        "prov_code": "04010",
+        "prov_name": "Batangas",
+        "reg_code": "04"
+    },
+    {
+        "prov_code": "04021",
+        "prov_name": "Cavite",
+        "reg_code": "04"
+    },
+    {
+        "prov_code": "04034",
+        "prov_name": "Laguna",
+        "reg_code": "04"
+    },
+    {
+        "prov_code": "04056",
+        "prov_name": "Quezon",
+        "reg_code": "04"
+    },
+    {
+        "prov_code": "04058",
+        "prov_name": "Rizal",
+        "reg_code": "04"
+    },
+    {
+        "prov_code": "17040",
+        "prov_name": "Marinduque",
+        "reg_code": "17"
+    },
+    {
+        "prov_code": "17051",
+        "prov_name": "Occidental Mindoro",
+        "reg_code": "17"
+    },
+    {
+        "prov_code": "17052",
+        "prov_name": "Oriental Mindoro",
+        "reg_code": "17"
+    },
+    {
+        "prov_code": "17053",
+        "prov_name": "Palawan",
+        "reg_code": "17"
+    },
+    {
+        "prov_code": "17059",
+        "prov_name": "Romblon",
+        "reg_code": "17"
+    },
+    {
+        "prov_code": "05005",
+        "prov_name": "Albay",
+        "reg_code": "05"
+    },
+    {
+        "prov_code": "05016",
+        "prov_name": "Camarines Norte",
+        "reg_code": "05"
+    },
+    {
+        "prov_code": "05017",
+        "prov_name": "Camarines Sur",
+        "reg_code": "05"
+    },
+    {
+        "prov_code": "05020",
+        "prov_name": "Catanduanes",
+        "reg_code": "05"
+    },
+    {
+        "prov_code": "05041",
+        "prov_name": "Masbate",
+        "reg_code": "05"
+    },
+    {
+        "prov_code": "05062",
+        "prov_name": "Sorsogon",
+        "reg_code": "05"
+    },
+    {
+        "prov_code": "06004",
+        "prov_name": "Aklan",
+        "reg_code": "06"
+    },
+    {
+        "prov_code": "06006",
+        "prov_name": "Antique",
+        "reg_code": "06"
+    },
+    {
+        "prov_code": "06019",
+        "prov_name": "Capiz",
+        "reg_code": "06"
+    },
+    {
+        "prov_code": "06030",
+        "prov_name": "Iloilo",
+        "reg_code": "06"
+    },
+    {
+        "prov_code": "06079",
+        "prov_name": "Guimaras",
+        "reg_code": "06"
+    },
+    {
+        "prov_code": "18045",
+        "prov_name": "Negros Occidental",
+        "reg_code": "18"
+    },
+    {
+        "prov_code": "18046",
+        "prov_name": "Negros Oriental",
+        "reg_code": "18"
+    },
+    {
+        "prov_code": "18061",
+        "prov_name": "Siquijor",
+        "reg_code": "18"
+    },
+    {
+        "prov_code": "07012",
+        "prov_name": "Bohol",
+        "reg_code": "07"
+    },
+    {
+        "prov_code": "07022",
+        "prov_name": "Cebu",
+        "reg_code": "07"
+    },
+    {
+        "prov_code": "08026",
+        "prov_name": "Eastern Samar",
+        "reg_code": "08"
+    },
+    {
+        "prov_code": "08037",
+        "prov_name": "Leyte",
+        "reg_code": "08"
+    },
+    {
+        "prov_code": "08048",
+        "prov_name": "Northern Samar",
+        "reg_code": "08"
+    },
+    {
+        "prov_code": "08060",
+        "prov_name": "Samar (Old: Western Samar)",
+        "reg_code": "08"
+    },
+    {
+        "prov_code": "08064",
+        "prov_name": "Southern Leyte",
+        "reg_code": "08"
+    },
+    {
+        "prov_code": "08078",
+        "prov_name": "Biliran",
+        "reg_code": "08"
+    },
+    {
+        "prov_code": "09072",
+        "prov_name": "Zamboanga del Norte",
+        "reg_code": "09"
+    },
+    {
+        "prov_code": "09073",
+        "prov_name": "Zamboanga del Sur",
+        "reg_code": "09"
+    },
+    {
+        "prov_code": "09083",
+        "prov_name": "Zamboanga Sibugay",
+        "reg_code": "09"
+    },
+    {
+        "prov_code": "10013",
+        "prov_name": "Bukidnon",
+        "reg_code": "10"
+    },
+    {
+        "prov_code": "10018",
+        "prov_name": "Camiguin",
+        "reg_code": "10"
+    },
+    {
+        "prov_code": "10035",
+        "prov_name": "Lanao del Norte",
+        "reg_code": "10"
+    },
+    {
+        "prov_code": "10042",
+        "prov_name": "Misamis Occidental",
+        "reg_code": "10"
+    },
+    {
+        "prov_code": "10043",
+        "prov_name": "Misamis Oriental",
+        "reg_code": "10"
+    },
+    {
+        "prov_code": "11023",
+        "prov_name": "Davao del Norte",
+        "reg_code": "11"
+    },
+    {
+        "prov_code": "11024",
+        "prov_name": "Davao del Sur",
+        "reg_code": "11"
+    },
+    {
+        "prov_code": "11025",
+        "prov_name": "Davao Oriental",
+        "reg_code": "11"
+    },
+    {
+        "prov_code": "11082",
+        "prov_name": "Davao de Oro (Old: Compostela Valley)",
+        "reg_code": "11"
+    },
+    {
+        "prov_code": "11086",
+        "prov_name": "Davao Occidental",
+        "reg_code": "11"
+    },
+    {
+        "prov_code": "12047",
+        "prov_name": "Cotabato (Old: North Cotabato)",
+        "reg_code": "12"
+    },
+    {
+        "prov_code": "12063",
+        "prov_name": "South Cotabato",
+        "reg_code": "12"
+    },
+    {
+        "prov_code": "12065",
+        "prov_name": "Sultan Kudarat",
+        "reg_code": "12"
+    },
+    {
+        "prov_code": "12080",
+        "prov_name": "Sarangani",
+        "reg_code": "12"
+    },
+    {
+        "prov_code": "16002",
+        "prov_name": "Agusan del Norte",
+        "reg_code": "16"
+    },
+    {
+        "prov_code": "16003",
+        "prov_name": "Agusan del Sur",
+        "reg_code": "16"
+    },
+    {
+        "prov_code": "16067",
+        "prov_name": "Surigao del Norte",
+        "reg_code": "16"
+    },
+    {
+        "prov_code": "16068",
+        "prov_name": "Surigao del Sur",
+        "reg_code": "16"
+    },
+    {
+        "prov_code": "16085",
+        "prov_name": "Dinagat Islands",
+        "reg_code": "16"
+    },
+    {
+        "prov_code": "19007",
+        "prov_name": "Basilan",
+        "reg_code": "19"
+    },
+    {
+        "prov_code": "19036",
+        "prov_name": "Lanao del Sur",
+        "reg_code": "19"
+    },
+    {
+        "prov_code": "19066",
+        "prov_name": "Sulu",
+        "reg_code": "19"
+    },
+    {
+        "prov_code": "19070",
+        "prov_name": "Tawi-Tawi",
+        "reg_code": "19"
+    },
+    {
+        "prov_code": "19087",
+        "prov_name": "Maguindanao del Norte",
+        "reg_code": "19"
+    },
+    {
+        "prov_code": "19088",
+        "prov_name": "Maguindanao del Sur",
+        "reg_code": "19"
+    }
+]

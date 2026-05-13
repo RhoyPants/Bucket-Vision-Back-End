@@ -20,6 +20,8 @@ import approvalStepUserRoutes from "./modules/approval/approval-step-user/approv
 import versioningRoutes from "./modules/versioning/versioning.routes";
 import calendarRoutes from "./modules/calendar/calendar.routes";
 import holidayRoutes from "./modules/admin/holidays/holiday.routes";
+import geographicalRoutes from "./modules/geographical/geographical.routes";
+import businessUnitRoutes from "./modules/business-unit/business-unit.routes";
 
 const app = express();
 app.use(cors({
@@ -56,8 +58,9 @@ app.use("/api/admin/approval/steps", approvalStepUserRoutes);
 app.use("/api/admin/holidays", holidayRoutes);
 app.use("/api/versioning", versioningRoutes);
 app.use("/api/calendar", calendarRoutes);
-
-
+app.use("/api/geographical", geographicalRoutes);
+app.use("/api/business-units", businessUnitRoutes);
+    
 
 app.get("/test-auth", authenticate, (req: any, res) => {
   res.json({

@@ -729,3 +729,83 @@ model Holiday {
 
   @@index([date])
 }
+
+//////////////////////////
+// PHILIPPINES GEOGRAPHICAL DATA
+//////////////////////////
+
+model Region {
+  id        String   @id @default(uuid())
+  regCode   String   @unique
+  regName   String
+  isActive  Boolean  @default(true)
+
+  provinces Province[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([regCode])
+}
+
+model Province {
+  id        String   @id @default(uuid())
+  provCode  String   @unique
+  provName  String
+  regCode   String
+  region    Region   @relation(fields: [regCode], references: [regCode], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+
+  cities City[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([regCode])
+  @@index([provCode])
+}
+
+model City {
+  id       String   @id @default(uuid())
+  cityCode String   @unique
+  cityName String
+  provCode String
+  province Province @relation(fields: [provCode], references: [provCode], onDelete: Cascade)
+  isActive Boolean  @default(true)
+
+  barangays Barangay[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([provCode])
+  @@index([cityCode])
+}
+
+model Barangay {
+  id        String   @id @default(uuid())
+  brgyCode  String   @unique
+  brgyName  String
+  cityCode  String
+  city      City     @relation(fields: [cityCode], references: [cityCode], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cityCode])
+  @@index([brgyCode])
+}
+
+model BusinessUnit {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String
+  entity        String
+  buHead        String?
+  assistantHead String?
+  isActive      Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([entity])
+}

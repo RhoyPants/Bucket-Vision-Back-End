@@ -1,0 +1,8277 @@
+[
+    {
+        "city_code": "1380100",
+        "city_name": "City of Caloocan",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380200",
+        "city_name": "City of Las Piñas",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380300",
+        "city_name": "City of Makati",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380400",
+        "city_name": "City of Malabon",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380500",
+        "city_name": "City of Mandaluyong",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380601",
+        "city_name": "City of Manila (Tondo I/II)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380602",
+        "city_name": "City of Manila (Binondo)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380603",
+        "city_name": "City of Manila (Quiapo)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380604",
+        "city_name": "City of Manila (San Nicolas)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380605",
+        "city_name": "City of Manila (Santa Cruz)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380606",
+        "city_name": "City of Manila (Sampaloc)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380607",
+        "city_name": "City of Manila (San Miguel)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380608",
+        "city_name": "City of Manila (Ermita)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380609",
+        "city_name": "City of Manila (Intramuros)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380610",
+        "city_name": "City of Manila (Malate)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380611",
+        "city_name": "City of Manila (Paco)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380612",
+        "city_name": "City of Manila (Pandacan)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380613",
+        "city_name": "City of Manila (Port Area)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380614",
+        "city_name": "City of Manila (Santa Ana)",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380700",
+        "city_name": "City of Marikina",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380800",
+        "city_name": "City of Muntinlupa",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1380900",
+        "city_name": "City of Navotas",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381000",
+        "city_name": "City of Parañaque",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381100",
+        "city_name": "Pasay City",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381200",
+        "city_name": "City of Pasig",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381300",
+        "city_name": "Quezon City",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381400",
+        "city_name": "City of San Juan",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381500",
+        "city_name": "City of Taguig",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1381600",
+        "city_name": "City of Valenzuela",
+        "prov_code": "13000"
+    },
+    {
+        "city_code": "1400101",
+        "city_name": "Bangued",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400102",
+        "city_name": "Boliney",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400103",
+        "city_name": "Bucay",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400104",
+        "city_name": "Bucloc",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400105",
+        "city_name": "Daguioman",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400106",
+        "city_name": "Danglas",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400107",
+        "city_name": "Dolores",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400108",
+        "city_name": "La Paz",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400109",
+        "city_name": "Lacub",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400110",
+        "city_name": "Lagangilang",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400111",
+        "city_name": "Lagayan",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400112",
+        "city_name": "Langiden",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400113",
+        "city_name": "Licuan-Baay (Old: Licuan)",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400114",
+        "city_name": "Luba",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400115",
+        "city_name": "Malibcong",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400116",
+        "city_name": "Manabo",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400117",
+        "city_name": "Peñarrubia",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400118",
+        "city_name": "Pidigan",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400119",
+        "city_name": "Pilar",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400120",
+        "city_name": "Sallapadan",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400121",
+        "city_name": "San Isidro",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400122",
+        "city_name": "San Juan",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400123",
+        "city_name": "San Quintin",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400124",
+        "city_name": "Tayum",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400125",
+        "city_name": "Tineg",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400126",
+        "city_name": "Tubo",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1400127",
+        "city_name": "Villaviciosa",
+        "prov_code": "14001"
+    },
+    {
+        "city_code": "1401101",
+        "city_name": "Atok",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401103",
+        "city_name": "Bakun",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401104",
+        "city_name": "Bokod",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401105",
+        "city_name": "Buguias",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401106",
+        "city_name": "Itogon",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401107",
+        "city_name": "Kabayan",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401108",
+        "city_name": "Kapangan",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401109",
+        "city_name": "Kibungan",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401110",
+        "city_name": "La Trinidad",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401111",
+        "city_name": "Mankayan",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401112",
+        "city_name": "Sablan",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401113",
+        "city_name": "Tuba",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1401114",
+        "city_name": "Tublay",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "1402701",
+        "city_name": "Banaue",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402702",
+        "city_name": "Hungduan",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402703",
+        "city_name": "Kiangan",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402704",
+        "city_name": "Lagawe",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402705",
+        "city_name": "Lamut",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402706",
+        "city_name": "Mayoyao",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402707",
+        "city_name": "Alfonso Lista (Old: Potia)",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402708",
+        "city_name": "Aguinaldo",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402709",
+        "city_name": "Hingyon",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402710",
+        "city_name": "Tinoc",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1402711",
+        "city_name": "Asipulo",
+        "prov_code": "14027"
+    },
+    {
+        "city_code": "1403201",
+        "city_name": "Balbalan",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403206",
+        "city_name": "Lubuagan",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403208",
+        "city_name": "Pasil",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403209",
+        "city_name": "Pinukpuk",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403211",
+        "city_name": "Rizal (Old: Liwan)",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403213",
+        "city_name": "City of Tabuk",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403214",
+        "city_name": "Tanudan",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1403215",
+        "city_name": "Tinglayan",
+        "prov_code": "14032"
+    },
+    {
+        "city_code": "1404401",
+        "city_name": "Barlig",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404402",
+        "city_name": "Bauko",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404403",
+        "city_name": "Besao",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404404",
+        "city_name": "Bontoc",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404405",
+        "city_name": "Natonin",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404406",
+        "city_name": "Paracelis",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404407",
+        "city_name": "Sabangan",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404408",
+        "city_name": "Sadanga",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404409",
+        "city_name": "Sagada",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1404410",
+        "city_name": "Tadian",
+        "prov_code": "14044"
+    },
+    {
+        "city_code": "1408101",
+        "city_name": "Calanasan (Old: Bayag)",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1408102",
+        "city_name": "Conner",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1408103",
+        "city_name": "Flora",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1408104",
+        "city_name": "Kabugao",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1408105",
+        "city_name": "Luna",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1408106",
+        "city_name": "Pudtol",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1408107",
+        "city_name": "Santa Marcela",
+        "prov_code": "14081"
+    },
+    {
+        "city_code": "1430300",
+        "city_name": "City of Baguio",
+        "prov_code": "14011"
+    },
+    {
+        "city_code": "0102801",
+        "city_name": "Adams",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102802",
+        "city_name": "Bacarra",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102803",
+        "city_name": "Badoc",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102804",
+        "city_name": "Bangui",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102805",
+        "city_name": "City of Batac",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102806",
+        "city_name": "Burgos",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102807",
+        "city_name": "Carasi",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102808",
+        "city_name": "Currimao",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102809",
+        "city_name": "Dingras",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102810",
+        "city_name": "Dumalneg",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102811",
+        "city_name": "Banna (Old: Espiritu)",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102812",
+        "city_name": "City of Laoag",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102813",
+        "city_name": "Marcos",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102814",
+        "city_name": "Nueva Era",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102815",
+        "city_name": "Pagudpud",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102816",
+        "city_name": "Paoay",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102817",
+        "city_name": "Pasuquin",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102818",
+        "city_name": "Piddig",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102819",
+        "city_name": "Pinili",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102820",
+        "city_name": "San Nicolas",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102821",
+        "city_name": "Sarrat",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102822",
+        "city_name": "Solsona",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102823",
+        "city_name": "Vintar",
+        "prov_code": "01028"
+    },
+    {
+        "city_code": "0102901",
+        "city_name": "Alilem",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102902",
+        "city_name": "Banayoyo",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102903",
+        "city_name": "Bantay",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102904",
+        "city_name": "Burgos",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102905",
+        "city_name": "Cabugao",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102906",
+        "city_name": "City of Candon",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102907",
+        "city_name": "Caoayan",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102908",
+        "city_name": "Cervantes",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102909",
+        "city_name": "Galimuyod",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102910",
+        "city_name": "Gregorio del Pilar (Old: Concepcion)",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102911",
+        "city_name": "Lidlidda",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102912",
+        "city_name": "Magsingal",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102913",
+        "city_name": "Nagbukel",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102914",
+        "city_name": "Narvacan",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102915",
+        "city_name": "Quirino (Old: Angkaki)",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102916",
+        "city_name": "Salcedo (Old: Baugen)",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102917",
+        "city_name": "San Emilio",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102918",
+        "city_name": "San Esteban",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102919",
+        "city_name": "San Ildefonso",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102920",
+        "city_name": "San Juan (Old: Lapog)",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102921",
+        "city_name": "San Vicente",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102922",
+        "city_name": "Santa",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102923",
+        "city_name": "Santa Catalina",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102924",
+        "city_name": "Santa Cruz",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102925",
+        "city_name": "Santa Lucia",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102926",
+        "city_name": "Santa Maria",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102927",
+        "city_name": "Santiago",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102928",
+        "city_name": "Santo Domingo",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102929",
+        "city_name": "Sigay",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102930",
+        "city_name": "Sinait",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102931",
+        "city_name": "Sugpon",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102932",
+        "city_name": "Suyo",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102933",
+        "city_name": "Tagudin",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0102934",
+        "city_name": "City of Vigan",
+        "prov_code": "01029"
+    },
+    {
+        "city_code": "0103301",
+        "city_name": "Agoo",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103302",
+        "city_name": "Aringay",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103303",
+        "city_name": "Bacnotan",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103304",
+        "city_name": "Bagulin",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103305",
+        "city_name": "Balaoan",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103306",
+        "city_name": "Bangar",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103307",
+        "city_name": "Bauang",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103308",
+        "city_name": "Burgos",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103309",
+        "city_name": "Caba",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103310",
+        "city_name": "Luna",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103311",
+        "city_name": "Naguilian",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103312",
+        "city_name": "Pugo",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103313",
+        "city_name": "Rosario",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103314",
+        "city_name": "City of San Fernando",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103315",
+        "city_name": "San Gabriel",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103316",
+        "city_name": "San Juan",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103317",
+        "city_name": "Santo Tomas",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103318",
+        "city_name": "Santol",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103319",
+        "city_name": "Sudipen",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0103320",
+        "city_name": "Tubao",
+        "prov_code": "01033"
+    },
+    {
+        "city_code": "0105501",
+        "city_name": "Agno",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105502",
+        "city_name": "Aguilar",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105503",
+        "city_name": "City of Alaminos",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105504",
+        "city_name": "Alcala",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105505",
+        "city_name": "Anda",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105506",
+        "city_name": "Asingan",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105507",
+        "city_name": "Balungao",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105508",
+        "city_name": "Bani",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105509",
+        "city_name": "Basista",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105510",
+        "city_name": "Bautista",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105511",
+        "city_name": "Bayambang",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105512",
+        "city_name": "Binalonan",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105513",
+        "city_name": "Binmaley",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105514",
+        "city_name": "Bolinao",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105515",
+        "city_name": "Bugallon",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105516",
+        "city_name": "Burgos",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105517",
+        "city_name": "Calasiao",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105518",
+        "city_name": "City of Dagupan",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105519",
+        "city_name": "Dasol",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105520",
+        "city_name": "Infanta",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105521",
+        "city_name": "Labrador",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105522",
+        "city_name": "Lingayen",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105523",
+        "city_name": "Mabini",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105524",
+        "city_name": "Malasiqui",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105525",
+        "city_name": "Manaoag",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105526",
+        "city_name": "Mangaldan",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105527",
+        "city_name": "Mangatarem",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105528",
+        "city_name": "Mapandan",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105529",
+        "city_name": "Natividad",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105530",
+        "city_name": "Pozorrubio",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105531",
+        "city_name": "Rosales",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105532",
+        "city_name": "City of San Carlos",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105533",
+        "city_name": "San Fabian",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105534",
+        "city_name": "San Jacinto",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105535",
+        "city_name": "San Manuel",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105536",
+        "city_name": "San Nicolas",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105537",
+        "city_name": "San Quintin",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105538",
+        "city_name": "Santa Barbara",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105539",
+        "city_name": "Santa Maria",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105540",
+        "city_name": "Santo Tomas",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105541",
+        "city_name": "Sison",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105542",
+        "city_name": "Sual",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105543",
+        "city_name": "Tayug",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105544",
+        "city_name": "Umingan",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105545",
+        "city_name": "Urbiztondo",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105546",
+        "city_name": "City of Urdaneta",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105547",
+        "city_name": "Villasis",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0105548",
+        "city_name": "Laoac",
+        "prov_code": "01055"
+    },
+    {
+        "city_code": "0200901",
+        "city_name": "Basco",
+        "prov_code": "02009"
+    },
+    {
+        "city_code": "0200902",
+        "city_name": "Itbayat",
+        "prov_code": "02009"
+    },
+    {
+        "city_code": "0200903",
+        "city_name": "Ivana",
+        "prov_code": "02009"
+    },
+    {
+        "city_code": "0200904",
+        "city_name": "Mahatao",
+        "prov_code": "02009"
+    },
+    {
+        "city_code": "0200905",
+        "city_name": "Sabtang",
+        "prov_code": "02009"
+    },
+    {
+        "city_code": "0200906",
+        "city_name": "Uyugan",
+        "prov_code": "02009"
+    },
+    {
+        "city_code": "0201501",
+        "city_name": "Abulug",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201502",
+        "city_name": "Alcala",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201503",
+        "city_name": "Allacapan",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201504",
+        "city_name": "Amulung",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201505",
+        "city_name": "Aparri",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201506",
+        "city_name": "Baggao",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201507",
+        "city_name": "Ballesteros",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201508",
+        "city_name": "Buguey",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201509",
+        "city_name": "Calayan",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201510",
+        "city_name": "Camalaniugan",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201511",
+        "city_name": "Claveria",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201512",
+        "city_name": "Enrile",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201513",
+        "city_name": "Gattaran",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201514",
+        "city_name": "Gonzaga",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201515",
+        "city_name": "Iguig",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201516",
+        "city_name": "Lal-Lo",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201517",
+        "city_name": "Lasam",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201518",
+        "city_name": "Pamplona",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201519",
+        "city_name": "Peñablanca",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201520",
+        "city_name": "Piat",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201521",
+        "city_name": "Rizal",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201522",
+        "city_name": "Sanchez-Mira",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201523",
+        "city_name": "Santa Ana",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201524",
+        "city_name": "Santa Praxedes",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201525",
+        "city_name": "Santa Teresita",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201526",
+        "city_name": "Santo Niño (Old: Faire)",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201527",
+        "city_name": "Solana",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201528",
+        "city_name": "Tuao",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0201529",
+        "city_name": "Tuguegarao City",
+        "prov_code": "02015"
+    },
+    {
+        "city_code": "0203101",
+        "city_name": "Alicia",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203102",
+        "city_name": "Angadanan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203103",
+        "city_name": "Aurora",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203104",
+        "city_name": "Benito Soliven",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203105",
+        "city_name": "Burgos",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203106",
+        "city_name": "Cabagan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203107",
+        "city_name": "Cabatuan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203108",
+        "city_name": "City of Cauayan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203109",
+        "city_name": "Cordon",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203110",
+        "city_name": "Dinapigue",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203111",
+        "city_name": "Divilacan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203112",
+        "city_name": "Echague",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203113",
+        "city_name": "Gamu",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203114",
+        "city_name": "City of Ilagan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203115",
+        "city_name": "Jones",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203116",
+        "city_name": "Luna",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203117",
+        "city_name": "Maconacon",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203118",
+        "city_name": "Delfin Albano (Old: Magsaysay)",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203119",
+        "city_name": "Mallig",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203120",
+        "city_name": "Naguilian",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203121",
+        "city_name": "Palanan",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203122",
+        "city_name": "Quezon",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203123",
+        "city_name": "Quirino",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203124",
+        "city_name": "Ramon",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203125",
+        "city_name": "Reina Mercedes",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203126",
+        "city_name": "Roxas",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203127",
+        "city_name": "San Agustin",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203128",
+        "city_name": "San Guillermo",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203129",
+        "city_name": "San Isidro",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203130",
+        "city_name": "San Manuel",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203131",
+        "city_name": "San Mariano",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203132",
+        "city_name": "San Mateo",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203133",
+        "city_name": "San Pablo",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203134",
+        "city_name": "Santa Maria",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203135",
+        "city_name": "City of Santiago",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203136",
+        "city_name": "Santo Tomas",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0203137",
+        "city_name": "Tumauini",
+        "prov_code": "02031"
+    },
+    {
+        "city_code": "0205001",
+        "city_name": "Ambaguio",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205002",
+        "city_name": "Aritao",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205003",
+        "city_name": "Bagabag",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205004",
+        "city_name": "Bambang",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205005",
+        "city_name": "Bayombong",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205006",
+        "city_name": "Diadi",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205007",
+        "city_name": "Dupax del Norte",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205008",
+        "city_name": "Dupax del Sur",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205009",
+        "city_name": "Kasibu",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205010",
+        "city_name": "Kayapa",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205011",
+        "city_name": "Quezon",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205012",
+        "city_name": "Santa Fe",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205013",
+        "city_name": "Solano",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205014",
+        "city_name": "Villaverde",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205015",
+        "city_name": "Alfonso Castaneda",
+        "prov_code": "02050"
+    },
+    {
+        "city_code": "0205701",
+        "city_name": "Aglipay",
+        "prov_code": "02057"
+    },
+    {
+        "city_code": "0205702",
+        "city_name": "Cabarroguis",
+        "prov_code": "02057"
+    },
+    {
+        "city_code": "0205703",
+        "city_name": "Diffun",
+        "prov_code": "02057"
+    },
+    {
+        "city_code": "0205704",
+        "city_name": "Maddela",
+        "prov_code": "02057"
+    },
+    {
+        "city_code": "0205705",
+        "city_name": "Saguday",
+        "prov_code": "02057"
+    },
+    {
+        "city_code": "0205706",
+        "city_name": "Nagtipunan",
+        "prov_code": "02057"
+    },
+    {
+        "city_code": "0300801",
+        "city_name": "Abucay",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300802",
+        "city_name": "Bagac",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300803",
+        "city_name": "City of Balanga",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300804",
+        "city_name": "Dinalupihan",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300805",
+        "city_name": "Hermosa",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300806",
+        "city_name": "Limay",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300807",
+        "city_name": "Mariveles",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300808",
+        "city_name": "Morong",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300809",
+        "city_name": "Orani",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300810",
+        "city_name": "Orion",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300811",
+        "city_name": "Pilar",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0300812",
+        "city_name": "Samal",
+        "prov_code": "03008"
+    },
+    {
+        "city_code": "0301401",
+        "city_name": "Angat",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301402",
+        "city_name": "Balagtas (Old: Bigaa)",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301403",
+        "city_name": "City of Baliwag",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301404",
+        "city_name": "Bocaue",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301405",
+        "city_name": "Bulacan",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301406",
+        "city_name": "Bustos",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301407",
+        "city_name": "Calumpit",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301408",
+        "city_name": "Guiguinto",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301409",
+        "city_name": "Hagonoy",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301410",
+        "city_name": "City of Malolos",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301411",
+        "city_name": "Marilao",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301412",
+        "city_name": "City of Meycauayan",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301413",
+        "city_name": "Norzagaray",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301414",
+        "city_name": "Obando",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301415",
+        "city_name": "Pandi",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301416",
+        "city_name": "Paombong",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301417",
+        "city_name": "Plaridel",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301418",
+        "city_name": "Pulilan",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301419",
+        "city_name": "San Ildefonso",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301420",
+        "city_name": "City of San Jose Del Monte",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301421",
+        "city_name": "San Miguel",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301422",
+        "city_name": "San Rafael",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301423",
+        "city_name": "Santa Maria",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0301424",
+        "city_name": "Doña Remedios Trinidad",
+        "prov_code": "03014"
+    },
+    {
+        "city_code": "0304901",
+        "city_name": "Aliaga",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304902",
+        "city_name": "Bongabon",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304903",
+        "city_name": "City of Cabanatuan",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304904",
+        "city_name": "Cabiao",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304905",
+        "city_name": "Carranglan",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304906",
+        "city_name": "Cuyapo",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304907",
+        "city_name": "Gabaldon (Old: Bitulok & Sabani)",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304908",
+        "city_name": "City of Gapan",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304909",
+        "city_name": "General Mamerto Natividad",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304910",
+        "city_name": "General Tinio (Old: Papaya)",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304911",
+        "city_name": "Guimba",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304912",
+        "city_name": "Jaen",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304913",
+        "city_name": "Laur",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304914",
+        "city_name": "Licab",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304915",
+        "city_name": "Llanera",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304916",
+        "city_name": "Lupao",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304917",
+        "city_name": "Science City of Muñoz",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304918",
+        "city_name": "Nampicuan",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304919",
+        "city_name": "City of Palayan",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304920",
+        "city_name": "Pantabangan",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304921",
+        "city_name": "Peñaranda",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304922",
+        "city_name": "Quezon",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304923",
+        "city_name": "Rizal",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304924",
+        "city_name": "San Antonio",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304925",
+        "city_name": "San Isidro",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304926",
+        "city_name": "San Jose City",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304927",
+        "city_name": "San Leonardo",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304928",
+        "city_name": "Santa Rosa",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304929",
+        "city_name": "Santo Domingo",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304930",
+        "city_name": "Talavera",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304931",
+        "city_name": "Talugtug",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0304932",
+        "city_name": "Zaragoza",
+        "prov_code": "03049"
+    },
+    {
+        "city_code": "0305402",
+        "city_name": "Apalit",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305403",
+        "city_name": "Arayat",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305404",
+        "city_name": "Bacolor",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305405",
+        "city_name": "Candaba",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305406",
+        "city_name": "Floridablanca",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305407",
+        "city_name": "Guagua",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305408",
+        "city_name": "Lubao",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305409",
+        "city_name": "Mabalacat City",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305410",
+        "city_name": "Macabebe",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305411",
+        "city_name": "Magalang",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305412",
+        "city_name": "Masantol",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305413",
+        "city_name": "Mexico",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305414",
+        "city_name": "Minalin",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305415",
+        "city_name": "Porac",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305416",
+        "city_name": "City of San Fernando",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305417",
+        "city_name": "San Luis",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305418",
+        "city_name": "San Simon",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305419",
+        "city_name": "Santa Ana",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305420",
+        "city_name": "Santa Rita",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305421",
+        "city_name": "Sto. Tomas",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0305422",
+        "city_name": "Sasmuan (Old: Sexmoan)",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0306901",
+        "city_name": "Anao",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306902",
+        "city_name": "Bamban",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306903",
+        "city_name": "Camiling",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306904",
+        "city_name": "Capas",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306905",
+        "city_name": "Concepcion",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306906",
+        "city_name": "Gerona",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306907",
+        "city_name": "La Paz",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306908",
+        "city_name": "Mayantoc",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306909",
+        "city_name": "Moncada",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306910",
+        "city_name": "Paniqui",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306911",
+        "city_name": "Pura",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306912",
+        "city_name": "Ramos",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306913",
+        "city_name": "San Clemente",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306914",
+        "city_name": "San Manuel",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306915",
+        "city_name": "Santa Ignacia",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306916",
+        "city_name": "City of Tarlac",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306917",
+        "city_name": "Victoria",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0306918",
+        "city_name": "San Jose",
+        "prov_code": "03069"
+    },
+    {
+        "city_code": "0307101",
+        "city_name": "Botolan",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307102",
+        "city_name": "Cabangan",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307103",
+        "city_name": "Candelaria",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307104",
+        "city_name": "Castillejos",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307105",
+        "city_name": "Iba",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307106",
+        "city_name": "Masinloc",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307108",
+        "city_name": "Palauig",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307109",
+        "city_name": "San Antonio",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307110",
+        "city_name": "San Felipe",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307111",
+        "city_name": "San Marcelino",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307112",
+        "city_name": "San Narciso",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307113",
+        "city_name": "Santa Cruz",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307114",
+        "city_name": "Subic",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0307701",
+        "city_name": "Baler",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307702",
+        "city_name": "Casiguran",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307703",
+        "city_name": "Dilasag",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307704",
+        "city_name": "Dinalungan",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307705",
+        "city_name": "Dingalan",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307706",
+        "city_name": "Dipaculao",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307707",
+        "city_name": "Maria Aurora",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0307708",
+        "city_name": "San Luis",
+        "prov_code": "03077"
+    },
+    {
+        "city_code": "0330100",
+        "city_name": "City of Angeles",
+        "prov_code": "03054"
+    },
+    {
+        "city_code": "0331400",
+        "city_name": "City of Olongapo",
+        "prov_code": "03071"
+    },
+    {
+        "city_code": "0401001",
+        "city_name": "Agoncillo",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401002",
+        "city_name": "Alitagtag",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401003",
+        "city_name": "Balayan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401004",
+        "city_name": "Balete",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401005",
+        "city_name": "Batangas City",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401006",
+        "city_name": "Bauan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401007",
+        "city_name": "City of Calaca",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401008",
+        "city_name": "Calatagan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401009",
+        "city_name": "Cuenca",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401010",
+        "city_name": "Ibaan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401011",
+        "city_name": "Laurel",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401012",
+        "city_name": "Lemery",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401013",
+        "city_name": "Lian",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401014",
+        "city_name": "City of Lipa",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401015",
+        "city_name": "Lobo",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401016",
+        "city_name": "Mabini",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401017",
+        "city_name": "Malvar",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401018",
+        "city_name": "Mataasnakahoy",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401019",
+        "city_name": "Nasugbu",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401020",
+        "city_name": "Padre Garcia",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401021",
+        "city_name": "Rosario",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401022",
+        "city_name": "San Jose",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401023",
+        "city_name": "San Juan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401024",
+        "city_name": "San Luis",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401025",
+        "city_name": "San Nicolas",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401026",
+        "city_name": "San Pascual",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401027",
+        "city_name": "Santa Teresita",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401028",
+        "city_name": "City of Sto. Tomas",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401029",
+        "city_name": "Taal",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401030",
+        "city_name": "Talisay",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401031",
+        "city_name": "City of Tanauan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401032",
+        "city_name": "Taysan",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401033",
+        "city_name": "Tingloy",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0401034",
+        "city_name": "Tuy",
+        "prov_code": "04010"
+    },
+    {
+        "city_code": "0402101",
+        "city_name": "Alfonso",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402102",
+        "city_name": "Amadeo",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402103",
+        "city_name": "City of Bacoor",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402104",
+        "city_name": "City of Carmona",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402105",
+        "city_name": "City of Cavite",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402106",
+        "city_name": "City of Dasmariñas",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402107",
+        "city_name": "General Emilio Aguinaldo",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402108",
+        "city_name": "City of General Trias",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402109",
+        "city_name": "City of Imus",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402110",
+        "city_name": "Indang",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402111",
+        "city_name": "Kawit",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402112",
+        "city_name": "Magallanes",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402113",
+        "city_name": "Maragondon",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402114",
+        "city_name": "Mendez (Old: Mendez-Nuñez)",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402115",
+        "city_name": "Naic",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402116",
+        "city_name": "Noveleta",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402117",
+        "city_name": "Rosario",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402118",
+        "city_name": "Silang",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402119",
+        "city_name": "City of Tagaytay",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402120",
+        "city_name": "Tanza",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402121",
+        "city_name": "Ternate",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402122",
+        "city_name": "City of Trece Martires",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0402123",
+        "city_name": "Gen. Mariano Alvarez",
+        "prov_code": "04021"
+    },
+    {
+        "city_code": "0403401",
+        "city_name": "Alaminos",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403402",
+        "city_name": "Bay",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403403",
+        "city_name": "City of Biñan",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403404",
+        "city_name": "City of Cabuyao",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403405",
+        "city_name": "City of Calamba",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403406",
+        "city_name": "Calauan",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403407",
+        "city_name": "Cavinti",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403408",
+        "city_name": "Famy",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403409",
+        "city_name": "Kalayaan",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403410",
+        "city_name": "Liliw",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403411",
+        "city_name": "Los Baños",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403412",
+        "city_name": "Luisiana",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403413",
+        "city_name": "Lumban",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403414",
+        "city_name": "Mabitac",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403415",
+        "city_name": "Magdalena",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403416",
+        "city_name": "Majayjay",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403417",
+        "city_name": "Nagcarlan",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403418",
+        "city_name": "Paete",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403419",
+        "city_name": "Pagsanjan",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403420",
+        "city_name": "Pakil",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403421",
+        "city_name": "Pangil",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403422",
+        "city_name": "Pila",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403423",
+        "city_name": "Rizal",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403424",
+        "city_name": "City of San Pablo",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403425",
+        "city_name": "City of San Pedro",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403426",
+        "city_name": "Santa Cruz",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403427",
+        "city_name": "Santa Maria",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403428",
+        "city_name": "City of Santa Rosa",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403429",
+        "city_name": "Siniloan",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0403430",
+        "city_name": "Victoria",
+        "prov_code": "04034"
+    },
+    {
+        "city_code": "0405601",
+        "city_name": "Agdangan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405602",
+        "city_name": "Alabat",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405603",
+        "city_name": "Atimonan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405605",
+        "city_name": "Buenavista",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405606",
+        "city_name": "Burdeos",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405607",
+        "city_name": "Calauag",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405608",
+        "city_name": "Candelaria",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405610",
+        "city_name": "Catanauan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405615",
+        "city_name": "Dolores",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405616",
+        "city_name": "General Luna",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405617",
+        "city_name": "General Nakar",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405618",
+        "city_name": "Guinayangan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405619",
+        "city_name": "Gumaca",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405620",
+        "city_name": "Infanta",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405621",
+        "city_name": "Jomalig",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405622",
+        "city_name": "Lopez",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405623",
+        "city_name": "Lucban",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405625",
+        "city_name": "Macalelon",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405627",
+        "city_name": "Mauban",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405628",
+        "city_name": "Mulanay",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405629",
+        "city_name": "Padre Burgos",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405630",
+        "city_name": "Pagbilao",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405631",
+        "city_name": "Panukulan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405632",
+        "city_name": "Patnanungan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405633",
+        "city_name": "Perez",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405634",
+        "city_name": "Pitogo",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405635",
+        "city_name": "Plaridel",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405636",
+        "city_name": "Polillo",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405637",
+        "city_name": "Quezon",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405638",
+        "city_name": "Real",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405639",
+        "city_name": "Sampaloc",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405640",
+        "city_name": "San Andres",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405641",
+        "city_name": "San Antonio",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405642",
+        "city_name": "San Francisco (Old: Aurora)",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405644",
+        "city_name": "San Narciso",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405645",
+        "city_name": "Sariaya",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405646",
+        "city_name": "Tagkawayan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405647",
+        "city_name": "City of Tayabas",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405648",
+        "city_name": "Tiaong",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405649",
+        "city_name": "Unisan",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "0405801",
+        "city_name": "Angono",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405802",
+        "city_name": "City of Antipolo",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405803",
+        "city_name": "Baras",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405804",
+        "city_name": "Binangonan",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405805",
+        "city_name": "Cainta",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405806",
+        "city_name": "Cardona",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405807",
+        "city_name": "Jala-Jala",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405808",
+        "city_name": "Rodriguez (Old: Montalban)",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405809",
+        "city_name": "Morong",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405810",
+        "city_name": "Pililla",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405811",
+        "city_name": "San Mateo",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405812",
+        "city_name": "Tanay",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405813",
+        "city_name": "Taytay",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0405814",
+        "city_name": "Teresa",
+        "prov_code": "04058"
+    },
+    {
+        "city_code": "0431200",
+        "city_name": "City of Lucena",
+        "prov_code": "04056"
+    },
+    {
+        "city_code": "1704001",
+        "city_name": "Boac",
+        "prov_code": "17040"
+    },
+    {
+        "city_code": "1704002",
+        "city_name": "Buenavista",
+        "prov_code": "17040"
+    },
+    {
+        "city_code": "1704003",
+        "city_name": "Gasan",
+        "prov_code": "17040"
+    },
+    {
+        "city_code": "1704004",
+        "city_name": "Mogpog",
+        "prov_code": "17040"
+    },
+    {
+        "city_code": "1704005",
+        "city_name": "Santa Cruz",
+        "prov_code": "17040"
+    },
+    {
+        "city_code": "1704006",
+        "city_name": "Torrijos",
+        "prov_code": "17040"
+    },
+    {
+        "city_code": "1705101",
+        "city_name": "Abra De Ilog",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705102",
+        "city_name": "Calintaan",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705103",
+        "city_name": "Looc",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705104",
+        "city_name": "Lubang",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705105",
+        "city_name": "Magsaysay",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705106",
+        "city_name": "Mamburao",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705107",
+        "city_name": "Paluan",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705108",
+        "city_name": "Rizal",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705109",
+        "city_name": "Sablayan",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705110",
+        "city_name": "San Jose",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705111",
+        "city_name": "Santa Cruz",
+        "prov_code": "17051"
+    },
+    {
+        "city_code": "1705201",
+        "city_name": "Baco",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705202",
+        "city_name": "Bansud",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705203",
+        "city_name": "Bongabong",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705204",
+        "city_name": "Bulalacao (Old: San Pedro)",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705205",
+        "city_name": "City of Calapan",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705206",
+        "city_name": "Gloria",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705207",
+        "city_name": "Mansalay",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705208",
+        "city_name": "Naujan",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705209",
+        "city_name": "Pinamalayan",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705210",
+        "city_name": "Pola",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705211",
+        "city_name": "Puerto Galera",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705212",
+        "city_name": "Roxas",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705213",
+        "city_name": "San Teodoro",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705214",
+        "city_name": "Socorro",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705215",
+        "city_name": "Victoria",
+        "prov_code": "17052"
+    },
+    {
+        "city_code": "1705301",
+        "city_name": "Aborlan",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705302",
+        "city_name": "Agutaya",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705303",
+        "city_name": "Araceli",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705304",
+        "city_name": "Balabac",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705305",
+        "city_name": "Bataraza",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705306",
+        "city_name": "Brooke's Point",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705307",
+        "city_name": "Busuanga",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705308",
+        "city_name": "Cagayancillo",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705309",
+        "city_name": "Coron",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705310",
+        "city_name": "Cuyo",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705311",
+        "city_name": "Dumaran",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705312",
+        "city_name": "El Nido (Old: Bacuit)",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705313",
+        "city_name": "Linapacan",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705314",
+        "city_name": "Magsaysay",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705315",
+        "city_name": "Narra",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705317",
+        "city_name": "Quezon",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705318",
+        "city_name": "Roxas",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705319",
+        "city_name": "San Vicente",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705320",
+        "city_name": "Taytay",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705321",
+        "city_name": "Kalayaan",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705322",
+        "city_name": "Culion",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705323",
+        "city_name": "Rizal (Old: Marcos)",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705324",
+        "city_name": "Sofronio Española",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "1705901",
+        "city_name": "Alcantara",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705902",
+        "city_name": "Banton",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705903",
+        "city_name": "Cajidiocan",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705904",
+        "city_name": "Calatrava",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705905",
+        "city_name": "Concepcion",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705906",
+        "city_name": "Corcuera",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705907",
+        "city_name": "Looc",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705908",
+        "city_name": "Magdiwang",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705909",
+        "city_name": "Odiongan",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705910",
+        "city_name": "Romblon",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705911",
+        "city_name": "San Agustin",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705912",
+        "city_name": "San Andres",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705913",
+        "city_name": "San Fernando",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705914",
+        "city_name": "San Jose",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705915",
+        "city_name": "Santa Fe",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705916",
+        "city_name": "Ferrol",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1705917",
+        "city_name": "Santa Maria (Old: Imelda)",
+        "prov_code": "17059"
+    },
+    {
+        "city_code": "1731500",
+        "city_name": "City of Puerto Princesa",
+        "prov_code": "17053"
+    },
+    {
+        "city_code": "0500501",
+        "city_name": "Bacacay",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500502",
+        "city_name": "Camalig",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500503",
+        "city_name": "Daraga (Old: Locsin)",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500504",
+        "city_name": "Guinobatan",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500505",
+        "city_name": "Jovellar",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500506",
+        "city_name": "City of Legazpi",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500507",
+        "city_name": "Libon",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500508",
+        "city_name": "City of Ligao",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500509",
+        "city_name": "Malilipot",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500510",
+        "city_name": "Malinao",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500511",
+        "city_name": "Manito",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500512",
+        "city_name": "Oas",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500513",
+        "city_name": "Pio Duran",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500514",
+        "city_name": "Polangui",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500515",
+        "city_name": "Rapu-Rapu",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500516",
+        "city_name": "Santo Domingo (Old: Libog)",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500517",
+        "city_name": "City of Tabaco",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0500518",
+        "city_name": "Tiwi",
+        "prov_code": "05005"
+    },
+    {
+        "city_code": "0501601",
+        "city_name": "Basud",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501602",
+        "city_name": "Capalonga",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501603",
+        "city_name": "Daet",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501604",
+        "city_name": "San Lorenzo Ruiz (Old: Imelda)",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501605",
+        "city_name": "Jose Panganiban",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501606",
+        "city_name": "Labo",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501607",
+        "city_name": "Mercedes",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501608",
+        "city_name": "Paracale",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501609",
+        "city_name": "San Vicente",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501610",
+        "city_name": "Santa Elena",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501611",
+        "city_name": "Talisay",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501612",
+        "city_name": "Vinzons",
+        "prov_code": "05016"
+    },
+    {
+        "city_code": "0501701",
+        "city_name": "Baao",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501702",
+        "city_name": "Balatan",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501703",
+        "city_name": "Bato",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501704",
+        "city_name": "Bombon",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501705",
+        "city_name": "Buhi",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501706",
+        "city_name": "Bula",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501707",
+        "city_name": "Cabusao",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501708",
+        "city_name": "Calabanga",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501709",
+        "city_name": "Camaligan",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501710",
+        "city_name": "Canaman",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501711",
+        "city_name": "Caramoan",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501712",
+        "city_name": "Del Gallego",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501713",
+        "city_name": "Gainza",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501714",
+        "city_name": "Garchitorena",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501715",
+        "city_name": "Goa",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501716",
+        "city_name": "City of Iriga",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501717",
+        "city_name": "Lagonoy",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501718",
+        "city_name": "Libmanan",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501719",
+        "city_name": "Lupi",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501720",
+        "city_name": "Magarao",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501721",
+        "city_name": "Milaor",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501722",
+        "city_name": "Minalabac",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501723",
+        "city_name": "Nabua",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501724",
+        "city_name": "City of Naga",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501725",
+        "city_name": "Ocampo",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501726",
+        "city_name": "Pamplona",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501727",
+        "city_name": "Pasacao",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501728",
+        "city_name": "Pili",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501729",
+        "city_name": "Presentacion (Old: Parubcan)",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501730",
+        "city_name": "Ragay",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501731",
+        "city_name": "Sagñay",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501732",
+        "city_name": "San Fernando",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501733",
+        "city_name": "San Jose",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501734",
+        "city_name": "Sipocot",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501735",
+        "city_name": "Siruma",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501736",
+        "city_name": "Tigaon",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0501737",
+        "city_name": "Tinambac",
+        "prov_code": "05017"
+    },
+    {
+        "city_code": "0502001",
+        "city_name": "Bagamanoc",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502002",
+        "city_name": "Baras",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502003",
+        "city_name": "Bato",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502004",
+        "city_name": "Caramoran",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502005",
+        "city_name": "Gigmoto",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502006",
+        "city_name": "Pandan",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502007",
+        "city_name": "Panganiban (Old: Payo)",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502008",
+        "city_name": "San Andres (Old: Calolbon)",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502009",
+        "city_name": "San Miguel",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502010",
+        "city_name": "Viga",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0502011",
+        "city_name": "Virac",
+        "prov_code": "05020"
+    },
+    {
+        "city_code": "0504101",
+        "city_name": "Aroroy",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504102",
+        "city_name": "Baleno",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504103",
+        "city_name": "Balud",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504104",
+        "city_name": "Batuan",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504105",
+        "city_name": "Cataingan",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504106",
+        "city_name": "Cawayan",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504107",
+        "city_name": "Claveria",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504108",
+        "city_name": "Dimasalang",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504109",
+        "city_name": "Esperanza",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504110",
+        "city_name": "Mandaon",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504111",
+        "city_name": "City of Masbate",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504112",
+        "city_name": "Milagros",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504113",
+        "city_name": "Mobo",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504114",
+        "city_name": "Monreal",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504115",
+        "city_name": "Palanas",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504116",
+        "city_name": "Pio V. Corpus (Old: Limbuhan)",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504117",
+        "city_name": "Placer",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504118",
+        "city_name": "San Fernando",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504119",
+        "city_name": "San Jacinto",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504120",
+        "city_name": "San Pascual",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0504121",
+        "city_name": "Uson",
+        "prov_code": "05041"
+    },
+    {
+        "city_code": "0506202",
+        "city_name": "Barcelona",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506203",
+        "city_name": "Bulan",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506204",
+        "city_name": "Bulusan",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506205",
+        "city_name": "Casiguran",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506206",
+        "city_name": "Castilla",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506207",
+        "city_name": "Donsol",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506208",
+        "city_name": "Gubat",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506209",
+        "city_name": "Irosin",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506210",
+        "city_name": "Juban",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506211",
+        "city_name": "Magallanes",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506212",
+        "city_name": "Matnog",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506213",
+        "city_name": "Pilar",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506214",
+        "city_name": "Prieto Diaz",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506215",
+        "city_name": "Santa Magdalena",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0506216",
+        "city_name": "City of Sorsogon",
+        "prov_code": "05062"
+    },
+    {
+        "city_code": "0600401",
+        "city_name": "Altavas",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600402",
+        "city_name": "Balete",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600403",
+        "city_name": "Banga",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600404",
+        "city_name": "Batan",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600405",
+        "city_name": "Buruanga",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600406",
+        "city_name": "Ibajay",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600407",
+        "city_name": "Kalibo",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600408",
+        "city_name": "Lezo",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600409",
+        "city_name": "Libacao",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600410",
+        "city_name": "Madalag",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600411",
+        "city_name": "Makato",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600412",
+        "city_name": "Malay",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600413",
+        "city_name": "Malinao",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600414",
+        "city_name": "Nabas",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600415",
+        "city_name": "New Washington",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600416",
+        "city_name": "Numancia",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600417",
+        "city_name": "Tangalan",
+        "prov_code": "06004"
+    },
+    {
+        "city_code": "0600601",
+        "city_name": "Anini-Y",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600602",
+        "city_name": "Barbaza",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600603",
+        "city_name": "Belison",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600604",
+        "city_name": "Bugasong",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600605",
+        "city_name": "Caluya",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600606",
+        "city_name": "Culasi",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600607",
+        "city_name": "Tobias Fornier (Old: Dao)",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600608",
+        "city_name": "Hamtic",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600609",
+        "city_name": "Laua-An",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600610",
+        "city_name": "Libertad",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600611",
+        "city_name": "Pandan",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600612",
+        "city_name": "Patnongon",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600613",
+        "city_name": "San Jose",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600614",
+        "city_name": "San Remigio",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600615",
+        "city_name": "Sebaste",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600616",
+        "city_name": "Sibalom",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600617",
+        "city_name": "Tibiao",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0600618",
+        "city_name": "Valderrama",
+        "prov_code": "06006"
+    },
+    {
+        "city_code": "0601901",
+        "city_name": "Cuartero",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601902",
+        "city_name": "Dao",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601903",
+        "city_name": "Dumalag",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601904",
+        "city_name": "Dumarao",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601905",
+        "city_name": "Ivisan",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601906",
+        "city_name": "Jamindan",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601907",
+        "city_name": "Ma-Ayon",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601908",
+        "city_name": "Mambusao",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601909",
+        "city_name": "Panay",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601910",
+        "city_name": "Panitan",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601911",
+        "city_name": "Pilar",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601912",
+        "city_name": "Pontevedra",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601913",
+        "city_name": "President Roxas",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601914",
+        "city_name": "City of Roxas",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601915",
+        "city_name": "Sapi-An",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601916",
+        "city_name": "Sigma",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0601917",
+        "city_name": "Tapaz",
+        "prov_code": "06019"
+    },
+    {
+        "city_code": "0603001",
+        "city_name": "Ajuy",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603002",
+        "city_name": "Alimodian",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603003",
+        "city_name": "Anilao",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603004",
+        "city_name": "Badiangan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603005",
+        "city_name": "Balasan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603006",
+        "city_name": "Banate",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603007",
+        "city_name": "Barotac Nuevo",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603008",
+        "city_name": "Barotac Viejo",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603009",
+        "city_name": "Batad",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603010",
+        "city_name": "Bingawan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603012",
+        "city_name": "Cabatuan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603013",
+        "city_name": "Calinog",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603014",
+        "city_name": "Carles",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603015",
+        "city_name": "Concepcion",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603016",
+        "city_name": "Dingle",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603017",
+        "city_name": "Dueñas",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603018",
+        "city_name": "Dumangas",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603019",
+        "city_name": "Estancia",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603020",
+        "city_name": "Guimbal",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603021",
+        "city_name": "Igbaras",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603023",
+        "city_name": "Janiuay",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603025",
+        "city_name": "Lambunao",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603026",
+        "city_name": "Leganes",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603027",
+        "city_name": "Lemery",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603028",
+        "city_name": "Leon",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603029",
+        "city_name": "Maasin",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603030",
+        "city_name": "Miagao",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603031",
+        "city_name": "Mina",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603032",
+        "city_name": "New Lucena",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603034",
+        "city_name": "Oton",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603035",
+        "city_name": "City of Passi",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603036",
+        "city_name": "Pavia",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603037",
+        "city_name": "Pototan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603038",
+        "city_name": "San Dionisio",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603039",
+        "city_name": "San Enrique",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603040",
+        "city_name": "San Joaquin",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603041",
+        "city_name": "San Miguel",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603042",
+        "city_name": "San Rafael",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603043",
+        "city_name": "Santa Barbara",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603044",
+        "city_name": "Sara",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603045",
+        "city_name": "Tigbauan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603046",
+        "city_name": "Tubungan",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0603047",
+        "city_name": "Zarraga",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "0607901",
+        "city_name": "Buenavista",
+        "prov_code": "06079"
+    },
+    {
+        "city_code": "0607902",
+        "city_name": "Jordan",
+        "prov_code": "06079"
+    },
+    {
+        "city_code": "0607903",
+        "city_name": "Nueva Valencia",
+        "prov_code": "06079"
+    },
+    {
+        "city_code": "0607904",
+        "city_name": "San Lorenzo",
+        "prov_code": "06079"
+    },
+    {
+        "city_code": "0607905",
+        "city_name": "Sibunag",
+        "prov_code": "06079"
+    },
+    {
+        "city_code": "0631000",
+        "city_name": "City of Iloilo",
+        "prov_code": "06030"
+    },
+    {
+        "city_code": "1804502",
+        "city_name": "City of Bago",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804503",
+        "city_name": "Binalbagan",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804504",
+        "city_name": "City of Cadiz",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804505",
+        "city_name": "Calatrava",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804506",
+        "city_name": "Candoni",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804507",
+        "city_name": "Cauayan",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804508",
+        "city_name": "Enrique B. Magalona (Old: Saravia)",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804509",
+        "city_name": "City of Escalante",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804510",
+        "city_name": "City of Himamaylan",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804511",
+        "city_name": "Hinigaran",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804512",
+        "city_name": "Hinoba-an (Old: Asia)",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804513",
+        "city_name": "Ilog",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804514",
+        "city_name": "Isabela",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804515",
+        "city_name": "City of Kabankalan",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804516",
+        "city_name": "City of La Carlota",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804517",
+        "city_name": "La Castellana",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804518",
+        "city_name": "Manapla",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804519",
+        "city_name": "Moises Padilla (Old: Magallon)",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804520",
+        "city_name": "Murcia",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804521",
+        "city_name": "Pontevedra",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804522",
+        "city_name": "Pulupandan",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804523",
+        "city_name": "City of Sagay",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804524",
+        "city_name": "City of San Carlos",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804525",
+        "city_name": "San Enrique",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804526",
+        "city_name": "City of Silay",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804527",
+        "city_name": "City of Sipalay",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804528",
+        "city_name": "City of Talisay",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804529",
+        "city_name": "Toboso",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804530",
+        "city_name": "Valladolid",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804531",
+        "city_name": "City of Victorias",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804532",
+        "city_name": "Salvador Benedicto",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "1804601",
+        "city_name": "Amlan (Old: Ayuquitan)",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804602",
+        "city_name": "Ayungon",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804603",
+        "city_name": "Bacong",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804604",
+        "city_name": "City of Bais",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804605",
+        "city_name": "Basay",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804606",
+        "city_name": "City of Bayawan (Old: Tulong)",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804607",
+        "city_name": "Bindoy (Old: Payabon)",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804608",
+        "city_name": "City of Canlaon",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804609",
+        "city_name": "Dauin",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804610",
+        "city_name": "City of Dumaguete",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804611",
+        "city_name": "City of Guihulngan",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804612",
+        "city_name": "Jimalalud",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804613",
+        "city_name": "La Libertad",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804614",
+        "city_name": "Mabinay",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804615",
+        "city_name": "Manjuyod",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804616",
+        "city_name": "Pamplona",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804617",
+        "city_name": "San Jose",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804618",
+        "city_name": "Santa Catalina",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804619",
+        "city_name": "Siaton",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804620",
+        "city_name": "Sibulan",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804621",
+        "city_name": "City of Tanjay",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804622",
+        "city_name": "Tayasan",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804623",
+        "city_name": "Valencia (Old: Luzurriaga)",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804624",
+        "city_name": "Vallehermoso",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1804625",
+        "city_name": "Zamboanguita",
+        "prov_code": "18046"
+    },
+    {
+        "city_code": "1806101",
+        "city_name": "Enrique Villanueva",
+        "prov_code": "18061"
+    },
+    {
+        "city_code": "1806102",
+        "city_name": "Larena",
+        "prov_code": "18061"
+    },
+    {
+        "city_code": "1806103",
+        "city_name": "Lazi",
+        "prov_code": "18061"
+    },
+    {
+        "city_code": "1806104",
+        "city_name": "Maria",
+        "prov_code": "18061"
+    },
+    {
+        "city_code": "1806105",
+        "city_name": "San Juan",
+        "prov_code": "18061"
+    },
+    {
+        "city_code": "1806106",
+        "city_name": "Siquijor",
+        "prov_code": "18061"
+    },
+    {
+        "city_code": "1830200",
+        "city_name": "City of Bacolod",
+        "prov_code": "18045"
+    },
+    {
+        "city_code": "0701201",
+        "city_name": "Alburquerque",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701202",
+        "city_name": "Alicia",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701203",
+        "city_name": "Anda",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701204",
+        "city_name": "Antequera",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701205",
+        "city_name": "Baclayon",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701206",
+        "city_name": "Balilihan",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701207",
+        "city_name": "Batuan",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701208",
+        "city_name": "Bilar",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701209",
+        "city_name": "Buenavista",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701210",
+        "city_name": "Calape",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701211",
+        "city_name": "Candijay",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701212",
+        "city_name": "Carmen",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701213",
+        "city_name": "Catigbian",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701214",
+        "city_name": "Clarin",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701215",
+        "city_name": "Corella",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701216",
+        "city_name": "Cortes",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701217",
+        "city_name": "Dagohoy",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701218",
+        "city_name": "Danao",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701219",
+        "city_name": "Dauis",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701220",
+        "city_name": "Dimiao",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701221",
+        "city_name": "Duero",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701222",
+        "city_name": "Garcia Hernandez",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701223",
+        "city_name": "Guindulman",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701224",
+        "city_name": "Inabanga",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701225",
+        "city_name": "Jagna",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701226",
+        "city_name": "Getafe",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701227",
+        "city_name": "Lila",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701228",
+        "city_name": "Loay",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701229",
+        "city_name": "Loboc",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701230",
+        "city_name": "Loon",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701231",
+        "city_name": "Mabini",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701232",
+        "city_name": "Maribojoc",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701233",
+        "city_name": "Panglao",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701234",
+        "city_name": "Pilar",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701235",
+        "city_name": "President Carlos P. Garcia (Old: Pitogo)",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701236",
+        "city_name": "Sagbayan (Old: Borja)",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701237",
+        "city_name": "San Isidro",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701238",
+        "city_name": "San Miguel",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701239",
+        "city_name": "Sevilla",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701240",
+        "city_name": "Sierra Bullones",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701241",
+        "city_name": "Sikatuna",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701242",
+        "city_name": "City of Tagbilaran",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701243",
+        "city_name": "Talibon",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701244",
+        "city_name": "Trinidad",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701245",
+        "city_name": "Tubigon",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701246",
+        "city_name": "Ubay",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701247",
+        "city_name": "Valencia",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0701248",
+        "city_name": "Bien Unido",
+        "prov_code": "07012"
+    },
+    {
+        "city_code": "0702201",
+        "city_name": "Alcantara",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702202",
+        "city_name": "Alcoy",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702203",
+        "city_name": "Alegria",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702204",
+        "city_name": "Aloguinsan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702205",
+        "city_name": "Argao",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702206",
+        "city_name": "Asturias",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702207",
+        "city_name": "Badian",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702208",
+        "city_name": "Balamban",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702209",
+        "city_name": "Bantayan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702210",
+        "city_name": "Barili",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702211",
+        "city_name": "City of Bogo",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702212",
+        "city_name": "Boljoon",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702213",
+        "city_name": "Borbon",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702214",
+        "city_name": "City of Carcar",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702215",
+        "city_name": "Carmen",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702216",
+        "city_name": "Catmon",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702218",
+        "city_name": "Compostela",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702219",
+        "city_name": "Consolacion",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702220",
+        "city_name": "Cordova",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702221",
+        "city_name": "Daanbantayan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702222",
+        "city_name": "Dalaguete",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702223",
+        "city_name": "Danao City",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702224",
+        "city_name": "Dumanjug",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702225",
+        "city_name": "Ginatilan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702227",
+        "city_name": "Liloan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702228",
+        "city_name": "Madridejos",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702229",
+        "city_name": "Malabuyoc",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702231",
+        "city_name": "Medellin",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702232",
+        "city_name": "Minglanilla",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702233",
+        "city_name": "Moalboal",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702234",
+        "city_name": "City of Naga",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702235",
+        "city_name": "Oslob",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702236",
+        "city_name": "Pilar",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702237",
+        "city_name": "Pinamungajan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702238",
+        "city_name": "Poro",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702239",
+        "city_name": "Ronda",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702240",
+        "city_name": "Samboan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702241",
+        "city_name": "San Fernando",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702242",
+        "city_name": "San Francisco",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702243",
+        "city_name": "San Remigio",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702244",
+        "city_name": "Santa Fe",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702245",
+        "city_name": "Santander",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702246",
+        "city_name": "Sibonga",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702247",
+        "city_name": "Sogod",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702248",
+        "city_name": "Tabogon",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702249",
+        "city_name": "Tabuelan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702250",
+        "city_name": "City of Talisay",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702251",
+        "city_name": "City of Toledo",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702252",
+        "city_name": "Tuburan",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0702253",
+        "city_name": "Tudela",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0730600",
+        "city_name": "City of Cebu",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0731100",
+        "city_name": "City of Lapu-Lapu (Old: Opon)",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0731300",
+        "city_name": "City of Mandaue",
+        "prov_code": "07022"
+    },
+    {
+        "city_code": "0802601",
+        "city_name": "Arteche",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802602",
+        "city_name": "Balangiga",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802603",
+        "city_name": "Balangkayan",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802604",
+        "city_name": "City of Borongan",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802605",
+        "city_name": "Can-Avid",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802606",
+        "city_name": "Dolores",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802607",
+        "city_name": "General Macarthur",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802608",
+        "city_name": "Giporlos",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802609",
+        "city_name": "Guiuan",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802610",
+        "city_name": "Hernani",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802611",
+        "city_name": "Jipapad",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802612",
+        "city_name": "Lawaan",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802613",
+        "city_name": "Llorente",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802614",
+        "city_name": "Maslog",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802615",
+        "city_name": "Maydolong",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802616",
+        "city_name": "Mercedes",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802617",
+        "city_name": "Oras",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802618",
+        "city_name": "Quinapondan",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802619",
+        "city_name": "Salcedo",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802620",
+        "city_name": "San Julian",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802621",
+        "city_name": "San Policarpo",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802622",
+        "city_name": "Sulat",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0802623",
+        "city_name": "Taft",
+        "prov_code": "08026"
+    },
+    {
+        "city_code": "0803701",
+        "city_name": "Abuyog",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803702",
+        "city_name": "Alangalang",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803703",
+        "city_name": "Albuera",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803705",
+        "city_name": "Babatngon",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803706",
+        "city_name": "Barugo",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803707",
+        "city_name": "Bato",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803708",
+        "city_name": "City of Baybay",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803710",
+        "city_name": "Burauen",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803713",
+        "city_name": "Calubian",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803714",
+        "city_name": "Capoocan",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803715",
+        "city_name": "Carigara",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803717",
+        "city_name": "Dagami",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803718",
+        "city_name": "Dulag",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803719",
+        "city_name": "Hilongos",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803720",
+        "city_name": "Hindang",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803721",
+        "city_name": "Inopacan",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803722",
+        "city_name": "Isabel",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803723",
+        "city_name": "Jaro",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803724",
+        "city_name": "Javier (Old: Bugho)",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803725",
+        "city_name": "Julita",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803726",
+        "city_name": "Kananga",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803728",
+        "city_name": "La Paz",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803729",
+        "city_name": "Leyte",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803730",
+        "city_name": "Macarthur",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803731",
+        "city_name": "Mahaplag",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803733",
+        "city_name": "Matag-Ob",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803734",
+        "city_name": "Matalom",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803735",
+        "city_name": "Mayorga",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803736",
+        "city_name": "Merida",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803738",
+        "city_name": "Ormoc City",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803739",
+        "city_name": "Palo",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803740",
+        "city_name": "Palompon",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803741",
+        "city_name": "Pastrana",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803742",
+        "city_name": "San Isidro",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803743",
+        "city_name": "San Miguel",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803744",
+        "city_name": "Santa Fe",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803745",
+        "city_name": "Tabango",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803746",
+        "city_name": "Tabontabon",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803748",
+        "city_name": "Tanauan",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803749",
+        "city_name": "Tolosa",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803750",
+        "city_name": "Tunga",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0803751",
+        "city_name": "Villaba",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0804801",
+        "city_name": "Allen",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804802",
+        "city_name": "Biri",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804803",
+        "city_name": "Bobon",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804804",
+        "city_name": "Capul",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804805",
+        "city_name": "Catarman",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804806",
+        "city_name": "Catubig",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804807",
+        "city_name": "Gamay",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804808",
+        "city_name": "Laoang",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804809",
+        "city_name": "Lapinig",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804810",
+        "city_name": "Las Navas",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804811",
+        "city_name": "Lavezares",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804812",
+        "city_name": "Mapanas",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804813",
+        "city_name": "Mondragon",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804814",
+        "city_name": "Palapag",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804815",
+        "city_name": "Pambujan",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804816",
+        "city_name": "Rosario",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804817",
+        "city_name": "San Antonio",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804818",
+        "city_name": "San Isidro",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804819",
+        "city_name": "San Jose",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804820",
+        "city_name": "San Roque",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804821",
+        "city_name": "San Vicente",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804822",
+        "city_name": "Silvino Lobos",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804823",
+        "city_name": "Victoria",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0804824",
+        "city_name": "Lope De Vega",
+        "prov_code": "08048"
+    },
+    {
+        "city_code": "0806001",
+        "city_name": "Almagro",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806002",
+        "city_name": "Basey",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806003",
+        "city_name": "City of Calbayog",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806004",
+        "city_name": "Calbiga",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806005",
+        "city_name": "City of Catbalogan",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806006",
+        "city_name": "Daram",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806007",
+        "city_name": "Gandara",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806008",
+        "city_name": "Hinabangan",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806009",
+        "city_name": "Jiabong",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806010",
+        "city_name": "Marabut",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806011",
+        "city_name": "Matuguinao",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806012",
+        "city_name": "Motiong",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806013",
+        "city_name": "Pinabacdao",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806014",
+        "city_name": "San Jose De Buan",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806015",
+        "city_name": "San Sebastian",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806016",
+        "city_name": "Santa Margarita",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806017",
+        "city_name": "Santa Rita",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806018",
+        "city_name": "Santo Niño",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806019",
+        "city_name": "Talalora",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806020",
+        "city_name": "Tarangnan",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806021",
+        "city_name": "Villareal",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806022",
+        "city_name": "Paranas (Old: Wright)",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806023",
+        "city_name": "Zumarraga",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806024",
+        "city_name": "Tagapul-An",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806025",
+        "city_name": "San Jorge",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806026",
+        "city_name": "Pagsanghan",
+        "prov_code": "08060"
+    },
+    {
+        "city_code": "0806401",
+        "city_name": "Anahawan",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806402",
+        "city_name": "Bontoc",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806403",
+        "city_name": "Hinunangan",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806404",
+        "city_name": "Hinundayan",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806405",
+        "city_name": "Libagon",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806406",
+        "city_name": "Liloan",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806407",
+        "city_name": "City of Maasin",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806408",
+        "city_name": "Macrohon",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806409",
+        "city_name": "Malitbog",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806410",
+        "city_name": "Padre Burgos",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806411",
+        "city_name": "Pintuyan",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806412",
+        "city_name": "Saint Bernard",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806413",
+        "city_name": "San Francisco",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806414",
+        "city_name": "San Juan (Old: Cabalian)",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806415",
+        "city_name": "San Ricardo",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806416",
+        "city_name": "Silago",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806417",
+        "city_name": "Sogod",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806418",
+        "city_name": "Tomas Oppus",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0806419",
+        "city_name": "Limasawa",
+        "prov_code": "08064"
+    },
+    {
+        "city_code": "0807801",
+        "city_name": "Almeria",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807802",
+        "city_name": "Biliran",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807803",
+        "city_name": "Cabucgayan",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807804",
+        "city_name": "Caibiran",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807805",
+        "city_name": "Culaba",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807806",
+        "city_name": "Kawayan",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807807",
+        "city_name": "Maripipi",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0807808",
+        "city_name": "Naval",
+        "prov_code": "08078"
+    },
+    {
+        "city_code": "0831600",
+        "city_name": "City of Tacloban",
+        "prov_code": "08037"
+    },
+    {
+        "city_code": "0907201",
+        "city_name": "City of Dapitan",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907202",
+        "city_name": "City of Dipolog",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907203",
+        "city_name": "Katipunan",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907204",
+        "city_name": "La Libertad",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907205",
+        "city_name": "Labason",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907206",
+        "city_name": "Liloy",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907207",
+        "city_name": "Manukan",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907208",
+        "city_name": "Mutia",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907209",
+        "city_name": "Piñan (Old: New Piñan)",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907210",
+        "city_name": "Polanco",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907211",
+        "city_name": "Pres. Manuel A. Roxas",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907212",
+        "city_name": "Rizal",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907213",
+        "city_name": "Salug",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907214",
+        "city_name": "Sergio Osmeña Sr.",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907215",
+        "city_name": "Siayan",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907216",
+        "city_name": "Sibuco",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907217",
+        "city_name": "Sibutad",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907218",
+        "city_name": "Sindangan",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907219",
+        "city_name": "Siocon",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907220",
+        "city_name": "Sirawai",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907221",
+        "city_name": "Tampilisan",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907222",
+        "city_name": "Jose Dalman (Old: Ponot)",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907223",
+        "city_name": "Gutalac",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907224",
+        "city_name": "Baliguian",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907225",
+        "city_name": "Godod",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907226",
+        "city_name": "Leon T. Postigo (Old: Bacungan)",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907227",
+        "city_name": "Kalawit",
+        "prov_code": "09072"
+    },
+    {
+        "city_code": "0907302",
+        "city_name": "Aurora",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907303",
+        "city_name": "Bayog",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907305",
+        "city_name": "Dimataling",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907306",
+        "city_name": "Dinas",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907307",
+        "city_name": "Dumalinao",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907308",
+        "city_name": "Dumingag",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907311",
+        "city_name": "Kumalarang",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907312",
+        "city_name": "Labangan",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907313",
+        "city_name": "Lapuyan",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907315",
+        "city_name": "Mahayag",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907317",
+        "city_name": "Margosatubig",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907318",
+        "city_name": "Midsalip",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907319",
+        "city_name": "Molave",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907322",
+        "city_name": "City of Pagadian",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907323",
+        "city_name": "Ramon Magsaysay (Old: Liargo)",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907324",
+        "city_name": "San Miguel",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907325",
+        "city_name": "San Pablo",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907327",
+        "city_name": "Tabina",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907328",
+        "city_name": "Tambulig",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907330",
+        "city_name": "Tukuran",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907333",
+        "city_name": "Lakewood",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907337",
+        "city_name": "Josefina",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907338",
+        "city_name": "Pitogo",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907340",
+        "city_name": "Sominot (Old: Don Mariano Marcos)",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907341",
+        "city_name": "Vincenzo A. Sagun",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907343",
+        "city_name": "Guipos",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0907344",
+        "city_name": "Tigbao",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "0908301",
+        "city_name": "Alicia",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908302",
+        "city_name": "Buug",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908303",
+        "city_name": "Diplahan",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908304",
+        "city_name": "Imelda",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908305",
+        "city_name": "Ipil",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908306",
+        "city_name": "Kabasalan",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908307",
+        "city_name": "Mabuhay",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908308",
+        "city_name": "Malangas",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908309",
+        "city_name": "Naga",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908310",
+        "city_name": "Olutanga",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908311",
+        "city_name": "Payao",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908312",
+        "city_name": "Roseller Lim",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908313",
+        "city_name": "Siay",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908314",
+        "city_name": "Talusan",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908315",
+        "city_name": "Titay",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0908316",
+        "city_name": "Tungawan",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0990101",
+        "city_name": "City of Isabela",
+        "prov_code": "09083"
+    },
+    {
+        "city_code": "0931700",
+        "city_name": "City of Zamboanga",
+        "prov_code": "09073"
+    },
+    {
+        "city_code": "1001301",
+        "city_name": "Baungon",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001302",
+        "city_name": "Damulog",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001303",
+        "city_name": "Dangcagan",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001304",
+        "city_name": "Don Carlos",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001305",
+        "city_name": "Impasug-ong",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001306",
+        "city_name": "Kadingilan",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001307",
+        "city_name": "Kalilangan",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001308",
+        "city_name": "Kibawe",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001309",
+        "city_name": "Kitaotao",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001310",
+        "city_name": "Lantapan",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001311",
+        "city_name": "Libona",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001312",
+        "city_name": "City of Malaybalay",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001313",
+        "city_name": "Malitbog",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001314",
+        "city_name": "Manolo Fortich",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001315",
+        "city_name": "Maramag",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001316",
+        "city_name": "Pangantucan",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001317",
+        "city_name": "Quezon",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001318",
+        "city_name": "San Fernando",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001319",
+        "city_name": "Sumilao",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001320",
+        "city_name": "Talakag",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001321",
+        "city_name": "City of Valencia",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001322",
+        "city_name": "Cabanglasan",
+        "prov_code": "10013"
+    },
+    {
+        "city_code": "1001801",
+        "city_name": "Catarman",
+        "prov_code": "10018"
+    },
+    {
+        "city_code": "1001802",
+        "city_name": "Guinsiliban",
+        "prov_code": "10018"
+    },
+    {
+        "city_code": "1001803",
+        "city_name": "Mahinog",
+        "prov_code": "10018"
+    },
+    {
+        "city_code": "1001804",
+        "city_name": "Mambajao",
+        "prov_code": "10018"
+    },
+    {
+        "city_code": "1001805",
+        "city_name": "Sagay",
+        "prov_code": "10018"
+    },
+    {
+        "city_code": "1003501",
+        "city_name": "Bacolod",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003502",
+        "city_name": "Baloi",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003503",
+        "city_name": "Baroy",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003505",
+        "city_name": "Kapatagan",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003506",
+        "city_name": "Sultan Naga Dimaporo (Old: Karomatan)",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003507",
+        "city_name": "Kauswagan",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003508",
+        "city_name": "Kolambugan",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003509",
+        "city_name": "Lala",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003510",
+        "city_name": "Linamon",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003511",
+        "city_name": "Magsaysay",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003512",
+        "city_name": "Maigo",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003513",
+        "city_name": "Matungao",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003514",
+        "city_name": "Munai",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003515",
+        "city_name": "Nunungan",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003516",
+        "city_name": "Pantao Ragat",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003517",
+        "city_name": "Poona Piagapo",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003518",
+        "city_name": "Salvador",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003519",
+        "city_name": "Sapad",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003520",
+        "city_name": "Tagoloan",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003521",
+        "city_name": "Tangcal",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003522",
+        "city_name": "Tubod",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1003523",
+        "city_name": "Pantar",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1004201",
+        "city_name": "Aloran",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004202",
+        "city_name": "Baliangao",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004203",
+        "city_name": "Bonifacio",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004204",
+        "city_name": "Calamba",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004205",
+        "city_name": "Clarin",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004206",
+        "city_name": "Concepcion",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004207",
+        "city_name": "Jimenez",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004208",
+        "city_name": "Lopez Jaena",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004209",
+        "city_name": "City of Oroquieta",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004210",
+        "city_name": "City of Ozamiz",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004211",
+        "city_name": "Panaon",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004212",
+        "city_name": "Plaridel",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004213",
+        "city_name": "Sapang Dalaga",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004214",
+        "city_name": "Sinacaban",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004215",
+        "city_name": "City of Tangub",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004216",
+        "city_name": "Tudela",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004217",
+        "city_name": "Don Victoriano Chiongbian (Old: Don Mariano Marcos)",
+        "prov_code": "10042"
+    },
+    {
+        "city_code": "1004301",
+        "city_name": "Alubijid",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004302",
+        "city_name": "Balingasag",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004303",
+        "city_name": "Balingoan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004304",
+        "city_name": "Binuangan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004306",
+        "city_name": "Claveria",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004307",
+        "city_name": "City of El Salvador",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004308",
+        "city_name": "City of Gingoog",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004309",
+        "city_name": "Gitagum",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004310",
+        "city_name": "Initao",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004311",
+        "city_name": "Jasaan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004312",
+        "city_name": "Kinoguitan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004313",
+        "city_name": "Lagonglong",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004314",
+        "city_name": "Laguindingan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004315",
+        "city_name": "Libertad",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004316",
+        "city_name": "Lugait",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004317",
+        "city_name": "Magsaysay (Old: Linugos)",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004318",
+        "city_name": "Manticao",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004319",
+        "city_name": "Medina",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004320",
+        "city_name": "Naawan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004321",
+        "city_name": "Opol",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004322",
+        "city_name": "Salay",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004323",
+        "city_name": "Sugbongcogon",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004324",
+        "city_name": "Tagoloan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004325",
+        "city_name": "Talisayan",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1004326",
+        "city_name": "Villanueva",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1030500",
+        "city_name": "City of Cagayan De Oro",
+        "prov_code": "10043"
+    },
+    {
+        "city_code": "1030900",
+        "city_name": "City of Iligan",
+        "prov_code": "10035"
+    },
+    {
+        "city_code": "1102301",
+        "city_name": "Asuncion (Old: Saug)",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102303",
+        "city_name": "Carmen",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102305",
+        "city_name": "Kapalong",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102314",
+        "city_name": "New Corella",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102315",
+        "city_name": "City of Panabo",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102317",
+        "city_name": "Island Garden City of Samal",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102318",
+        "city_name": "Santo Tomas",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102319",
+        "city_name": "City of Tagum",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102322",
+        "city_name": "Talaingod",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102323",
+        "city_name": "Braulio E. Dujali",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102324",
+        "city_name": "San Isidro",
+        "prov_code": "11023"
+    },
+    {
+        "city_code": "1102401",
+        "city_name": "Bansalan",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102403",
+        "city_name": "City of Digos",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102404",
+        "city_name": "Hagonoy",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102406",
+        "city_name": "Kiblawan",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102407",
+        "city_name": "Magsaysay",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102408",
+        "city_name": "Malalag",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102410",
+        "city_name": "Matanao",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102411",
+        "city_name": "Padada",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102412",
+        "city_name": "Santa Cruz",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102414",
+        "city_name": "Sulop",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1102501",
+        "city_name": "Baganga",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102502",
+        "city_name": "Banaybanay",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102503",
+        "city_name": "Boston",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102504",
+        "city_name": "Caraga",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102505",
+        "city_name": "Cateel",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102506",
+        "city_name": "Governor Generoso",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102507",
+        "city_name": "Lupon",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102508",
+        "city_name": "Manay",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102509",
+        "city_name": "City of Mati",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102510",
+        "city_name": "San Isidro",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1102511",
+        "city_name": "Tarragona",
+        "prov_code": "11025"
+    },
+    {
+        "city_code": "1108201",
+        "city_name": "Compostela",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108202",
+        "city_name": "Laak (Old: San Vicente)",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108203",
+        "city_name": "Mabini (Old: Doña Alicia)",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108204",
+        "city_name": "Maco",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108205",
+        "city_name": "Maragusan (Old: San Mariano)",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108206",
+        "city_name": "Mawab",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108207",
+        "city_name": "Monkayo",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108208",
+        "city_name": "Montevista",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108209",
+        "city_name": "Nabunturan",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108210",
+        "city_name": "New Bataan",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108211",
+        "city_name": "Pantukan",
+        "prov_code": "11082"
+    },
+    {
+        "city_code": "1108601",
+        "city_name": "Don Marcelino",
+        "prov_code": "11086"
+    },
+    {
+        "city_code": "1108602",
+        "city_name": "Jose Abad Santos (Old: Trinidad)",
+        "prov_code": "11086"
+    },
+    {
+        "city_code": "1108603",
+        "city_name": "Malita",
+        "prov_code": "11086"
+    },
+    {
+        "city_code": "1108604",
+        "city_name": "Santa Maria",
+        "prov_code": "11086"
+    },
+    {
+        "city_code": "1108605",
+        "city_name": "Sarangani",
+        "prov_code": "11086"
+    },
+    {
+        "city_code": "1130700",
+        "city_name": "City of Davao",
+        "prov_code": "11024"
+    },
+    {
+        "city_code": "1204701",
+        "city_name": "Alamada",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204702",
+        "city_name": "Carmen",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204703",
+        "city_name": "Kabacan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204704",
+        "city_name": "City of Kidapawan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204705",
+        "city_name": "Libungan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204706",
+        "city_name": "Magpet",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204707",
+        "city_name": "Makilala",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204708",
+        "city_name": "Matalam",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204709",
+        "city_name": "Midsayap",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204710",
+        "city_name": "M'Lang",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204711",
+        "city_name": "Pigkawayan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204712",
+        "city_name": "Pikit",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204713",
+        "city_name": "President Roxas",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204714",
+        "city_name": "Tulunan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204715",
+        "city_name": "Antipas",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204716",
+        "city_name": "Banisilan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204717",
+        "city_name": "Aleosan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1204718",
+        "city_name": "Arakan",
+        "prov_code": "12047"
+    },
+    {
+        "city_code": "1206302",
+        "city_name": "Banga",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206306",
+        "city_name": "City of Koronadal",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206311",
+        "city_name": "Norala",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206312",
+        "city_name": "Polomolok",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206313",
+        "city_name": "Surallah",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206314",
+        "city_name": "Tampakan",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206315",
+        "city_name": "Tantangan",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206316",
+        "city_name": "T'Boli",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206317",
+        "city_name": "Tupi",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206318",
+        "city_name": "Santo Niño",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206319",
+        "city_name": "Lake Sebu",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1206501",
+        "city_name": "Bagumbayan",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206502",
+        "city_name": "Columbio",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206503",
+        "city_name": "Esperanza",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206504",
+        "city_name": "Isulan",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206505",
+        "city_name": "Kalamansig",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206506",
+        "city_name": "Lebak",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206507",
+        "city_name": "Lutayan",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206508",
+        "city_name": "Lambayong (Old: Mariano Marcos)",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206509",
+        "city_name": "Palimbang",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206510",
+        "city_name": "President Quirino",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206511",
+        "city_name": "City of Tacurong",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1206512",
+        "city_name": "Sen. Ninoy Aquino",
+        "prov_code": "12065"
+    },
+    {
+        "city_code": "1208001",
+        "city_name": "Alabel",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1208002",
+        "city_name": "Glan",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1208003",
+        "city_name": "Kiamba",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1208004",
+        "city_name": "Maasim",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1208005",
+        "city_name": "Maitum",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1208006",
+        "city_name": "Malapatan",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1208007",
+        "city_name": "Malungon",
+        "prov_code": "12080"
+    },
+    {
+        "city_code": "1230800",
+        "city_name": "City of General Santos (Old: Dadiangas)",
+        "prov_code": "12063"
+    },
+    {
+        "city_code": "1600201",
+        "city_name": "Buenavista",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600203",
+        "city_name": "City of Cabadbaran",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600204",
+        "city_name": "Carmen",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600205",
+        "city_name": "Jabonga",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600206",
+        "city_name": "Kitcharao",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600207",
+        "city_name": "Las Nieves",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600208",
+        "city_name": "Magallanes",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600209",
+        "city_name": "Nasipit",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600210",
+        "city_name": "Santiago",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600211",
+        "city_name": "Tubay",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600212",
+        "city_name": "Remedios T. Romualdez",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1600301",
+        "city_name": "City of Bayugan",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600302",
+        "city_name": "Bunawan",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600303",
+        "city_name": "Esperanza",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600304",
+        "city_name": "La Paz",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600305",
+        "city_name": "Loreto",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600306",
+        "city_name": "Prosperidad",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600307",
+        "city_name": "Rosario",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600308",
+        "city_name": "San Francisco",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600309",
+        "city_name": "San Luis",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600310",
+        "city_name": "Santa Josefa",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600311",
+        "city_name": "Talacogon",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600312",
+        "city_name": "Trento",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600313",
+        "city_name": "Veruela",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1600314",
+        "city_name": "Sibagat",
+        "prov_code": "16003"
+    },
+    {
+        "city_code": "1606701",
+        "city_name": "Alegria",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606702",
+        "city_name": "Bacuag",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606704",
+        "city_name": "Burgos",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606706",
+        "city_name": "Claver",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606707",
+        "city_name": "Dapa",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606708",
+        "city_name": "Del Carmen",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606710",
+        "city_name": "General Luna",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606711",
+        "city_name": "Gigaquit",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606714",
+        "city_name": "Mainit",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606715",
+        "city_name": "Malimono",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606716",
+        "city_name": "Pilar",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606717",
+        "city_name": "Placer",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606718",
+        "city_name": "San Benito",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606719",
+        "city_name": "San Francisco (Old: Anao-aon)",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606720",
+        "city_name": "San Isidro",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606721",
+        "city_name": "Santa Monica (Old: Sapao)",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606722",
+        "city_name": "Sison",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606723",
+        "city_name": "Socorro",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606724",
+        "city_name": "City of Surigao",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606725",
+        "city_name": "Tagana-An",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606727",
+        "city_name": "Tubod",
+        "prov_code": "16067"
+    },
+    {
+        "city_code": "1606801",
+        "city_name": "Barobo",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606802",
+        "city_name": "Bayabas",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606803",
+        "city_name": "City of Bislig",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606804",
+        "city_name": "Cagwait",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606805",
+        "city_name": "Cantilan",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606806",
+        "city_name": "Carmen",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606807",
+        "city_name": "Carrascal",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606808",
+        "city_name": "Cortes",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606809",
+        "city_name": "Hinatuan",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606810",
+        "city_name": "Lanuza",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606811",
+        "city_name": "Lianga",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606812",
+        "city_name": "Lingig",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606813",
+        "city_name": "Madrid",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606814",
+        "city_name": "Marihatag",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606815",
+        "city_name": "San Agustin",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606816",
+        "city_name": "San Miguel",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606817",
+        "city_name": "Tagbina",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606818",
+        "city_name": "Tago",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1606819",
+        "city_name": "City of Tandag",
+        "prov_code": "16068"
+    },
+    {
+        "city_code": "1608501",
+        "city_name": "Basilisa (Old: Rizal)",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1608502",
+        "city_name": "Cagdianao",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1608503",
+        "city_name": "Dinagat",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1608504",
+        "city_name": "Libjo (Old: Albor)",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1608505",
+        "city_name": "Loreto",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1608506",
+        "city_name": "San Jose",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1608507",
+        "city_name": "Tubajon",
+        "prov_code": "16085"
+    },
+    {
+        "city_code": "1630400",
+        "city_name": "City of Butuan",
+        "prov_code": "16002"
+    },
+    {
+        "city_code": "1900702",
+        "city_name": "City of Lamitan",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900703",
+        "city_name": "Lantawan",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900704",
+        "city_name": "Maluso",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900705",
+        "city_name": "Sumisip",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900706",
+        "city_name": "Tipo-Tipo",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900707",
+        "city_name": "Tuburan",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900708",
+        "city_name": "Akbar",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900709",
+        "city_name": "Al-Barka",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900710",
+        "city_name": "Hadji Mohammad Ajul",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900711",
+        "city_name": "Ungkaya Pukan",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900712",
+        "city_name": "Hadji Muhtamad",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1900713",
+        "city_name": "Tabuan-Lasa",
+        "prov_code": "19007"
+    },
+    {
+        "city_code": "1903601",
+        "city_name": "Bacolod-Kalawi (Old: Bacolod Grande)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903602",
+        "city_name": "Balabagan",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903603",
+        "city_name": "Balindong (Old: Watu)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903604",
+        "city_name": "Bayang",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903605",
+        "city_name": "Binidayan",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903606",
+        "city_name": "Bubong",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903607",
+        "city_name": "Butig",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903609",
+        "city_name": "Ganassi",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903610",
+        "city_name": "Kapai",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903611",
+        "city_name": "Lumba-Bayabao (Old: Maguing)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903612",
+        "city_name": "Lumbatan",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903613",
+        "city_name": "Madalum",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903614",
+        "city_name": "Madamba",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903615",
+        "city_name": "Malabang",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903616",
+        "city_name": "Marantao",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903617",
+        "city_name": "City of Marawi",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903618",
+        "city_name": "Masiu",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903619",
+        "city_name": "Mulondo",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903620",
+        "city_name": "Pagayawan (Old: Tatarikan)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903621",
+        "city_name": "Piagapo",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903622",
+        "city_name": "Poona Bayabao (Old: Gata)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903623",
+        "city_name": "Pualas",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903624",
+        "city_name": "Ditsaan-Ramain",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903625",
+        "city_name": "Saguiaran",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903626",
+        "city_name": "Tamparan",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903627",
+        "city_name": "Taraka",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903628",
+        "city_name": "Tubaran",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903629",
+        "city_name": "Tugaya",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903630",
+        "city_name": "Wao",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903631",
+        "city_name": "Marogong",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903632",
+        "city_name": "Calanogas",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903633",
+        "city_name": "Buadiposo-Buntong",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903634",
+        "city_name": "Maguing",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903635",
+        "city_name": "Picong (Old: Sultan Gumander)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903636",
+        "city_name": "Lumbayanague",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903637",
+        "city_name": "Amai Manabilang (Old: Bumbaran)",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903638",
+        "city_name": "Tagoloan Ii",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903639",
+        "city_name": "Kapatagan",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903640",
+        "city_name": "Sultan Dumalondong",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1903641",
+        "city_name": "Lumbaca-Unayan",
+        "prov_code": "19036"
+    },
+    {
+        "city_code": "1906601",
+        "city_name": "Indanan",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906602",
+        "city_name": "Jolo",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906603",
+        "city_name": "Kalingalan Caluang",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906604",
+        "city_name": "Luuk",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906605",
+        "city_name": "Maimbung",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906606",
+        "city_name": "Hadji Panglima Tahil (Old: Marunggas)",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906607",
+        "city_name": "Old Panamao",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906608",
+        "city_name": "Pangutaran",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906609",
+        "city_name": "Parang",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906610",
+        "city_name": "Pata",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906611",
+        "city_name": "Patikul",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906612",
+        "city_name": "Siasi",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906613",
+        "city_name": "Talipao",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906614",
+        "city_name": "Tapul",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906615",
+        "city_name": "Tongkil",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906616",
+        "city_name": "Panglima Estino (Old: New Panamao)",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906617",
+        "city_name": "Lugus",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906618",
+        "city_name": "Pandami",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1906619",
+        "city_name": "Omar",
+        "prov_code": "19066"
+    },
+    {
+        "city_code": "1907001",
+        "city_name": "Panglima Sugala (Old: Balimbing)",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907002",
+        "city_name": "Bongao",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907003",
+        "city_name": "Mapun (Old: Cagayan de Tawi-Tawi)",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907004",
+        "city_name": "Simunul",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907005",
+        "city_name": "Sitangkai",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907006",
+        "city_name": "South Ubian",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907007",
+        "city_name": "Tandubas",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907008",
+        "city_name": "Turtle Islands",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907009",
+        "city_name": "Languyan",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907010",
+        "city_name": "Sapa-Sapa",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1907011",
+        "city_name": "Sibutu",
+        "prov_code": "19070"
+    },
+    {
+        "city_code": "1908701",
+        "city_name": "Barira",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908702",
+        "city_name": "Buldon",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908703",
+        "city_name": "City of Cotabato",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908704",
+        "city_name": "Datu Blah T. Sinsuat",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908705",
+        "city_name": "Datu Odin Sinsuat (Old: Dinaig)",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908706",
+        "city_name": "Kabuntalan (Old: Tumbao)",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908707",
+        "city_name": "Matanog",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908708",
+        "city_name": "Northern Kabuntalan",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908709",
+        "city_name": "Parang",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908710",
+        "city_name": "Sultan Kudarat (Old: Nuling)",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908711",
+        "city_name": "Sultan Mastura",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908712",
+        "city_name": "Talitay",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908713",
+        "city_name": "Upi",
+        "prov_code": "19087"
+    },
+    {
+        "city_code": "1908801",
+        "city_name": "Ampatuan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908802",
+        "city_name": "Buluan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908803",
+        "city_name": "Datu Abdullah Sangki",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908804",
+        "city_name": "Datu Anggal Midtimbang",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908805",
+        "city_name": "Datu Hoffer Ampatuan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908806",
+        "city_name": "Datu Paglas",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908807",
+        "city_name": "Datu Piang",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908808",
+        "city_name": "Datu Salibo",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908809",
+        "city_name": "Datu Saudi Ampatuan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908810",
+        "city_name": "Datu Unsay",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908811",
+        "city_name": "Gen. S.K. Pendatun",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908812",
+        "city_name": "Guindulungan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908813",
+        "city_name": "Mamasapano",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908814",
+        "city_name": "Mangudadatu",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908815",
+        "city_name": "Pagagawan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908816",
+        "city_name": "Pagalungan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908817",
+        "city_name": "Paglat",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908818",
+        "city_name": "Pandag",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908819",
+        "city_name": "Rajah Buayan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908820",
+        "city_name": "Shariff Aguak (Old: Maganoy)",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908821",
+        "city_name": "Shariff Saydona Mustapha",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908822",
+        "city_name": "South Upi",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908823",
+        "city_name": "Sultan Sa Barongis (Old: Lambayong)",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1908824",
+        "city_name": "Talayan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999901",
+        "city_name": "Kapalawan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999902",
+        "city_name": "Old Kaabakan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999903",
+        "city_name": "Kadayangan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999904",
+        "city_name": "Nabalawag",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999905",
+        "city_name": "Pahamuddin",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999906",
+        "city_name": "Malidegao",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999907",
+        "city_name": "Ligawasan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1999908",
+        "city_name": "Tugunan",
+        "prov_code": "19088"
+    },
+    {
+        "city_code": "1381701",
+        "city_name": "Pateros",
+        "prov_code": "13000"
+    }
+]

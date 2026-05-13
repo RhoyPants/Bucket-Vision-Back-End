@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import * as fs from "fs";
+import * as path from "path";
 
 const prisma = new PrismaClient();
 
@@ -42,6 +44,7 @@ async function main() {
     { name: "APPROVALS", path: "/approvals" },
     { name: "ADMIN", path: "/approval-flows" },
     { name: "SETTINGS", path: "/settings" },
+    { name: "BUSINESS_UNITS", path: "/business-units" },
   ];
 
   const modules = await Promise.all(
@@ -54,7 +57,7 @@ async function main() {
     ),
   );
 
-  console.log("✅ Modules created (13 total)");
+  console.log("✅ Modules created (16 total)");
 
   //////////////////////////////
   // ROLES
@@ -1464,6 +1467,122 @@ console.log("✅ Real construction project created");
 
   console.log("✅ Approval flows created (2 total: 1 default)");
 
+  //////////////////////////////
+  // PHILIPPINES GEOGRAPHICAL DATA
+  //////////////////////////////
+
+  // Load JSON data files
+  const dataDir = path.join(__dirname, "../data");
+  
+  const regionsData = JSON.parse(
+    fs.readFileSync(path.join(dataDir, "regions.json"), "utf-8")
+  );
+  const provincesData = JSON.parse(
+    fs.readFileSync(path.join(dataDir, "provinces.json"), "utf-8")
+  );
+  const citiesData = JSON.parse(
+    fs.readFileSync(path.join(dataDir, "cities.json"), "utf-8")
+  );
+  const barangaysData = JSON.parse(
+    fs.readFileSync(path.join(dataDir, "barangays.json"), "utf-8")
+  );
+  const businessUnitsData = JSON.parse(
+    fs.readFileSync(path.join(dataDir, "businessUnit.json"), "utf-8")
+  );
+
+  // Seed Regions
+  const regions = await Promise.all(
+    regionsData.map((region: any) =>
+      prisma.region.upsert({
+        where: { regCode: region.reg_code },
+        update: {},
+        create: {
+          regCode: region.reg_code,
+          regName: region.reg_name,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ Regions created (${regions.length} total)`);
+
+  // Seed Provinces
+  const provinces = await Promise.all(
+    provincesData.map((province: any) =>
+      prisma.province.upsert({
+        where: { provCode: province.prov_code },
+        update: {},
+        create: {
+          provCode: province.prov_code,
+          provName: province.prov_name,
+          regCode: province.reg_code,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ Provinces created (${provinces.length} total)`);
+
+  // Seed Cities
+  const cities = await Promise.all(
+    citiesData.map((city: any) =>
+      prisma.city.upsert({
+        where: { cityCode: city.city_code },
+        update: {},
+        create: {
+          cityCode: city.city_code,
+          cityName: city.city_name,
+          provCode: city.prov_code,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ Cities created (${cities.length} total)`);
+
+  // Seed Barangays
+  const barangays = await Promise.all(
+    barangaysData.map((barangay: any) =>
+      prisma.barangay.upsert({
+        where: { brgyCode: barangay.brgy_code },
+        update: {},
+        create: {
+          brgyCode: barangay.brgy_code,
+          brgyName: barangay.brgy_name,
+          cityCode: barangay.city_code,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ Barangays created (${barangays.length} total)`);
+
+  // Seed Business Units
+  const businessUnits = await Promise.all(
+    businessUnitsData.map((bu: any) =>
+      prisma.businessUnit.upsert({
+        where: { code: bu.Title },
+        update: {
+          name: bu.BusinessUnit,
+          entity: bu.Entity,
+          isActive: true,
+        },
+        create: {
+          code: bu.Title,
+          name: bu.BusinessUnit,
+          entity: bu.Entity,
+          isActive: true,
+        },
+      })
+    )
+  );
+
+  console.log(`✅ Business Units created (${businessUnits.length} total)`);
+
   console.log("\n✅✅✅ SEEDING COMPLETED SUCCESSFULLY!\n");
   console.log("📊 Summary:");
   console.log(`   Modules: ${modules.length}`);
@@ -1471,6 +1590,12 @@ console.log("✅ Real construction project created");
   console.log(`   Users: 6`);
   console.log(`   Projects: 1 (Real Construction - Commercial Fit-Out, ACTIVE with full approval history)`);
   console.log(`   Approval Flows: 2 (1 default available for assignment)`);
+  console.log(`   📍 Geographical Data:`);
+  console.log(`      - Regions: ${regions.length}`);
+  console.log(`      - Provinces: ${provinces.length}`);
+  console.log(`      - Cities: ${cities.length}`);
+  console.log(`      - Barangays: ${barangays.length}`);
+  console.log(`   🏢 Business Units: ${businessUnits.length}`);
   console.log(`\n🔑 Test Login Credentials:`);
   console.log(`   superadmin@test.com / password123`);
   console.log(`   pic@test.com / password123`);

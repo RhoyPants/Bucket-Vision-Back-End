@@ -1,0 +1,184 @@
+[
+  {
+    "Title": "EMO",
+    "BusinessUnit": "EXECUTIVE MANAGEMENT OFFICE",
+    "Entity": "GVI",
+    "BUHead": "Casey D. Pichel",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "BT",
+    "BusinessUnit": "BUSINESS TRANSFORMATION",
+    "Entity": "GVI",
+    "BUHead": "Jom M. Titular",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "SPO",
+    "BusinessUnit": "SPECIAL PROJECTS OFFICE",
+    "Entity": "GVI",
+    "BUHead": "Angela M. Titular",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "CC",
+    "BusinessUnit": "CORPORATE COMMUNICATION",
+    "Entity": "GVI",
+    "BUHead": "Raffy M. Titular",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "MIT",
+    "BusinessUnit": "MARKET INFORMATION TECHNOLOGY",
+    "Entity": "GVI",
+    "BUHead": "Jhei R. Torres",
+    "asstBUhead": "Giancarlo F. Robeves"
+  },
+  {
+    "Title": "CE",
+    "BusinessUnit": "COST ENGINEERING",
+    "Entity": "GVI",
+    "BUHead": "Jonathan Ong",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "HR",
+    "BusinessUnit": "HUMAN RESOURCES",
+    "Entity": "GVI",
+    "BUHead": "Marlina M. Caro",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "MEI",
+    "BusinessUnit": "MARKET EXPERIENCE INNOVATION",
+    "Entity": "GVE",
+    "BUHead": "Ejie Gonzaga",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "FIN",
+    "BusinessUnit": "FINANCE AND ACCOUNTING",
+    "Entity": "GVI",
+    "BUHead": "Leah S. Gonzaga",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "RS",
+    "BusinessUnit": "COMMERCIAL OPERATIONS (MERCHANDISING)",
+    "Entity": "GVE",
+    "BUHead": "Filipinas U. Casera",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "CMS",
+    "BusinessUnit": "CORPORATE MANAGEMENT SERVICES",
+    "Entity": "GVI",
+    "BUHead": "Marlina M. Caro",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "OP",
+    "BusinessUnit": "OFFICE OF THE PRESIDENT",
+    "Entity": "GVI",
+    "BUHead": "Rachel M. Titular",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "DI",
+    "BusinessUnit": "DESIGN AND INNOVATION",
+    "Entity": "HULMA",
+    "BUHead": "Vic M. Lipio",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "SSHE",
+    "BusinessUnit": "SAFETY, SECURITY, HEALTH AND ENVIRONMENT",
+    "Entity": "GVI",
+    "BUHead": "Marlina M. Caro",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "SC",
+    "BusinessUnit": "SUPPLY CHAIN",
+    "Entity": "GVI",
+    "BUHead": "Paolo M. Titular",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "CM",
+    "BusinessUnit": "CONSTRUCTION MANAGEMENT",
+    "Entity": "GVI",
+    "BUHead": "Ron Arwin C. Sabolbora",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "WL",
+    "BusinessUnit": "LOGISTICS",
+    "Entity": "GVI",
+    "BUHead": "John Lenard Martin",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "PROD",
+    "BusinessUnit": "PRODUCTION",
+    "Entity": "HULMA",
+    "BUHead": "Deo J. Alejo",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "ACT",
+    "BusinessUnit": "MARKETING OPERATIONS (ACTIVATIONS)",
+    "Entity": "GVE",
+    "BUHead": "Julie Paguibitan-Conde",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "EVE",
+    "BusinessUnit": "EVENTS",
+    "Entity": "GVE",
+    "BUHead": "Kier T. Viernes",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "GPUR",
+    "BusinessUnit": "GVE PURCHASING",
+    "Entity": "GVE",
+    "BUHead": "Hershi A. Camposano",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "HPUR",
+    "BusinessUnit": "HULMA PURCHASING",
+    "Entity": "HULMA",
+    "BUHead": "Legie A. Reyes",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "PMO",
+    "BusinessUnit": "PROPERTY MANAGEMENT OFFICE",
+    "Entity": "HULMA",
+    "BUHead": "Cyrel A. Magramo",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "SA",
+    "BusinessUnit": "SALES AND ACCOUNTS",
+    "Entity": "HULMA",
+    "BUHead": "Deo J. Alejo",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "CARA",
+    "BusinessUnit": "CORPORATE AUDIT AND RISK ASSESSTMENT",
+    "Entity": "GVI",
+    "BUHead": "",
+    "asstBUhead": ""
+  },
+  {
+    "Title": "FO",
+    "BusinessUnit": "FIELD OPERATIONS",
+    "Entity": "HULMA",
+    "BUHead": "Deo J. Alejo",
+    "asstBUhead": ""
+  }
+]
