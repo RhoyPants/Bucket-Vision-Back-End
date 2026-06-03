@@ -16,6 +16,15 @@ export interface CreateProjectDTO {
   pin?: string;
   businessUnit?: string;
   entity?: string;
+
+  monday?: boolean;
+  tuesday?: boolean;
+  wednesday?: boolean;
+  thursday?: boolean;
+  friday?: boolean;
+  saturday?: boolean;
+  sunday?: boolean;
+  includeHolidays?: boolean;
 }
 
 // =========================
@@ -43,4 +52,13 @@ export interface UpdateProjectDTO {
   totalBudget?: number;
   priority?: string;
   pin?: string;
+
+  monday?: boolean;
+  tuesday?: boolean;
+  wednesday?: boolean;
+  thursday?: boolean;
+  friday?: boolean;
+  saturday?: boolean;
+  sunday?: boolean;
+  includeHolidays?: boolean;
 }

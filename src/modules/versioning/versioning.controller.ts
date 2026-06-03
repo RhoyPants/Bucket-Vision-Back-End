@@ -140,6 +140,7 @@ export class VersioningController {
 
       res.status(200).json({
         success: true,
+        message: "Version comparison loaded",
         data: comparison,
       });
     } catch (error: any) {

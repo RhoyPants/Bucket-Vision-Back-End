@@ -50,7 +50,15 @@ static async getDashboard(
       priority,
       pin,
       businessUnit,
-      entity
+      entity,
+      monday,
+      tuesday,
+      wednesday,
+      thursday,
+      friday,
+      saturday,
+      sunday,
+      includeHolidays
     } = req.body;
 
     const userId = (req as any).user.id;
@@ -76,7 +84,16 @@ static async getDashboard(
 
         // 🔥 NEW FIELDS
         businessUnit,
-        entity
+        entity,
+
+        monday: monday ?? undefined,
+        tuesday: tuesday ?? undefined,
+        wednesday: wednesday ?? undefined,
+        thursday: thursday ?? undefined,
+        friday: friday ?? undefined,
+        saturday: saturday ?? undefined,
+        sunday: sunday ?? undefined,
+        includeHolidays: includeHolidays ?? undefined
       }
     });
 
@@ -347,7 +364,15 @@ static async getDashboard(
       priority,
       pin,
       businessUnit,
-      entity
+      entity,
+      monday,
+      tuesday,
+      wednesday,
+      thursday,
+      friday,
+      saturday,
+      sunday,
+      includeHolidays
     } = req.body;
 
     const updated = await prisma.project.update({
@@ -369,7 +394,16 @@ static async getDashboard(
 
         // 🔥 NEW
         businessUnit,
-        entity
+        entity,
+
+        monday: monday ?? undefined,
+        tuesday: tuesday ?? undefined,
+        wednesday: wednesday ?? undefined,
+        thursday: thursday ?? undefined,
+        friday: friday ?? undefined,
+        saturday: saturday ?? undefined,
+        sunday: sunday ?? undefined,
+        includeHolidays: includeHolidays ?? undefined
       },
     });
 
@@ -741,14 +775,14 @@ export async function getProjectEngagedUsers(req: any, res: any) {
   }
 }
 
-// 🔥 UPDATE PROJECT MEMBER ROLE (PATCH endpoint)
+// UPDATE PROJECT MEMBER ROLE (PATCH endpoint)
 export async function updateProjectMemberRole(req: any, res: any) {
   try {
     const { projectId, userId } = req.params;
     const { newRole } = req.body;
     const requesterId = (req as any).user.id;
 
-    // ✅ VALIDATION: newRole must be valid
+    // VALIDATION: newRole must be valid
     if (!newRole || !["SUB_OWNER", "MEMBER"].includes(newRole)) {
       return res.status(400).json({
         success: false,
@@ -759,7 +793,7 @@ export async function updateProjectMemberRole(req: any, res: any) {
       });
     }
 
-    // ✅ CHECK: Project exists
+    // CHECK: Project exists
     const project = await prisma.project.findUnique({
       where: { id: projectId }
     });
@@ -774,7 +808,7 @@ export async function updateProjectMemberRole(req: any, res: any) {
       });
     }
 
-    // ✅ PERMISSION: Only project owner can modify member roles
+    // PERMISSION: Only project owner can modify member roles
     const requesterMember = await prisma.projectMember.findFirst({
       where: {
         projectId,
@@ -792,7 +826,7 @@ export async function updateProjectMemberRole(req: any, res: any) {
       });
     }
 
-    // ✅ CHECK: Member exists in project
+    // CHECK: Member exists in project
     const member = await prisma.projectMember.findFirst({
       where: {
         projectId,
@@ -813,7 +847,7 @@ export async function updateProjectMemberRole(req: any, res: any) {
       });
     }
 
-    // ✅ PREVENT: Cannot change OWNER role
+    // PREVENT: Cannot change OWNER role
     if (member.role === "OWNER") {
       return res.status(409).json({
         success: false,
@@ -824,7 +858,7 @@ export async function updateProjectMemberRole(req: any, res: any) {
       });
     }
 
-    // 🔥 UPDATE: Member role (real-time draft auto-save)
+    // UPDATE: Member role (real-time draft auto-save)
     const updated = await prisma.projectMember.update({
       where: { id: member.id },
       data: {

@@ -1543,23 +1543,30 @@ console.log("✅ Real construction project created");
 
   console.log(`✅ Cities created (${cities.length} total)`);
 
-  // Seed Barangays
-  const barangays = await Promise.all(
-    barangaysData.map((barangay: any) =>
-      prisma.barangay.upsert({
-        where: { brgyCode: barangay.brgy_code },
-        update: {},
-        create: {
-          brgyCode: barangay.brgy_code,
-          brgyName: barangay.brgy_name,
-          cityCode: barangay.city_code,
-          isActive: true,
-        },
-      })
-    )
-  );
+  // Seed Barangays in batches to avoid exhausting DB connection pool
+  const BATCH_SIZE = 500;
+  let barangaysProcessed = 0;
 
-  console.log(`✅ Barangays created (${barangays.length} total)`);
+  for (let i = 0; i < barangaysData.length; i += BATCH_SIZE) {
+    const batch = barangaysData.slice(i, i + BATCH_SIZE);
+    await Promise.all(
+      batch.map((barangay: any) =>
+        prisma.barangay.upsert({
+          where: { brgyCode: barangay.brgy_code },
+          update: {},
+          create: {
+            brgyCode: barangay.brgy_code,
+            brgyName: barangay.brgy_name,
+            cityCode: barangay.city_code,
+            isActive: true,
+          },
+        })
+      )
+    );
+    barangaysProcessed += batch.length;
+  }
+
+  console.log(`✅ Barangays created (${barangaysProcessed} total)`);
 
   // Seed Business Units
   const businessUnits = await Promise.all(
@@ -1594,7 +1601,7 @@ console.log("✅ Real construction project created");
   console.log(`      - Regions: ${regions.length}`);
   console.log(`      - Provinces: ${provinces.length}`);
   console.log(`      - Cities: ${cities.length}`);
-  console.log(`      - Barangays: ${barangays.length}`);
+  console.log(`      - Barangays: ${barangaysProcessed}`);
   console.log(`   🏢 Business Units: ${businessUnits.length}`);
   console.log(`\n🔑 Test Login Credentials:`);
   console.log(`   superadmin@test.com / password123`);

@@ -7,238 +7,154 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//////////////////////////
-// ENUMS
-//////////////////////////
-
-enum ProjectStatus {
-  DRAFT
-  FOR_REVIEW
-  FOR_APPROVAL
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-  REJECTED
-  NEEDS_REVISION
-}
-
-enum ApprovalLevel {
-  BU_HEAD
-  OP
-}
-
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-//////////////////////////
-// USER + RBAC
-//////////////////////////
-
 model User {
-  id           String  @id @default(uuid())
-  name         String
-  email        String  @unique
-  password     String
-  roleId       String
-  refreshToken String?
-  isActive     Boolean @default(true)
-
-  // 🔥 NEW: Department & Approver assignment
-  departmentId String?
-  approverId   String?
-
-  role Role @relation(fields: [roleId], references: [id])
-
-  projects        Project[] @relation("ProjectOwner")
-  createdSubtasks Subtask[] @relation("SubtaskCreator")
-
-  assignedSubtasks SubtaskAssignee[]
-  assignedTasks    TaskAssignee[]
-
-  comments    Comment[]
-  attachments Attachment[]
-  activities  ActivityLog[]
-
-  // 🔥 ORG CHART: Manager-Member Relations (many-to-many)
-  managers UserHierarchy[] @relation("UserMembers")
-  members  UserHierarchy[] @relation("UserManagers")
-
-  // 🔥 PROJECT: Project membership
-  projectMembers ProjectMember[]
-
-  progressLogs       ProgressLog[]
+  id                 String                 @id @default(uuid())
+  name               String
+  email              String                 @unique
+  password           String
+  roleId             String
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  refreshToken       String?
+  isActive           Boolean                @default(true)
+  approverId         String?
+  departmentId       String?
+  activities         ActivityLog[]
+  approvalAuditLogs  ApprovalAuditLog[]     @relation("ApprovedBy")
+  approvalStepUsers  ApprovalStepUser[]     @relation("ApprovalStepUsers")
+  attachments        Attachment[]
+  comments           Comment[]
   dailyReports       DailyReport[]
-  weeklyReports      WeeklyReport[]
   dailyReports_recv  DailyReportReceiver[]
+  notifications      Notification[]
+  progressLogs       ProgressLog[]
+  projects           Project[]              @relation("ProjectOwner")
+  approvals          ProjectApproval[]
+  projectMembers     ProjectMember[]
+  createdSubtasks    Subtask[]              @relation("SubtaskCreator")
+  assignedSubtasks   SubtaskAssignee[]
+  assignedTasks      TaskAssignee[]
+  role               Role                   @relation(fields: [roleId], references: [id])
+  managers           UserHierarchy[]        @relation("UserMembers")
+  members            UserHierarchy[]        @relation("UserManagers")
+  weeklyReports      WeeklyReport[]
   weeklyReports_recv WeeklyReportReceiver[]
-
-  // 🔥 NEW: Approvals & Notifications
-  approvals         ProjectApproval[]
-  approvalAuditLogs ApprovalAuditLog[] @relation("ApprovedBy")
-  approvalStepUsers ApprovalStepUser[] @relation("ApprovalStepUsers")
-  notifications     Notification[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Role {
-  id       String  @id @default(uuid())
-  name     String  @unique
-  isActive Boolean @default(true)
-
-  users           User[]
+  id              String           @id @default(uuid())
+  name            String           @unique
+  isActive        Boolean          @default(true)
   rolePermissions RolePermission[]
+  users           User[]
 }
 
 model Module {
-  id       String  @id @default(uuid())
-  name     String  @unique
-  path     String
-  isActive Boolean @default(true)
-
+  id              String           @id @default(uuid())
+  name            String           @unique
+  path            String
+  isActive        Boolean          @default(true)
   rolePermissions RolePermission[]
 }
 
 model Permission {
-  id     String @id @default(uuid())
-  action String @unique
-
+  id              String           @id @default(uuid())
+  action          String           @unique
   rolePermissions RolePermission[]
 }
 
 model RolePermission {
-  id           String @id @default(uuid())
+  id           String     @id @default(uuid())
   roleId       String
   moduleId     String
   permissionId String
-
-  role       Role       @relation(fields: [roleId], references: [id])
-  module     Module     @relation(fields: [moduleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
+  module       Module     @relation(fields: [moduleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
 
   @@unique([roleId, moduleId, permissionId])
 }
 
-//////////////////////////
-// PROJECT MEMBER ROLES
-//////////////////////////
-
 model ProjectMember {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   projectId String
   userId    String
-  role      String // "OWNER", "SUB_OWNER", "MEMBER"
-
-  project Project @relation(fields: [projectId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
-
+  role      String
   createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([projectId, userId])
   @@index([projectId])
   @@index([userId])
 }
 
-//////////////////////////
-// ORG CHART HIERARCHY
-//////////////////////////
-
 model UserHierarchy {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   managerId String
   memberId  String
-
-  manager User @relation("UserMembers", fields: [managerId], references: [id])
-  member  User @relation("UserManagers", fields: [memberId], references: [id])
-
   createdAt DateTime @default(now())
+  manager   User     @relation("UserMembers", fields: [managerId], references: [id])
+  member    User     @relation("UserManagers", fields: [memberId], references: [id])
 
   @@unique([managerId, memberId])
   @@index([managerId])
   @@index([memberId])
 }
 
-//////////////////////////
-// PROJECT
-//////////////////////////
-
 model Project {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-
-  location     Json?
-  businessUnit String?
-  entity       String?
-
-  startDate       DateTime?
-  expectedEndDate DateTime?
-  actualStartDate DateTime?
-  actualEndDate   DateTime?
-
-  totalBudget Float?
-  priority    String?
-  duration    Int?
-
-  pin String?
-
-  progress Float @default(0)
-
-  ownerId String
-  owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
-
-  // 🔥 NEW: Project Status & Versioning
-  status           ProjectStatus @default(DRAFT)
-  versionNumber    Int           @default(1)
-  versionLabel     String?
-  isActive         Boolean       @default(false)
-  isLatestVersion  Boolean       @default(true)
-  isLocked         Boolean       @default(false)
-  requiresApproval Boolean       @default(true)
-
-  // 🔥 ROOT PROJECT (groups all versions together)
-  rootProjectId String?
-  rootProject   Project?  @relation("RootProject", fields: [rootProjectId], references: [id])
-  versions      Project[] @relation("RootProject")
-
-  // 🔥 PARENT PROJECT (previous version)
-  parentProjectId String?
-  parentProject   Project?  @relation("ProjectVersion", fields: [parentProjectId], references: [id])
-  children        Project[] @relation("ProjectVersion")
-
-  scopes         Scope[]
-  attachments    Attachment[]
-  projectMembers ProjectMember[]
-  dailyReports   DailyReport[]
-  weeklyReports  WeeklyReport[]
-  timelines      ProjectTimeline[]
-
-  // 🔥 NEW: Approvals
-  approvals         ProjectApproval[]
+  id                String             @id @default(uuid())
+  name              String
+  description       String?
+  ownerId           String
+  createdAt         DateTime           @default(now())
+  progress          Float              @default(0)
+  actualEndDate     DateTime?
+  actualStartDate   DateTime?
+  deletedAt         DateTime?
+  duration          Int?
+  expectedEndDate   DateTime?
+  pin               String?
+  priority          String?
+  startDate         DateTime?
+  totalBudget       Float?
+  updatedAt         DateTime           @updatedAt
+  businessUnit      String?
+  entity            String?
+  location          Json?
+  isActive          Boolean            @default(false)
+  isLatestVersion   Boolean            @default(true)
+  isLocked          Boolean            @default(false)
+  parentProjectId   String?
+  requiresApproval  Boolean            @default(true)
+  rootProjectId     String?
+  status            ProjectStatus      @default(DRAFT)
+  versionLabel      String?
+  versionNumber     Int                @default(1)
+  approvalFlowId    String?
+  approvalEnabled   Boolean            @default(true)
+  monday            Boolean            @default(true)
+  tuesday           Boolean            @default(true)
+  wednesday         Boolean            @default(true)
+  thursday          Boolean            @default(true)
+  friday            Boolean            @default(true)
+  saturday          Boolean            @default(false)
+  sunday            Boolean            @default(false)
+  includeHolidays   Boolean            @default(true)
   approvalAuditLogs ApprovalAuditLog[] @relation("ApprovalAudit")
-
-  // 🔥 NEW: Approval Flow Configuration
-  approvalFlowId  String?
-  approvalFlow    ApprovalFlow? @relation(fields: [approvalFlowId], references: [id])
-  approvalEnabled Boolean       @default(true) // Can disable per project
-
-  // 🔥 EMBEDDED: Work Schedule (days & holidays) - Per-project schedule configuration
-  monday          Boolean @default(true)
-  tuesday         Boolean @default(true)
-  wednesday       Boolean @default(true)
-  thursday        Boolean @default(true)
-  friday          Boolean @default(true)
-  saturday        Boolean @default(false)
-  sunday          Boolean @default(false)
-  includeHolidays Boolean @default(true)
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  attachments       Attachment[]
+  dailyReports      DailyReport[]
+  approvalFlow      ApprovalFlow?      @relation(fields: [approvalFlowId], references: [id])
+  owner             User               @relation("ProjectOwner", fields: [ownerId], references: [id])
+  parentProject     Project?           @relation("ProjectVersion", fields: [parentProjectId], references: [id])
+  children          Project[]          @relation("ProjectVersion")
+  rootProject       Project?           @relation("RootProject", fields: [rootProjectId], references: [id])
+  versions          Project[]          @relation("RootProject")
+  approvals         ProjectApproval[]
+  projectMembers    ProjectMember[]
+  timelines         ProjectTimeline[]
+  scopes            Scope[]
+  weeklyReports     WeeklyReport[]
 
   @@index([status])
   @@index([isActive])
@@ -248,281 +164,192 @@ model Project {
   @@index([approvalFlowId])
 }
 
-//////////////////////////
-// SCOPE (formerly Category)
-//////////////////////////
-
 model Scope {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-  order       Int     @default(0)
-
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  order           Int       @default(0)
+  projectId       String
   budgetAllocated Float?
   budgetPercent   Float?
-
-  progress Float @default(0)
-
-  tasks Task[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  progress        Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks           Task[]
 
   @@index([projectId])
 }
 
-//////////////////////////
-// TASK
-//////////////////////////
-
 model TaskAssignee {
   taskId String
   userId String
-
-  task Task @relation(fields: [taskId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  task   Task   @relation(fields: [taskId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@id([taskId, userId])
 }
 
 model Task {
-  id          String  @id @default(uuid())
-  title       String
-  description String?
-  order       Int     @default(0)
-
-  scopeId String
-  scope   Scope  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
-
+  id              String         @id @default(uuid())
+  title           String
+  description     String?
+  createdAt       DateTime       @default(now())
+  progress        Float          @default(0)
   budgetAllocated Float?
   budgetPercent   Float?
-
-  progress Float @default(0)
-
-  assignees TaskAssignee[]
-  subtasks  Subtask[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  deletedAt       DateTime?
+  updatedAt       DateTime       @updatedAt
+  order           Int            @default(0)
+  scopeId         String
+  subtasks        Subtask[]
+  scope           Scope          @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  assignees       TaskAssignee[]
 
   @@index([scopeId])
 }
 
-//////////////////////////
-// SUBTASK
-//////////////////////////
-
 model Subtask {
-  id          String  @id @default(uuid())
-  title       String
-  description String?
-
-  taskId String
-  task   Task   @relation(fields: [taskId], references: [id])
-
-  order    Int
-  priority String?
-
-  status Int @default(0)
-
-  projectedStartDate DateTime?
+  id                 String            @id @default(uuid())
+  title              String
+  description        String?
+  taskId             String
+  order              Int
+  priority           String?
+  createdBy          String
+  createdAt          DateTime          @default(now())
+  progress           Float             @default(0)
+  actualEndDate      DateTime?
+  actualStartDate    DateTime?
+  budgetAllocated    Float?
+  budgetPercent      Float?
+  deletedAt          DateTime?
   projectedEndDate   DateTime?
-
-  actualStartDate DateTime?
-  actualEndDate   DateTime?
-
-  budgetAllocated Float?
-  budgetPercent   Float?
-
-  progress Float @default(0)
-
-  remarks String?
-
-  createdBy String
-  creator   User   @relation("SubtaskCreator", fields: [createdBy], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  checklists  Checklist[]
-  assignees   SubtaskAssignee[]
-  comments    Comment[]
-  attachments Attachment[]
-  activities  ActivityLog[]     @relation("SubtaskActivity")
-
-  progressLogs ProgressLog[]
+  projectedStartDate DateTime?
+  remarks            String?
+  updatedAt          DateTime          @updatedAt
+  status             Int               @default(0)
+  activities         ActivityLog[]     @relation("SubtaskActivity")
+  attachments        Attachment[]
+  checklists         Checklist[]
+  comments           Comment[]
+  progressLogs       ProgressLog[]
+  creator            User              @relation("SubtaskCreator", fields: [createdBy], references: [id])
+  task               Task              @relation(fields: [taskId], references: [id])
+  assignees          SubtaskAssignee[]
 
   @@index([taskId])
 }
 
-//////////////////////////
-// APPROVAL FLOW SYSTEM
-//////////////////////////
-
 model ApprovalFlow {
-  id          String  @id @default(uuid())
-  name        String  @unique // "BU_HEAD → OP", "Director → BU_HEAD → OP"
-  description String?
-  isDefault   Boolean @default(false)
-  isActive    Boolean @default(true)
-
-  // 🔥 NEW: Execution mode (sequential or parallel)
-  executionMode String @default("SEQUENTIAL") // "SEQUENTIAL" or "PARALLEL"
-
-  steps    ApprovalStep[]
-  projects Project[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(uuid())
+  name          String         @unique
+  description   String?
+  isDefault     Boolean        @default(false)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  executionMode String         @default("SEQUENTIAL")
+  steps         ApprovalStep[]
+  projects      Project[]
 
   @@index([isDefault])
   @@index([isActive])
 }
 
 model ApprovalStep {
-  id     String @id @default(uuid())
-  flowId String
-
-  order Int
-  role  String? // "BU_HEAD", "OP", "DIRECTOR", "FINANCE", etc. (optional if specific users assigned)
-
-  // Control how approval works at this step
-  requiresAll Int     @default(1) // 0 = Any one approver, 1 = All approvers with role must approve
-  canReject   Boolean @default(true) // Can this step reject?
-
-  // 🔥 NEW: Specific user assignment
-  // If filled, only these users can approve (overrides role-based)
+  id               String             @id @default(uuid())
+  flowId           String
+  order            Int
+  role             String?
+  requiresAll      Int                @default(1)
+  canReject        Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  useSpecificUsers Boolean            @default(false)
+  flow             ApprovalFlow       @relation(fields: [flowId], references: [id], onDelete: Cascade)
   assignedUsers    ApprovalStepUser[]
-  useSpecificUsers Boolean            @default(false) // Toggle between role-based vs user-specific
-
-  flow ApprovalFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@unique([flowId, order])
   @@index([flowId])
 }
 
-// 🔥 NEW: Approval step specific user assignments
 model ApprovalStepUser {
-  id     String @id @default(uuid())
-  stepId String
-  userId String
-
-  step ApprovalStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
-  user User         @relation("ApprovalStepUsers", fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  id        String       @id @default(uuid())
+  stepId    String
+  userId    String
+  createdAt DateTime     @default(now())
+  step      ApprovalStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  user      User         @relation("ApprovalStepUsers", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([stepId, userId])
   @@index([stepId])
   @@index([userId])
 }
 
-//////////////////////////
-// PROGRESS LOG
-//////////////////////////
-
 model ProgressLog {
-  id        String  @id @default(uuid())
-  subtaskId String
-  userId    String?
-
+  id                String   @id @default(uuid())
+  subtaskId         String
   date              DateTime
   dailyPercent      Float
   cumulativePercent Float
-
-  remarks   String?
-  photoUrl  String?
-  latitude  Float?
-  longitude Float?
-
-  location      String?
-  dayNumber     Int?
-  attachmentUrl String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  subtask Subtask @relation(fields: [subtaskId], references: [id])
-  user    User?   @relation(fields: [userId], references: [id])
+  latitude          Float?
+  longitude         Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  photoUrl          String?
+  remarks           String?
+  attachmentUrl     String?
+  dayNumber         Int?
+  location          String?
+  userId            String?
+  subtask           Subtask  @relation(fields: [subtaskId], references: [id])
+  user              User?    @relation(fields: [userId], references: [id])
 
   @@unique([subtaskId, date])
 }
-
-//////////////////////////
-// CHECKLIST
-//////////////////////////
 
 model Checklist {
   id          String  @id @default(uuid())
   title       String
   isCompleted Boolean @default(false)
   order       Int
-
-  subtaskId String
-  subtask   Subtask @relation(fields: [subtaskId], references: [id])
+  subtaskId   String
+  subtask     Subtask @relation(fields: [subtaskId], references: [id])
 }
-
-//////////////////////////
-// ASSIGNEE
-//////////////////////////
 
 model SubtaskAssignee {
   subtaskId String
   userId    String
-
-  subtask Subtask @relation(fields: [subtaskId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  subtask   Subtask @relation(fields: [subtaskId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
 
   @@id([subtaskId, userId])
 }
-
-//////////////////////////
-// COMMENT
-//////////////////////////
 
 model Comment {
   id        String   @id @default(uuid())
   content   String
   createdAt DateTime @default(now())
-
   subtaskId String
   userId    String
-
-  subtask Subtask @relation(fields: [subtaskId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  subtask   Subtask  @relation(fields: [subtaskId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
-
-//////////////////////////
-// ATTACHMENT
-//////////////////////////
 
 model Attachment {
-  id        String   @id @default(uuid())
-  fileUrl   String
-  fileName  String
-  createdAt DateTime @default(now())
-
+  id         String   @id @default(uuid())
+  fileUrl    String
+  fileName   String
+  createdAt  DateTime @default(now())
   subtaskId  String?
-  projectId  String?
   uploadedBy String
-
-  subtask Subtask? @relation(fields: [subtaskId], references: [id])
-  project Project? @relation(fields: [projectId], references: [id])
-  user    User     @relation(fields: [uploadedBy], references: [id])
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id])
+  subtask    Subtask? @relation(fields: [subtaskId], references: [id])
+  user       User     @relation(fields: [uploadedBy], references: [id])
 }
-
-//////////////////////////
-// ACTIVITY LOG
-//////////////////////////
 
 model ActivityLog {
   id         String   @id @default(uuid())
@@ -531,68 +358,52 @@ model ActivityLog {
   entityId   String
   metadata   Json?
   createdAt  DateTime @default(now())
-
-  userId    String
-  subtaskId String?
-
-  user    User     @relation(fields: [userId], references: [id])
-  subtask Subtask? @relation("SubtaskActivity", fields: [subtaskId], references: [id])
+  userId     String
+  subtaskId  String?
+  subtask    Subtask? @relation("SubtaskActivity", fields: [subtaskId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   @@index([entityType, entityId])
 }
 
-//////////////////////////
-// REPORTING
-//////////////////////////
-
 model DailyReport {
-  id        String @id @default(uuid())
-  userId    String
-  projectId String
-
-  dayNumber Int
-  date      DateTime
-  location  String
-  remarks   String?
-
+  id          String                @id @default(uuid())
+  userId      String
+  projectId   String
+  dayNumber   Int
+  date        DateTime
+  location    String
+  remarks     String?
   attachments String[]
-
-  createdAt DateTime @default(now())
-
-  user      User                  @relation(fields: [userId], references: [id])
-  project   Project               @relation(fields: [projectId], references: [id])
-  receivers DailyReportReceiver[]
+  createdAt   DateTime              @default(now())
+  project     Project               @relation(fields: [projectId], references: [id])
+  user        User                  @relation(fields: [userId], references: [id])
+  receivers   DailyReportReceiver[]
 }
 
 model DailyReportReceiver {
   reportId String
   userId   String
-  read     Boolean @default(false)
-
-  report DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  user   User        @relation(fields: [userId], references: [id])
+  read     Boolean     @default(false)
+  report   DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id])
 
   @@id([reportId, userId])
 }
 
 model WeeklyReport {
-  id     String @id @default(uuid())
-  userId String
-
-  projectId String?
-
-  title    String
-  dateFrom DateTime
-  dateTo   DateTime
-
+  id          String                 @id @default(uuid())
+  userId      String
+  title       String
+  dateFrom    DateTime
+  dateTo      DateTime
   remarks     String?
   attachments String[]
-
-  createdAt DateTime @default(now())
-
-  user      User                   @relation(fields: [userId], references: [id])
-  project   Project?               @relation(fields: [projectId], references: [id])
-  receivers WeeklyReportReceiver[]
+  createdAt   DateTime               @default(now())
+  projectId   String?
+  project     Project?               @relation(fields: [projectId], references: [id])
+  user        User                   @relation(fields: [userId], references: [id])
+  receivers   WeeklyReportReceiver[]
 
   @@index([projectId])
 }
@@ -600,36 +411,26 @@ model WeeklyReport {
 model WeeklyReportReceiver {
   reportId String
   userId   String
-  read     Boolean @default(false)
-
-  report WeeklyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  user   User         @relation(fields: [userId], references: [id])
+  read     Boolean      @default(false)
+  report   WeeklyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id])
 
   @@id([reportId, userId])
 }
 
-//////////////////////////
-// APPROVAL SYSTEM
-//////////////////////////
-
 model ProjectApproval {
-  id        String @id @default(uuid())
-  projectId String
-
-  level   ApprovalLevel
-  order   Int            @default(0)
-  isFinal Boolean        @default(false)
-  status  ApprovalStatus @default(PENDING)
-
+  id         String         @id @default(uuid())
+  projectId  String
+  level      ApprovalLevel
+  order      Int            @default(0)
+  isFinal    Boolean        @default(false)
+  status     ApprovalStatus @default(PENDING)
   approverId String
-  approver   User   @relation(fields: [approverId], references: [id])
-
-  remarks String?
-  actedAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  remarks    String?
+  actedAt    DateTime?
+  createdAt  DateTime       @default(now())
+  approver   User           @relation(fields: [approverId], references: [id])
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([approverId])
@@ -637,112 +438,76 @@ model ProjectApproval {
   @@index([level])
 }
 
-//////////////////////////
-// NOTIFICATIONS
-//////////////////////////
-
 model Notification {
-  id     String @id @default(uuid())
-  userId String
-
-  type    String
-  message String
-
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  message   String
   isRead    Boolean   @default(false)
   readAt    DateTime?
   createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
 }
-
-//////////////////////////
-// APPROVAL AUDIT LOG
-//////////////////////////
 
 model ApprovalAuditLog {
   id             String         @id @default(uuid())
   projectId      String
   approverId     String
   level          ApprovalLevel
-  action         String // "SUBMITTED", "APPROVED", "REJECTED", "RESUBMITTED"
+  action         String
   previousStatus ProjectStatus?
   newStatus      ProjectStatus?
   remarks        String?
-
-  project  Project @relation("ApprovalAudit", fields: [projectId], references: [id], onDelete: Cascade)
-  approver User    @relation("ApprovedBy", fields: [approverId], references: [id])
-
-  createdAt DateTime @default(now())
+  createdAt      DateTime       @default(now())
+  approver       User           @relation("ApprovedBy", fields: [approverId], references: [id])
+  project        Project        @relation("ApprovalAudit", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([approverId])
   @@index([createdAt])
 }
 
-//////////////////////////
-// SYSTEM SETTINGS
-//////////////////////////
-
 model SystemSetting {
-  id    String @id @default(uuid())
-  key   String @unique
-  value String
-
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-//////////////////////////
-// S-CURVE SNAPSHOT
-//////////////////////////
-
 model ProjectTimeline {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   projectId String
-
-  date DateTime
-
-  planned Float
-  actual  Float
-
+  date      DateTime
+  planned   Float
+  actual    Float
   variance  Float
   daysAhead Float
-
-  project Project @relation(fields: [projectId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id])
 }
-
-//////////////////////////
-// GLOBAL HOLIDAYS
-//////////////////////////
 
 model Holiday {
   id          String   @id @default(uuid())
-  date        DateTime @unique // Unique date for global holidays
-  name        String // Holiday name (e.g., "Christmas", "New Year")
-  description String? // Optional description
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  date        DateTime @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([date])
 }
 
-//////////////////////////
-// PHILIPPINES GEOGRAPHICAL DATA
-//////////////////////////
-
 model Region {
-  id        String   @id @default(uuid())
-  regCode   String   @unique
+  id        String     @id @default(uuid())
+  regCode   String     @unique
   regName   String
-  isActive  Boolean  @default(true)
-
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   provinces Province[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
 
   @@index([regCode])
 }
@@ -752,28 +517,26 @@ model Province {
   provCode  String   @unique
   provName  String
   regCode   String
-  region    Region   @relation(fields: [regCode], references: [regCode], onDelete: Cascade)
   isActive  Boolean  @default(true)
-
-  cities City[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cities    City[]
+  region    Region   @relation(fields: [regCode], references: [regCode], onDelete: Cascade)
 
   @@index([regCode])
   @@index([provCode])
 }
 
 model City {
-  id       String   @id @default(uuid())
-  cityCode String   @unique
-  cityName String
-  provCode String
-  province Province @relation(fields: [provCode], references: [provCode], onDelete: Cascade)
-  isActive Boolean  @default(true)
-
+  id        String     @id @default(uuid())
+  cityCode  String     @unique
+  cityName  String
+  provCode  String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   barangays Barangay[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  province  Province   @relation(fields: [provCode], references: [provCode], onDelete: Cascade)
 
   @@index([provCode])
   @@index([cityCode])
@@ -784,11 +547,10 @@ model Barangay {
   brgyCode  String   @unique
   brgyName  String
   cityCode  String
-  city      City     @relation(fields: [cityCode], references: [cityCode], onDelete: Cascade)
   isActive  Boolean  @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  city      City     @relation(fields: [cityCode], references: [cityCode], onDelete: Cascade)
 
   @@index([cityCode])
   @@index([brgyCode])
@@ -802,10 +564,31 @@ model BusinessUnit {
   buHead        String?
   assistantHead String?
   isActive      Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([code])
   @@index([entity])
+}
+
+enum ProjectStatus {
+  DRAFT
+  FOR_REVIEW
+  FOR_APPROVAL
+  ACTIVE
+  INACTIVE
+  REJECTED
+  NEEDS_REVISION
+  ARCHIVED
+}
+
+enum ApprovalLevel {
+  BU_HEAD
+  OP
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
