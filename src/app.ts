@@ -22,6 +22,7 @@ import calendarRoutes from "./modules/calendar/calendar.routes";
 import holidayRoutes from "./modules/admin/holidays/holiday.routes";
 import geographicalRoutes from "./modules/geographical/geographical.routes";
 import businessUnitRoutes from "./modules/business-unit/business-unit.routes";
+import personalDashboardRoutes from "./modules/personal-dashboard/personal-dashboard.routes";
 
 const app = express();
 app.use(cors({
@@ -60,6 +61,7 @@ app.use("/api/versioning", versioningRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/geographical", geographicalRoutes);
 app.use("/api/business-units", businessUnitRoutes);
+app.use("/api/personal-dashboards", personalDashboardRoutes);
     
 
 app.get("/test-auth", authenticate, (req: any, res) => {

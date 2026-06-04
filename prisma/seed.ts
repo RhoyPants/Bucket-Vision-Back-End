@@ -45,6 +45,7 @@ async function main() {
     { name: "ADMIN", path: "/approval-flows" },
     { name: "SETTINGS", path: "/settings" },
     { name: "BUSINESS_UNITS", path: "/business-units" },
+    { name: "PERSONAL_DASHBOARDS", path: "/personal-dashboards" },
   ];
 
   const modules = await Promise.all(
@@ -57,7 +58,7 @@ async function main() {
     ),
   );
 
-  console.log("✅ Modules created (16 total)");
+  console.log("✅ Modules created (17 total)");
 
   //////////////////////////////
   // ROLES

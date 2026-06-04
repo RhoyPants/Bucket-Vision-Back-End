@@ -37,6 +37,7 @@ model User {
   role               Role                   @relation(fields: [roleId], references: [id])
   managers           UserHierarchy[]        @relation("UserMembers")
   members            UserHierarchy[]        @relation("UserManagers")
+  personalDashboards PersonalDashboard[]
   weeklyReports      WeeklyReport[]
   weeklyReports_recv WeeklyReportReceiver[]
 }
@@ -152,6 +153,7 @@ model Project {
   versions          Project[]          @relation("RootProject")
   approvals         ProjectApproval[]
   projectMembers    ProjectMember[]
+  personalDashboards PersonalDashboard[]
   timelines         ProjectTimeline[]
   scopes            Scope[]
   weeklyReports     WeeklyReport[]
@@ -489,6 +491,79 @@ model ProjectTimeline {
   project   Project  @relation(fields: [projectId], references: [id])
 }
 
+model PersonalDashboard {
+  id          String                 @id @default(uuid())
+  userId      String
+  projectId   String
+  name        String
+  description String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kpis        DashboardKpi[]
+  charts      DashboardChartConfig[]
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model DashboardKpi {
+  id            String                 @id @default(uuid())
+  dashboardId   String
+  name          String
+  description   String?
+  unit          String                 @default("%")
+  field         KpiField               @default(PROGRESS)
+  sourceType    KpiSourceType
+  projectId     String
+  scopeId       String?
+  taskId        String?
+  subtaskId     String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  dashboard     PersonalDashboard      @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  thresholds    KpiThresholdRule[]
+
+  @@index([dashboardId])
+  @@index([projectId])
+  @@index([scopeId])
+  @@index([taskId])
+  @@index([subtaskId])
+}
+
+model KpiThresholdRule {
+  id            String             @id @default(uuid())
+  kpiId         String
+  status        KpiStatus
+  operator      KpiValueOperator
+  value1        Float
+  value2        Float?
+  dateOperator  KpiValueOperator?
+  dateValue1    DateTime?
+  dateValue2    DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  kpi           DashboardKpi        @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  @@unique([kpiId, status])
+  @@index([kpiId])
+}
+
+model DashboardChartConfig {
+  id          String            @id @default(uuid())
+  dashboardId String
+  chartType   DashboardChartType
+  isEnabled   Boolean           @default(true)
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  dashboard   PersonalDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@unique([dashboardId, chartType])
+  @@index([dashboardId])
+}
+
 model Holiday {
   id          String   @id @default(uuid())
   date        DateTime @unique
@@ -591,4 +666,39 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum KpiSourceType {
+  PROJECT
+  SCOPE
+  TASK
+  SUBTASK
+}
+
+enum KpiField {
+  PROGRESS
+}
+
+enum KpiStatus {
+  CRITICAL
+  ONFLOW
+  HEALTHY
+  UNCLASSIFIED
+}
+
+enum KpiValueOperator {
+  LT
+  LTE
+  EQ
+  GTE
+  GT
+  BETWEEN
+}
+
+enum DashboardChartType {
+  KPI_SUMMARY
+  SCURVE
+  PROGRESS_TREND
+  KPI_STATUS_DISTRIBUTION
+  TASK_COMPLETION
 }
