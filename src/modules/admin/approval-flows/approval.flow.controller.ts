@@ -33,6 +33,17 @@ export class ApprovalFlowController {
             }
           });
         }
+
+        const mode = sortedSteps[i].stepExecutionMode;
+        if (mode && mode !== "SEQUENTIAL" && mode !== "PARALLEL") {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: "INVALID_STEPS",
+              message: `Step ${i + 1}: stepExecutionMode must be SEQUENTIAL or PARALLEL`,
+            },
+          });
+        }
       }
 
       const flow = await ApprovalFlowService.createFlow({
@@ -211,6 +222,44 @@ export class ApprovalFlowController {
           code: "DEFAULT_FLOW_NOT_FOUND",
           message: error.message
         }
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/approval-flows/roles/:roleId/users
+   * Get active users by role (dropdown support)
+   */
+  static async getUsersByRole(req: Request, res: Response) {
+    try {
+      const roleId = Array.isArray(req.params.roleId)
+        ? req.params.roleId[0]
+        : req.params.roleId;
+
+      if (!roleId) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_INPUT",
+            message: "roleId is required",
+          },
+        });
+      }
+
+      const users = await ApprovalFlowService.getUsersByRoleId(roleId);
+
+      return res.status(200).json({
+        success: true,
+        data: users,
+        message: "Users by role loaded",
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "GET_USERS_BY_ROLE_ERROR",
+          message: error.message,
+        },
       });
     }
   }

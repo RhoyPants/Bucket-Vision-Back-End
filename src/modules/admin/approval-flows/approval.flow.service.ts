@@ -3,8 +3,11 @@ import prisma from "../../../config/prisma";
 interface ApprovalStepInput {
   order: number;
   role: string;
+  stepExecutionMode?: string;
   requiresAll?: number;
   canReject?: boolean;
+  useSpecificUsers?: boolean;
+  assignedUsers?: any[];
 }
 
 interface CreateApprovalFlowInput {
@@ -23,6 +26,54 @@ interface UpdateApprovalFlowInput {
 }
 
 export class ApprovalFlowService {
+  private static normalizeAssignedUserIds(step: ApprovalStepInput): string[] {
+    const raw = Array.isArray(step.assignedUsers) ? step.assignedUsers : [];
+
+    const ids = raw
+      .map((entry: any) => {
+        if (typeof entry === "string") return entry;
+        if (entry?.userId) return entry.userId;
+        if (entry?.id) return entry.id;
+        return null;
+      })
+      .filter(Boolean) as string[];
+
+    return Array.from(new Set(ids));
+  }
+
+  private static buildStepCreateInput(step: ApprovalStepInput) {
+    const assignedUserIds = this.normalizeAssignedUserIds(step);
+    const useSpecificUsers = step.useSpecificUsers === true || assignedUserIds.length > 0;
+
+    return {
+      order: step.order,
+      role: step.role,
+      stepExecutionMode: step.stepExecutionMode || "PARALLEL",
+      requiresAll: step.requiresAll ?? 1,
+      canReject: step.canReject ?? true,
+      useSpecificUsers,
+      assignedUsers:
+        assignedUserIds.length > 0
+          ? {
+              create: assignedUserIds.map((userId) => ({ userId })),
+            }
+          : undefined,
+    };
+  }
+
+  private static stepInclude = {
+    orderBy: { order: "asc" },
+    include: {
+      assignedUsers: {
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, role: { select: { id: true, name: true } } },
+          },
+        },
+      },
+    },
+  } as const;
+
   /**
    * Create a new approval flow with steps
    */
@@ -52,15 +103,10 @@ export class ApprovalFlowService {
           description: data.description,
           isDefault: data.isDefault || false,
           steps: {
-            create: data.steps.map((step) => ({
-              order: step.order,
-              role: step.role,
-              requiresAll: step.requiresAll ?? 1,
-              canReject: step.canReject ?? true
-            }))
+            create: data.steps.map((step) => this.buildStepCreateInput(step))
           }
         },
-        include: { steps: { orderBy: { order: "asc" } } }
+        include: { steps: this.stepInclude }
       });
 
       return flow;
@@ -76,7 +122,9 @@ export class ApprovalFlowService {
     try {
       const flows = await (prisma as any).approvalFlow.findMany({
         where: onlyActive ? { isActive: true } : undefined,
-        include: { steps: { orderBy: { order: "asc" } } },
+        include: {
+          steps: this.stepInclude,
+        },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }]
       });
 
@@ -93,7 +141,9 @@ export class ApprovalFlowService {
     try {
       const flow = await (prisma as any).approvalFlow.findUnique({
         where: { id: flowId },
-        include: { steps: { orderBy: { order: "asc" } } }
+        include: {
+          steps: this.stepInclude,
+        }
       });
 
       if (!flow) {
@@ -155,16 +205,13 @@ export class ApprovalFlowService {
           isActive: data.isActive,
           steps: data.steps
             ? {
-                create: data.steps.map((step) => ({
-                  order: step.order,
-                  role: step.role,
-                  requiresAll: step.requiresAll ?? 1,
-                  canReject: step.canReject ?? true
-                }))
+                create: data.steps.map((step) => this.buildStepCreateInput(step))
               }
             : undefined
         },
-        include: { steps: { orderBy: { order: "asc" } } }
+        include: {
+          steps: this.stepInclude,
+        }
       });
 
       return updated;
@@ -212,7 +259,9 @@ export class ApprovalFlowService {
     try {
       const flow = await (prisma as any).approvalFlow.findFirst({
         where: { isDefault: true, isActive: true },
-        include: { steps: { orderBy: { order: "asc" } } }
+        include: {
+          steps: this.stepInclude,
+        }
       });
 
       if (!flow) {
@@ -246,6 +295,28 @@ export class ApprovalFlowService {
     }
   }
 
+  static async getUsersByRoleId(roleId: string) {
+    try {
+      const users = await prisma.user.findMany({
+        where: {
+          isActive: true,
+          roleId,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: { select: { id: true, name: true } },
+        },
+        orderBy: { name: "asc" },
+      });
+
+      return users;
+    } catch (error: any) {
+      throw new Error(`Failed to fetch users by role: ${error.message}`);
+    }
+  }
+
   /**
    * Set default flow
    */
@@ -269,7 +340,9 @@ export class ApprovalFlowService {
       const updated = await (prisma as any).approvalFlow.update({
         where: { id: flowId },
         data: { isDefault: true },
-        include: { steps: { orderBy: { order: "asc" } } }
+        include: {
+          steps: this.stepInclude,
+        }
       });
 
       return updated;
@@ -306,7 +379,11 @@ export class ApprovalFlowService {
           approvalEnabled: true
         },
         include: {
-          approvalFlow: { include: { steps: { orderBy: { order: "asc" } } } }
+          approvalFlow: {
+            include: {
+              steps: this.stepInclude,
+            },
+          }
         }
       });
 
@@ -333,7 +410,11 @@ export class ApprovalFlowService {
         where: { id: projectId },
         data: { approvalEnabled: enabled },
         include: {
-          approvalFlow: { include: { steps: { orderBy: { order: "asc" } } } }
+          approvalFlow: {
+            include: {
+              steps: this.stepInclude,
+            },
+          }
         }
       });
 

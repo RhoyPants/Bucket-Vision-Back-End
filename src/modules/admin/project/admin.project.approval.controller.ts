@@ -55,28 +55,68 @@ export class AdminProjectApprovalController {
         }
       }
 
+      // Determine the resolved approvalFlowId being set
+      const resolvedFlowId =
+        approvalFlowId !== undefined
+          ? approvalFlowId || null
+          : project.approvalFlowId;
+
+      // Detect flow-removal: explicitly passing null/undefined to clear the flow
+      const isRemovingFlow =
+        approvalFlowId !== undefined && !approvalFlowId;
+
+      // Auto-activate when:
+      //  (a) flow is being removed, OR
+      //  (b) approvalEnabled is explicitly set to false
+      // In both cases, regardless of current project status
+      const shouldAutoActivate =
+        isRemovingFlow || approvalEnabled === false;
+
       // Update project
       const updateData: any = {
-        approvalFlowId:
-          approvalFlowId !== undefined
-            ? approvalFlowId || null
-            : project.approvalFlowId,
+        approvalFlowId: resolvedFlowId,
         approvalEnabled:
-          approvalEnabled !== undefined ? approvalEnabled : project.approvalEnabled
+          approvalEnabled !== undefined
+            ? approvalEnabled
+            : isRemovingFlow
+            ? false
+            : project.approvalEnabled,
       };
 
-      // If disabling approval and project is currently in a pending approval state,
-      // auto-activate the project immediately
-      const pendingStatuses = ["FOR_REVIEW", "FOR_APPROVAL"];
-      if (approvalEnabled === false && pendingStatuses.includes(project.status)) {
+      let autoActivated = false;
+
+      if (shouldAutoActivate) {
         updateData.status = "ACTIVE";
         updateData.isActive = true;
+        updateData.isLatestVersion = true;
+        autoActivated = true;
 
         // Cancel all pending approval records for this project
         await prisma.projectApproval.updateMany({
           where: { projectId, status: "PENDING" },
-          data: { status: "APPROVED", remarks: "Auto-approved: approval flow disabled by admin" }
+          data: {
+            status: "APPROVED",
+            remarks: isRemovingFlow
+              ? "Auto-approved: approval flow removed by admin"
+              : "Auto-approved: approval disabled by admin",
+          },
         });
+
+        // Archive all previous versions under the same root project
+        if (project.rootProjectId) {
+          await prisma.project.updateMany({
+            where: {
+              rootProjectId: project.rootProjectId,
+              NOT: { id: projectId },
+            },
+            data: {
+              status: "ARCHIVED",
+              isActive: false,
+              isLatestVersion: false,
+              isLocked: true,
+            },
+          });
+        }
       }
 
       const updated = await prisma.project.update({
@@ -91,15 +131,17 @@ export class AdminProjectApprovalController {
 
       return res.json({
         success: true,
-        message: approvalEnabled === false && pendingStatuses.includes(project.status)
-          ? "Approval disabled - project has been automatically activated"
+        message: autoActivated
+          ? isRemovingFlow
+            ? "Approval flow removed - project has been automatically activated"
+            : "Approval disabled - project has been automatically activated"
           : "Project approval configuration updated successfully",
         data: {
           projectId: updated.id,
           projectName: updated.name,
           projectStatus: updated.status,
           approvalEnabled: updated.approvalEnabled,
-          autoActivated: approvalEnabled === false && pendingStatuses.includes(project.status),
+          autoActivated,
           approvalFlow: updated.approvalFlow
             ? {
                 id: updated.approvalFlow.id,
@@ -107,6 +149,7 @@ export class AdminProjectApprovalController {
                 steps: updated.approvalFlow.steps.map((s: any) => ({
                   order: s.order,
                   role: s.role,
+                  stepExecutionMode: s.stepExecutionMode,
                   requiresAll: s.requiresAll,
                   canReject: s.canReject
                 }))
@@ -166,6 +209,7 @@ export class AdminProjectApprovalController {
                 steps: project.approvalFlow.steps.map((s: any) => ({
                   order: s.order,
                   role: s.role,
+                  stepExecutionMode: s.stepExecutionMode,
                   requiresAll: s.requiresAll,
                   canReject: s.canReject
                 }))

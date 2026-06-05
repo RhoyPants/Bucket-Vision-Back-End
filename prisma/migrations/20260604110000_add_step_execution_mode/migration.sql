@@ -1,0 +1,2 @@
+ALTER TABLE "ApprovalStep"
+ADD COLUMN "stepExecutionMode" TEXT NOT NULL DEFAULT 'PARALLEL';

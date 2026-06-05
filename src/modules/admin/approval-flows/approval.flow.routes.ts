@@ -18,6 +18,13 @@ router.get(
   ApprovalFlowController.getDefaultFlow
 );
 
+router.get(
+  "/roles/:roleId/users",
+  authenticate,
+  authorize("ADMIN", "READ"),
+  ApprovalFlowController.getUsersByRole
+);
+
 // POST /api/admin/approval-flows
 // Create new approval flow
 router.post(

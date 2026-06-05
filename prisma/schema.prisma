@@ -265,6 +265,7 @@ model ApprovalStep {
   flowId           String
   order            Int
   role             String?
+  stepExecutionMode String            @default("PARALLEL")
   requiresAll      Int                @default(1)
   canReject        Boolean            @default(true)
   createdAt        DateTime           @default(now())

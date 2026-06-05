@@ -2,6 +2,154 @@ import prisma from "../../config/prisma";
 import { ProjectStatus, ApprovalLevel } from "@prisma/client";
 
 export class ApprovalService {
+  private normalizeStepMode(mode: string | null | undefined): "SEQUENTIAL" | "PARALLEL" {
+    return mode === "SEQUENTIAL" ? "SEQUENTIAL" : "PARALLEL";
+  }
+
+  private async resolveStepApproverIds(step: any): Promise<string[]> {
+    if (step.useSpecificUsers) {
+      const specificIds = (step.assignedUsers || [])
+        .map((assignment: any) => assignment.userId)
+        .filter(Boolean);
+
+      if (specificIds.length === 0) {
+        throw new Error(
+          `Step ${step.order} is configured to use specific users but none are assigned`
+        );
+      }
+
+      const users = await prisma.user.findMany({
+        where: {
+          id: { in: specificIds },
+          isActive: true,
+        },
+        select: { id: true },
+      });
+
+      if (users.length === 0) {
+        throw new Error(`No active assigned users found for step ${step.order}`);
+      }
+
+      return users.map((user) => user.id);
+    }
+
+    const roleApprovers = await this.getUsersByRoleInFlow(step.role);
+    if (roleApprovers.length === 0) {
+      throw new Error(
+        `No users found with role "${step.role}" for approval flow step ${step.order}`
+      );
+    }
+
+    return roleApprovers.map((u) => u.id);
+  }
+
+  private async getCurrentPendingOrder(projectId: string): Promise<number | null> {
+    const firstPending = await prisma.projectApproval.findFirst({
+      where: { projectId, status: "PENDING" },
+      orderBy: { order: "asc" },
+      select: { order: true },
+    });
+
+    return firstPending?.order ?? null;
+  }
+
+  private async applyPostApprovalTransition(projectId: string): Promise<ProjectStatus | null> {
+    const remainingPending = await prisma.projectApproval.findMany({
+      where: { projectId, status: "PENDING" },
+      select: { order: true, level: true, approver: { select: { id: true } } },
+      orderBy: { order: "asc" },
+    });
+
+    if (remainingPending.length === 0) {
+      return "ACTIVE";
+    }
+
+    const nextOrder = remainingPending[0].order;
+    const nextLevel = remainingPending[0].level;
+
+    const nextStatus: ProjectStatus = nextLevel === "OP" ? "FOR_APPROVAL" : "FOR_REVIEW";
+
+    const nextApprovers = remainingPending
+      .filter((approval) => approval.order === nextOrder)
+      .map((approval) => approval.approver.id);
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true, versionNumber: true },
+    });
+
+    if (project) {
+      for (const userId of nextApprovers) {
+        await this.notifyApprover(
+          userId,
+          projectId,
+          `Project "${project.name}" (v${project.versionNumber}) is pending your approval (Step ${nextOrder}: ${nextLevel})`
+        );
+      }
+    }
+
+    return nextStatus;
+  }
+
+  private async buildStepExecutionState(projectId: string): Promise<
+    Record<number, { mode: "SEQUENTIAL" | "PARALLEL"; approvedIds: string[]; pendingIds: string[] }>
+  > {
+    const approvals = await prisma.projectApproval.findMany({
+      where: { projectId },
+      select: {
+        order: true,
+        approverId: true,
+        status: true,
+        project: {
+          select: {
+            approvalFlow: {
+              select: {
+                steps: {
+                  select: {
+                    order: true,
+                    stepExecutionMode: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const first = approvals[0];
+    const modeByOrder = new Map<number, "SEQUENTIAL" | "PARALLEL">();
+    const steps = first?.project?.approvalFlow?.steps || [];
+    for (const step of steps) {
+      modeByOrder.set(step.order, this.normalizeStepMode(step.stepExecutionMode));
+    }
+
+    const state: Record<
+      number,
+      { mode: "SEQUENTIAL" | "PARALLEL"; approvedIds: string[]; pendingIds: string[] }
+    > = {};
+
+    for (const approval of approvals) {
+      if (!state[approval.order]) {
+        state[approval.order] = {
+          mode: modeByOrder.get(approval.order) || "PARALLEL",
+          approvedIds: [],
+          pendingIds: [],
+        };
+      }
+
+      if (approval.status === "APPROVED") {
+        state[approval.order].approvedIds.push(approval.approverId);
+      }
+
+      if (approval.status === "PENDING") {
+        state[approval.order].pendingIds.push(approval.approverId);
+      }
+    }
+
+    return state;
+  }
+
   /**
    * Check if approval system is enabled
    */
@@ -118,7 +266,12 @@ export class ApprovalService {
       include: {
         owner: { include: { role: true } },
         approvalFlow: {
-          include: { steps: { orderBy: { order: "asc" } } }
+          include: {
+            steps: {
+              orderBy: { order: "asc" },
+              include: { assignedUsers: true },
+            },
+          },
         }
       }
     });
@@ -246,7 +399,12 @@ export class ApprovalService {
       // Use default flow
       flow = await (prisma as any).approvalFlow.findFirst({
         where: { isDefault: true, isActive: true },
-        include: { steps: { orderBy: { order: "asc" } } }
+        include: {
+          steps: {
+            orderBy: { order: "asc" },
+            include: { assignedUsers: true },
+          },
+        }
       });
 
       if (!flow) {
@@ -264,15 +422,11 @@ export class ApprovalService {
     const createdApprovals: any[] = [];
 
     for (const step of flow.steps) {
-      // Get users with the required role
-      const approvers = await this.getUsersByRoleInFlow(step.role);
+      const approverIds = await this.resolveStepApproverIds(step);
 
-      if (approvers.length === 0) {
-        throw new Error(`No users found with role "${step.role}" for approval flow step ${step.order}`);
+      if (approverIds.length === 0) {
+        throw new Error(`No approvers configured for step ${step.order}`);
       }
-
-      // Create approval record for each approver (if requiresAll) or first one
-      const approverIds = step.requiresAll ? approvers.map(a => a.id) : [approvers[0].id];
 
       for (const approverId of approverIds) {
         const approval = await prisma.projectApproval.create({
@@ -326,7 +480,12 @@ export class ApprovalService {
       flow: {
         id: flow.id,
         name: flow.name,
-        steps: flow.steps.map((s: any) => ({ order: s.order, role: s.role }))
+        steps: flow.steps.map((s: any) => ({
+          order: s.order,
+          role: s.role,
+          stepExecutionMode: this.normalizeStepMode(s.stepExecutionMode),
+          useSpecificUsers: !!s.useSpecificUsers,
+        }))
       }
     };
   }
@@ -370,6 +529,8 @@ export class ApprovalService {
       throw new Error("Project not found");
     }
 
+    const currentOrder = await this.getCurrentPendingOrder(projectId);
+
     // Find the approval record for this approver
     const approval = await prisma.projectApproval.findFirst({
       where: {
@@ -383,6 +544,37 @@ export class ApprovalService {
       throw new Error("No pending approval found for this approver");
     }
 
+    const step = await prisma.approvalStep.findFirst({
+      where: {
+        flowId: project.approvalFlowId || undefined,
+        order: approval.order,
+      },
+      select: {
+        stepExecutionMode: true,
+      },
+    });
+
+    const stepMode = this.normalizeStepMode(step?.stepExecutionMode);
+
+    if (currentOrder !== null && approval.order !== currentOrder) {
+      throw new Error("This approval step is not active yet");
+    }
+
+    if (stepMode === "SEQUENTIAL") {
+      const earlierPendingInStep = await prisma.projectApproval.findFirst({
+        where: {
+          projectId,
+          order: approval.order,
+          status: "PENDING",
+          createdAt: { lt: approval.createdAt },
+        },
+      });
+
+      if (earlierPendingInStep) {
+        throw new Error("This step is sequential. Please wait for the previous approver in this step.");
+      }
+    }
+
     // Update approval
     const updatedApproval = await prisma.projectApproval.update({
       where: { id: approval.id },
@@ -392,39 +584,10 @@ export class ApprovalService {
       },
     });
 
-    let newProjectStatus = project.status;
+    const postStatus = await this.applyPostApprovalTransition(projectId);
+    const newProjectStatus = postStatus || project.status;
 
-    if (approval.level === "BU_HEAD") {
-      // Check if all BU Heads have approved
-      const allBUApproved = await this.checkAllBUHeadsApproved(projectId);
-
-      if (allBUApproved) {
-        // Move to OP level
-        newProjectStatus = "FOR_APPROVAL";
-
-        // Notify OP
-        const opApproval = await prisma.projectApproval.findFirst({
-          where: {
-            projectId,
-            level: "OP",
-            status: "PENDING",
-          },
-          include: { approver: true },
-        });
-
-        if (opApproval?.approver) {
-          await this.notifyApprover(
-            opApproval.approver.id,
-            projectId,
-            `All BU Heads have approved. Project "${project.name}" (v${project.versionNumber}) is now ready for OP approval`
-          );
-        }
-      }
-    } else if (approval.level === "OP") {
-      // OP approval -> Project goes ACTIVE
-      newProjectStatus = "ACTIVE";
-
-      // Handle versioning: archive old versions when new version is approved
+    if (newProjectStatus === "ACTIVE") {
       if (project.rootProjectId) {
         await prisma.project.updateMany({
           where: {
@@ -440,7 +603,6 @@ export class ApprovalService {
         });
       }
 
-      // Activate this project
       await prisma.project.update({
         where: { id: projectId },
         data: {
@@ -449,7 +611,6 @@ export class ApprovalService {
         },
       });
 
-      // Notify PIC
       await this.notifyProjectOwner(
         projectId,
         `Project "${project.name}" (v${project.versionNumber}) has been approved and activated!`,
@@ -715,12 +876,50 @@ export class ApprovalService {
         return [];
       }
 
-      // Step 2: Filter - Only show projects where ALL PREVIOUS APPROVALS are already APPROVED
-      // This ensures sequential workflow (must approve in order)
+      // Step 2: Filter pending approvals to those currently actionable for this user.
       const eligibleApprovals: any[] = [];
 
       for (const currentApproval of pendingApprovals) {
-        // Get all approvals for this project that have LOWER order (previous steps)
+        const stepState = await this.buildStepExecutionState(currentApproval.projectId);
+
+        const previousOrders = Object.keys(stepState)
+          .map((k) => Number(k))
+          .filter((order) => order < currentApproval.order);
+
+        const allPreviousOrdersDone = previousOrders.every((order) => {
+          const state = stepState[order];
+          return state.pendingIds.length === 0;
+        });
+
+        if (!allPreviousOrdersDone) {
+          continue;
+        }
+
+        const currentStepState = stepState[currentApproval.order];
+        if (!currentStepState) {
+          continue;
+        }
+
+        if (currentStepState.mode === "SEQUENTIAL") {
+          const createdInOrder = await prisma.projectApproval.findMany({
+            where: {
+              projectId: currentApproval.projectId,
+              order: currentApproval.order,
+            },
+            select: {
+              approverId: true,
+              status: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "asc" },
+          });
+
+          const firstPending = createdInOrder.find((item) => item.status === "PENDING");
+          if (!firstPending || firstPending.approverId !== userId) {
+            continue;
+          }
+        }
+
         const previousApprovals = await prisma.projectApproval.findMany({
           where: {
             projectId: currentApproval.projectId,
@@ -728,12 +927,10 @@ export class ApprovalService {
           }
         });
 
-        // Check if ALL previous approvals are APPROVED
-        const allPreviousApproved = previousApprovals.every(
-          (approval: any) => approval.status === "APPROVED"
-        );
+        const allPreviousApproved = previousApprovals.every((approval: any) => {
+          return approval.status === "APPROVED";
+        });
 
-        // Only add if all previous steps are approved (or if this is the first step, previousApprovals will be empty)
         if (allPreviousApproved) {
           eligibleApprovals.push(currentApproval);
         }

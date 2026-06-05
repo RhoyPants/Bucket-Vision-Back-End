@@ -8,10 +8,31 @@ import {
 } from "./project.dto";
 import { getProjectDashboard } from "./project.dashboard.service";
 import { generateProjectTimeline } from "../timeline/timeline.service";
+import { approvalService } from "../approval/approval.service";
 
 
 
 export class ProjectController {
+  private static async enrichBusinessUnitDetails(projects: any[]) {
+    const buIds = [
+      ...new Set(projects.map((p: any) => p.businessUnit).filter(Boolean)),
+    ];
+
+    const businessUnits = buIds.length
+      ? await prisma.businessUnit.findMany({
+          where: { id: { in: buIds as string[] } },
+          select: { id: true, code: true, name: true },
+        })
+      : [];
+
+    const buMap = Object.fromEntries(businessUnits.map((bu) => [bu.id, bu]));
+
+    return projects.map((p: any) => ({
+      ...p,
+      businessUnitDetails: p.businessUnit ? buMap[p.businessUnit] ?? null : null,
+    }));
+  }
+
     // 🔥 DASHBOARD
 static async getDashboard(
   req: Request<ProjectParamsDTO>,
@@ -185,7 +206,58 @@ static async getDashboard(
         });
       }
 
-      res.json(projects);
+      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  static async getMyApprovals(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const projects = await approvalService.getPendingProjectsForApproval(userId);
+      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  static async getMyRequests(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const projects = await prisma.project.findMany({
+        where: { ownerId: userId, status: { not: "DRAFT" } },
+        orderBy: { createdAt: "desc" },
+        include: {
+          projectMembers: {
+            include: { user: { select: { id: true, name: true, email: true } } },
+          },
+        },
+      });
+      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  static async getMyDrafts(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const projects = await prisma.project.findMany({
+        where: { ownerId: userId, status: "DRAFT" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          projectMembers: {
+            include: { user: { select: { id: true, name: true, email: true } } },
+          },
+        },
+      });
+      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      res.json(enriched);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

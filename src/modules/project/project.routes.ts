@@ -13,6 +13,30 @@ router.get(
   ProjectController.getAll,
 );
 
+// GET MY APPROVAL QUEUE
+router.get(
+  "/my-approvals",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  ProjectController.getMyApprovals,
+);
+
+// GET MY REQUESTS (owned, non-draft)
+router.get(
+  "/my-requests",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  ProjectController.getMyRequests,
+);
+
+// GET MY DRAFTS (owned drafts)
+router.get(
+  "/my-drafts",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  ProjectController.getMyDrafts,
+);
+
 // GET ONE
 router.get(
   "/:id",
