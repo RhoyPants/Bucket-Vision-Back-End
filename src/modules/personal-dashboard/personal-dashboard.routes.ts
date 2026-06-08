@@ -89,4 +89,53 @@ router.get(
   personalDashboardController.getChartData
 );
 
+router.get(
+  "/:id/notes",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "READ"),
+  personalDashboardController.listNotes
+);
+
+router.post(
+  "/:id/notes",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "CREATE"),
+  personalDashboardController.createNote
+);
+
+router.put(
+  "/:id/notes/:noteId",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  personalDashboardController.updateNote
+);
+
+router.delete(
+  "/:id/notes/:noteId",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "DELETE"),
+  personalDashboardController.deleteNote
+);
+
+router.post(
+  "/:id/notes/:noteId/items",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "CREATE"),
+  personalDashboardController.addNoteItem
+);
+
+router.put(
+  "/:id/notes/:noteId/items/:itemId",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  personalDashboardController.updateNoteItem
+);
+
+router.delete(
+  "/:id/notes/:noteId/items/:itemId",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "DELETE"),
+  personalDashboardController.deleteNoteItem
+);
+
 export default router;

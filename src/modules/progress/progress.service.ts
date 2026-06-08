@@ -188,8 +188,10 @@ export async function addProgressLog(data: {
   dailyPercent: number;
   remarks?: string;
   photoUrl?: string;
-  latitude?: number;
-  longitude?: number;
+  attachmentUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  userId?: string;
 }) {
   // 1. Validate
   if (data.dailyPercent < 0 || data.dailyPercent > 100) {
@@ -197,7 +199,7 @@ export async function addProgressLog(data: {
   }
 
   // 2. Create / Update log
-  await prisma.progressLog.upsert({
+  const log = await prisma.progressLog.upsert({
     where: {
       subtaskId_date: {
         subtaskId: data.subtaskId,
@@ -208,8 +210,10 @@ export async function addProgressLog(data: {
       dailyPercent: data.dailyPercent,
       remarks: data.remarks,
       photoUrl: data.photoUrl,
+      attachmentUrl: data.attachmentUrl,
       latitude: data.latitude,
       longitude: data.longitude,
+      userId: data.userId,
     },
     create: {
       subtaskId: data.subtaskId,
@@ -218,11 +222,17 @@ export async function addProgressLog(data: {
       cumulativePercent: 0,
       remarks: data.remarks,
       photoUrl: data.photoUrl,
+      attachmentUrl: data.attachmentUrl,
       latitude: data.latitude,
       longitude: data.longitude,
+      userId: data.userId,
     },
   });
 
   // 3. Recompute everything
   await recomputeSubtaskProgress(data.subtaskId);
+
+  return await prisma.progressLog.findUnique({
+    where: { id: log.id },
+  });
 }

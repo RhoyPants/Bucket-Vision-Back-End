@@ -62,3 +62,28 @@ export interface ChartConfigDTO {
   isEnabled?: boolean;
   sortOrder?: number;
 }
+
+export interface DashboardNoteItemDTO {
+  text: string;
+  isDone?: boolean;
+  sortOrder?: number;
+}
+
+export interface CreateDashboardNoteDTO {
+  title?: string;
+  content?: string;
+  sortOrder?: number;
+  items?: DashboardNoteItemDTO[];
+}
+
+export interface UpdateDashboardNoteDTO {
+  title?: string | null;
+  content?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateDashboardNoteItemDTO {
+  text?: string;
+  isDone?: boolean;
+  sortOrder?: number;
+}

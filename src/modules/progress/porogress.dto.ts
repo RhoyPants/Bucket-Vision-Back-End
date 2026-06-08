@@ -8,8 +8,10 @@ export interface CreateProgressDTO {
   dailyPercent: number;
   remarks?: string;
   photoUrl?: string;
-  latitude?: any;
-  longitude?: any;
+  attachmentUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  userId?: string;
 }
 
 export interface UpdateProgressDTO {

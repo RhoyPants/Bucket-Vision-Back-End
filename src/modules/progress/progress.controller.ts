@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { addProgressLog, recomputeSubtaskProgress } from "./progress.service";
 import { getSCurve as getSCurveData } from "./scurve.service";
+import { uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
 
 import {
   GetBySubtaskParamsDTO,
@@ -51,6 +52,7 @@ export async function addProgress(req: Request, res: Response) {
     const { subtaskId, date, dailyPercent, remarks } = req.body;
 
     const file = (req as any).file;
+    const userId = (req as any).user?.id;
 
     // 🔥 FIX: parse everything properly
     const parsedDaily = Number(dailyPercent);
@@ -66,21 +68,36 @@ export async function addProgress(req: Request, res: Response) {
       throw new Error("dailyPercent must be between 0 and 100");
     }
 
+    let photoUrl: string | undefined;
+
+    if (file?.buffer) {
+      const uploaded = await uploadBufferToSharePoint({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        folder: "progress",
+      });
+
+      photoUrl = uploaded.webUrl || uploaded.downloadUrl || undefined;
+    }
+
     const progressData: CreateProgressDTO = {
       subtaskId,
       date: new Date(date),
       dailyPercent: parsedDaily, // ✅ FIXED
       remarks: remarks || null,
-    //   photoUrl: file ? `/uploads/${file.filename}` : null,
+      photoUrl,
       latitude: parsedLat,
       longitude: parsedLng,
+      userId,
     };
 
-    await addProgressLog(progressData);
+    const createdLog = await addProgressLog(progressData);
 
     res.json({
       success: true,
       message: "Progress updated successfully",
+      data: createdLog,
     } as ProgressResponseDTO);
   } catch (error: any) {
     res.status(400).json({

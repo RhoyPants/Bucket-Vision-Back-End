@@ -504,9 +504,37 @@ model PersonalDashboard {
   project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   kpis        DashboardKpi[]
   charts      DashboardChartConfig[]
+  notes       DashboardNote[]
 
   @@index([userId])
   @@index([projectId])
+}
+
+model DashboardNote {
+  id          String               @id @default(uuid())
+  dashboardId String
+  title       String?
+  content     String?
+  sortOrder   Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  dashboard   PersonalDashboard    @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  items       DashboardNoteItem[]
+
+  @@index([dashboardId])
+}
+
+model DashboardNoteItem {
+  id        String        @id @default(uuid())
+  noteId    String
+  text      String
+  isDone    Boolean       @default(false)
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  note      DashboardNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
 }
 
 model DashboardKpi {

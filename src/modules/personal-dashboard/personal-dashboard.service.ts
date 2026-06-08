@@ -3,9 +3,12 @@ import { getSCurve } from "../progress/scurve.service";
 import {
   ChartConfigDTO,
   CreateDashboardKpiDTO,
+  CreateDashboardNoteDTO,
   CreatePersonalDashboardDTO,
   KpiThresholdDTO,
   SourcePreviewQueryDTO,
+  UpdateDashboardNoteDTO,
+  UpdateDashboardNoteItemDTO,
   UpdateDashboardKpiDTO,
   UpdatePersonalDashboardDTO,
 } from "./personal-dashboard.dto";
@@ -34,6 +37,10 @@ export class PersonalDashboardService {
         project: { select: { id: true, name: true, progress: true, status: true } },
         kpis: { include: { thresholds: true } },
         charts: { orderBy: { sortOrder: "asc" } },
+        notes: {
+          include: { items: { orderBy: { sortOrder: "asc" } } },
+          orderBy: { sortOrder: "asc" },
+        },
       },
     });
 
@@ -74,6 +81,10 @@ export class PersonalDashboardService {
           project: { select: { id: true, name: true, progress: true, status: true } },
           kpis: { include: { thresholds: true } },
           charts: { orderBy: { sortOrder: "asc" } },
+          notes: {
+            include: { items: { orderBy: { sortOrder: "asc" } } },
+            orderBy: { sortOrder: "asc" },
+          },
         },
       });
 
@@ -99,6 +110,10 @@ export class PersonalDashboardService {
         project: { select: { id: true, name: true, progress: true, status: true } },
         kpis: { include: { thresholds: true } },
         charts: { orderBy: { sortOrder: "asc" } },
+        notes: {
+          include: { items: { orderBy: { sortOrder: "asc" } } },
+          orderBy: { sortOrder: "asc" },
+        },
       },
     });
 
@@ -361,6 +376,128 @@ export class PersonalDashboardService {
     return this.getById(dashboardId, userId);
   }
 
+  async listNotes(dashboardId: string, userId: string) {
+    await this.findOwnedDashboard(dashboardId, userId);
+
+    return await (prisma as any).dashboardNote.findMany({
+      where: { dashboardId },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  async createNote(dashboardId: string, userId: string, dto: CreateDashboardNoteDTO) {
+    await this.findOwnedDashboard(dashboardId, userId);
+
+    const note = await (prisma as any).dashboardNote.create({
+      data: {
+        dashboardId,
+        title: dto.title?.trim() || null,
+        content: dto.content?.trim() || null,
+        sortOrder: dto.sortOrder ?? 0,
+        items: dto.items?.length
+          ? {
+              create: dto.items.map((item, index) => ({
+                text: item.text.trim(),
+                isDone: !!item.isDone,
+                sortOrder: item.sortOrder ?? index,
+              })),
+            }
+          : undefined,
+      },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+    });
+
+    return note;
+  }
+
+  async updateNote(
+    dashboardId: string,
+    noteId: string,
+    userId: string,
+    dto: UpdateDashboardNoteDTO
+  ) {
+    await this.findOwnedDashboard(dashboardId, userId);
+    await this.findNote(dashboardId, noteId);
+
+    const note = await (prisma as any).dashboardNote.update({
+      where: { id: noteId },
+      data: {
+        title: dto.title === undefined ? undefined : dto.title?.trim() || null,
+        content: dto.content === undefined ? undefined : dto.content?.trim() || null,
+        sortOrder: dto.sortOrder,
+      },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+    });
+
+    return note;
+  }
+
+  async deleteNote(dashboardId: string, noteId: string, userId: string) {
+    await this.findOwnedDashboard(dashboardId, userId);
+    await this.findNote(dashboardId, noteId);
+
+    await (prisma as any).dashboardNote.delete({ where: { id: noteId } });
+    return { id: noteId };
+  }
+
+  async addNoteItem(
+    dashboardId: string,
+    noteId: string,
+    userId: string,
+    dto: { text: string; isDone?: boolean; sortOrder?: number }
+  ) {
+    await this.findOwnedDashboard(dashboardId, userId);
+    await this.findNote(dashboardId, noteId);
+
+    if (!dto.text || dto.text.trim().length === 0) {
+      throw new Error("Checklist item text is required");
+    }
+
+    const item = await (prisma as any).dashboardNoteItem.create({
+      data: {
+        noteId,
+        text: dto.text.trim(),
+        isDone: !!dto.isDone,
+        sortOrder: dto.sortOrder ?? 0,
+      },
+    });
+
+    return item;
+  }
+
+  async updateNoteItem(
+    dashboardId: string,
+    noteId: string,
+    itemId: string,
+    userId: string,
+    dto: UpdateDashboardNoteItemDTO
+  ) {
+    await this.findOwnedDashboard(dashboardId, userId);
+    await this.findNote(dashboardId, noteId);
+    await this.findNoteItem(noteId, itemId);
+
+    const item = await (prisma as any).dashboardNoteItem.update({
+      where: { id: itemId },
+      data: {
+        text: dto.text === undefined ? undefined : dto.text.trim(),
+        isDone: dto.isDone,
+        sortOrder: dto.sortOrder,
+      },
+    });
+
+    return item;
+  }
+
+  async deleteNoteItem(dashboardId: string, noteId: string, itemId: string, userId: string) {
+    await this.findOwnedDashboard(dashboardId, userId);
+    await this.findNote(dashboardId, noteId);
+    await this.findNoteItem(noteId, itemId);
+
+    await (prisma as any).dashboardNoteItem.delete({ where: { id: itemId } });
+    return { id: itemId };
+  }
+
   async getChartData(dashboardId: string, userId: string) {
     const dashboard = await this.findOwnedDashboard(dashboardId, userId);
     const enriched = await this.enrichDashboard(dashboard);
@@ -405,13 +542,105 @@ export class PersonalDashboardService {
     const progress = await this.getProgressValue(kpi.sourceType, kpi);
     const status = evaluateProgressStatus(progress, thresholds as KpiThresholdDTO[]);
 
+    // Enrich with source details (name/title and calculated dates)
+    const sourceDetails = await this.getSourceDetails(kpi);
+
     return {
       ...kpi,
       thresholds,
       currentValue: Number(progress.toFixed(2)),
       preview: buildProgressPreview(kpi.sourceType, progress),
       status,
+      sourceDetails,
     };
+  }
+
+  private async getSourceDetails(kpi: any) {
+    const sourceType = kpi.sourceType;
+
+    if (sourceType === "SUBTASK") {
+      const subtask = await prisma.subtask.findUnique({
+        where: { id: kpi.subtaskId },
+        select: { title: true, projectedStartDate: true, projectedEndDate: true },
+      });
+      return subtask
+        ? {
+            title: subtask.title,
+            expectedStartDate: subtask.projectedStartDate,
+            expectedEndDate: subtask.projectedEndDate,
+          }
+        : null;
+    }
+
+    if (sourceType === "TASK") {
+      const task = await prisma.task.findUnique({
+        where: { id: kpi.taskId },
+        select: { title: true },
+      });
+
+      if (!task) return null;
+
+      // Calculate dates from task's subtasks
+      const subtasks = await prisma.subtask.findMany({
+        where: { taskId: kpi.taskId },
+        select: { projectedStartDate: true, projectedEndDate: true },
+      });
+
+      const starts = subtasks
+        .map((s) => s.projectedStartDate)
+        .filter(Boolean) as Date[];
+      const ends = subtasks.map((s) => s.projectedEndDate).filter(Boolean) as Date[];
+
+      return {
+        title: task.title,
+        expectedStartDate:
+          starts.length > 0 ? new Date(Math.min(...starts.map((d) => d.getTime()))) : null,
+        expectedEndDate:
+          ends.length > 0 ? new Date(Math.max(...ends.map((d) => d.getTime()))) : null,
+      };
+    }
+
+    if (sourceType === "SCOPE") {
+      const scope = await prisma.scope.findUnique({
+        where: { id: kpi.scopeId },
+        select: { name: true },
+      });
+
+      if (!scope) return null;
+
+      // Calculate dates from scope's subtasks
+      const subtasks = await prisma.subtask.findMany({
+        where: { task: { scopeId: kpi.scopeId } },
+        select: { projectedStartDate: true, projectedEndDate: true },
+      });
+
+      const starts = subtasks
+        .map((s) => s.projectedStartDate)
+        .filter(Boolean) as Date[];
+      const ends = subtasks.map((s) => s.projectedEndDate).filter(Boolean) as Date[];
+
+      return {
+        title: scope.name,
+        expectedStartDate:
+          starts.length > 0 ? new Date(Math.min(...starts.map((d) => d.getTime()))) : null,
+        expectedEndDate:
+          ends.length > 0 ? new Date(Math.max(...ends.map((d) => d.getTime()))) : null,
+      };
+    }
+
+    // PROJECT
+    const project = await prisma.project.findUnique({
+      where: { id: kpi.projectId },
+      select: { name: true, startDate: true, expectedEndDate: true },
+    });
+
+    return project
+      ? {
+          title: project.name,
+          expectedStartDate: project.startDate,
+          expectedEndDate: project.expectedEndDate,
+        }
+      : null;
   }
 
   private async findOwnedDashboard(id: string, userId: string) {
@@ -421,6 +650,10 @@ export class PersonalDashboardService {
         project: { select: { id: true, name: true, progress: true, status: true } },
         kpis: { include: { thresholds: true } },
         charts: { orderBy: { sortOrder: "asc" } },
+        notes: {
+          include: { items: { orderBy: { sortOrder: "asc" } } },
+          orderBy: { sortOrder: "asc" },
+        },
       },
     });
 
@@ -442,6 +675,31 @@ export class PersonalDashboardService {
     }
 
     return kpi;
+  }
+
+  private async findNote(dashboardId: string, noteId: string) {
+    const note = await (prisma as any).dashboardNote.findFirst({
+      where: { id: noteId, dashboardId },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+    });
+
+    if (!note) {
+      throw new Error("Note not found");
+    }
+
+    return note;
+  }
+
+  private async findNoteItem(noteId: string, itemId: string) {
+    const item = await (prisma as any).dashboardNoteItem.findFirst({
+      where: { id: itemId, noteId },
+    });
+
+    if (!item) {
+      throw new Error("Checklist item not found");
+    }
+
+    return item;
   }
 
   private validateDashboardInput(dto: CreatePersonalDashboardDTO) {
