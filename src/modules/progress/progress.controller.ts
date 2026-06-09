@@ -2,7 +2,10 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { addProgressLog, recomputeSubtaskProgress } from "./progress.service";
 import { getSCurve as getSCurveData } from "./scurve.service";
-import { uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
+import {
+  fetchSharePointFile,
+  uploadBufferToSharePoint,
+} from "../../services/sharepoint-upload.service";
 
 import {
   GetBySubtaskParamsDTO,
@@ -30,11 +33,28 @@ export async function getBySubtask(req: Request, res: Response) {
     const logs = await prisma.progressLog.findMany({
       where: { subtaskId },
       orderBy: { date: "asc" },
+      include: { attachments: { orderBy: { sortOrder: "asc" } } },
     });
+
+    const authHeader = req.headers.authorization;
+    const bearerToken =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : "";
+
+    const logsWithProxy = logs.map((log) => ({
+      ...log,
+      attachments: log.attachments.map((attachment) => ({
+        ...attachment,
+        proxyUrl: `/api/progress/attachments/${attachment.id}/file${
+          bearerToken ? `?token=${encodeURIComponent(bearerToken)}` : ""
+        }`,
+      })),
+    }));
 
     res.json({
       success: true,
-      data: logs,
+      data: logsWithProxy,
     } as ProgressResponseDTO);
   } catch (error: any) {
     res.status(500).json({
@@ -51,7 +71,13 @@ export async function addProgress(req: Request, res: Response) {
   try {
     const { subtaskId, date, dailyPercent, remarks } = req.body;
 
-    const file = (req as any).file;
+    const rawFiles = (req as any).files;
+    const files: Express.Multer.File[] = Array.isArray(rawFiles)
+      ? rawFiles
+      : [
+          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
+          ...((rawFiles?.photo as Express.Multer.File[]) ?? []),
+        ];
     const userId = (req as any).user?.id;
 
     // 🔥 FIX: parse everything properly
@@ -68,28 +94,34 @@ export async function addProgress(req: Request, res: Response) {
       throw new Error("dailyPercent must be between 0 and 100");
     }
 
-    let photoUrl: string | undefined;
-
-    if (file?.buffer) {
-      const uploaded = await uploadBufferToSharePoint({
-        buffer: file.buffer,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        folder: "progress",
-      });
-
-      photoUrl = uploaded.webUrl || uploaded.downloadUrl || undefined;
-    }
+    // Upload all files to SharePoint in parallel
+    const uploadedAttachments = await Promise.all(
+      files.map(async (file, i) => {
+        const result = await uploadBufferToSharePoint({
+          buffer: file.buffer,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          folder: "progress",
+        });
+        return {
+          url: result.downloadUrl || result.webUrl || "",
+          name: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          sortOrder: i,
+        };
+      })
+    );
 
     const progressData: CreateProgressDTO = {
       subtaskId,
       date: new Date(date),
       dailyPercent: parsedDaily, // ✅ FIXED
       remarks: remarks || null,
-      photoUrl,
       latitude: parsedLat,
       longitude: parsedLng,
       userId,
+      attachments: uploadedAttachments,
     };
 
     const createdLog = await addProgressLog(progressData);
@@ -231,6 +263,62 @@ export async function getSCurve(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: error.message || "Internal server error",
+    });
+  }
+}
+
+// ========================================
+// DELETE A SINGLE ATTACHMENT
+// ========================================
+export async function deleteProgressAttachment(req: Request, res: Response) {
+  try {
+    let { attachmentId } = req.params;
+    if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+
+    await prisma.progressLogAttachment.delete({
+      where: { id: attachmentId },
+    });
+
+    res.json({ success: true, message: "Attachment deleted" });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+// ========================================
+// STREAM A SINGLE ATTACHMENT (CORS-SAFE)
+// ========================================
+export async function streamProgressAttachment(req: Request, res: Response) {
+  try {
+    let { attachmentId } = req.params;
+    if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+
+    const attachment = await prisma.progressLogAttachment.findUnique({
+      where: { id: attachmentId },
+    });
+
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        message: "Attachment not found",
+      });
+    }
+
+    const file = await fetchSharePointFile(attachment.url);
+    const contentType = attachment.mimeType || file.contentType;
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${encodeURIComponent(attachment.name)}"`
+    );
+    res.setHeader("Cache-Control", "private, max-age=300");
+
+    res.send(file.buffer);
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
     });
   }
 }

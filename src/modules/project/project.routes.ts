@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { ProjectController, assignProjectMember, getProjectMembers, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole } from "./project.controller";
+import { ProjectController, assignProjectMember, getProjectMembers, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole, uploadProjectAttachment, getProjectAttachments, deleteProjectAttachment, streamProjectAttachment } from "./project.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
+import upload from "../../middleware/upload.middleware";
 
 const router = Router();
 
@@ -50,6 +51,7 @@ router.post(
   "/",
   authenticate,
   authorize("PROJECTS", "CREATE"),
+  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   ProjectController.create,
 );
 
@@ -132,6 +134,38 @@ router.post(
   authenticate,
   authorize("PROJECTS", "UPDATE"),
   removeProjectMember
+);
+
+// ========================================
+// 📎 PROJECT ATTACHMENTS
+// ========================================
+router.post(
+  "/:id/attachments",
+  authenticate,
+  authorize("PROJECTS", "UPDATE"),
+  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
+  uploadProjectAttachment
+);
+
+router.get(
+  "/:id/attachments",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  getProjectAttachments
+);
+
+router.delete(
+  "/attachments/:attachmentId",
+  authenticate,
+  authorize("PROJECTS", "UPDATE"),
+  deleteProjectAttachment
+);
+
+router.get(
+  "/attachments/:attachmentId/file",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  streamProjectAttachment
 );
 
 export default router;

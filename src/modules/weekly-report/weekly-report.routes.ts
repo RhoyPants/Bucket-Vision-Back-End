@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { WeeklyReportController } from "./weekly-report.controller";
+import { WeeklyReportController, uploadWeeklyReportAttachment, deleteWeeklyReportAttachment, streamWeeklyReportAttachment } from "./weekly-report.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
+import upload from "../../middleware/upload.middleware";
 
 const router = Router();
 
@@ -91,6 +92,31 @@ router.delete(
   authenticate,
   authorize("WEEKLY_REPORTS", "DELETE"),
   WeeklyReportController.delete
+);
+
+// ========================================
+// 📎 WEEKLY REPORT ATTACHMENTS
+// ========================================
+router.post(
+  "/:id/attachments",
+  authenticate,
+  authorize("WEEKLY_REPORTS", "UPDATE"),
+  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
+  uploadWeeklyReportAttachment
+);
+
+router.delete(
+  "/attachments/:attachmentId",
+  authenticate,
+  authorize("WEEKLY_REPORTS", "UPDATE"),
+  deleteWeeklyReportAttachment
+);
+
+router.get(
+  "/attachments/:attachmentId/file",
+  authenticate,
+  authorize("WEEKLY_REPORTS", "READ"),
+  streamWeeklyReportAttachment
 );
 
 export default router;

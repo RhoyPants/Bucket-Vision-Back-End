@@ -9,6 +9,7 @@ import {
 import { getProjectDashboard } from "./project.dashboard.service";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 import { approvalService } from "../approval/approval.service";
+import { fetchSharePointFile, uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
 
 
 
@@ -82,6 +83,14 @@ static async getDashboard(
       includeHolidays
     } = req.body;
 
+    const rawFiles = (req as any).files;
+    const files: Express.Multer.File[] = Array.isArray(rawFiles)
+      ? rawFiles
+      : [
+          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
+          ...((rawFiles?.files as Express.Multer.File[]) ?? []),
+        ];
+
     const userId = (req as any).user.id;
 
     const project = await prisma.project.create({
@@ -137,7 +146,39 @@ static async getDashboard(
       }
     }
 
-    res.json(project);
+    // Optional create-time attachments: same submit request as project creation.
+    if (files.length > 0) {
+      await Promise.all(
+        files.map(async (file) => {
+          const uploaded = await uploadBufferToSharePoint({
+            buffer: file.buffer,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            folder: "projects",
+          });
+
+          await prisma.attachment.create({
+            data: {
+              projectId: project.id,
+              uploadedBy: userId,
+              fileUrl: uploaded.downloadUrl || uploaded.webUrl || "",
+              fileName: file.originalname,
+              mimeType: file.mimetype,
+              size: file.size,
+            },
+          });
+        })
+      );
+    }
+
+    const projectWithAttachments = await prisma.project.findUnique({
+      where: { id: project.id },
+      include: {
+        attachments: true,
+      },
+    });
+
+    res.json(projectWithAttachments);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
@@ -612,6 +653,118 @@ static async delete(
     res.status(400).json({ message: error.message });
   }
 }
+}
+
+// ========================================
+// 📎 PROJECT ATTACHMENTS
+// ========================================
+export async function uploadProjectAttachment(req: any, res: Response) {
+  try {
+    const { id: projectId } = req.params;
+    const userId = req.user?.id;
+    const rawFiles = req.files;
+    const files: Express.Multer.File[] = Array.isArray(rawFiles)
+      ? rawFiles
+      : [
+          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
+          ...((rawFiles?.files as Express.Multer.File[]) ?? []),
+        ];
+
+    if (!files.length) {
+      return res.status(400).json({ success: false, message: "No files provided" });
+    }
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) return res.status(404).json({ success: false, message: "Project not found" });
+
+    const created = await Promise.all(
+      files.map(async (file) => {
+        const result = await uploadBufferToSharePoint({
+          buffer: file.buffer,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          folder: "projects",
+        });
+        return prisma.attachment.create({
+          data: {
+            projectId,
+            uploadedBy: userId,
+            fileUrl: result.downloadUrl || result.webUrl || "",
+            fileName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+          },
+        });
+      })
+    );
+
+    res.json({ success: true, data: created });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function getProjectAttachments(req: any, res: Response) {
+  try {
+    const { id: projectId } = req.params;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const authHeader = req.headers.authorization;
+    const bearerToken =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : "";
+
+    const attachments = await prisma.attachment.findMany({
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const withProxy = attachments.map((attachment) => ({
+      ...attachment,
+      proxyUrl: `/api/projects/attachments/${attachment.id}/file${
+        bearerToken ? `?token=${encodeURIComponent(bearerToken)}` : ""
+      }`,
+    }));
+
+    res.json({ success: true, data: withProxy });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function deleteProjectAttachment(req: any, res: Response) {
+  try {
+    let { attachmentId } = req.params;
+    if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+    await prisma.attachment.delete({ where: { id: attachmentId } });
+    res.json({ success: true, message: "Attachment deleted" });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function streamProjectAttachment(req: any, res: Response) {
+  try {
+    let { attachmentId } = req.params;
+    if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+
+    const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
+    if (!attachment) return res.status(404).json({ success: false, message: "Attachment not found" });
+
+    const file = await fetchSharePointFile(attachment.fileUrl);
+    const contentType = attachment.mimeType || file.contentType;
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(attachment.fileName)}"`);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(file.buffer);
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
 }
 
 // 🔥 PROJECT MEMBER MANAGEMENT

@@ -153,6 +153,64 @@ async function getAccessToken() {
   return data.access_token as string;
 }
 
+function toBase64Url(value: string) {
+  return Buffer.from(value, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+async function fetchViaGraphShare(url: string) {
+  const token = await getAccessToken();
+  const shareId = `u!${toBase64Url(url)}`;
+  const graphUrl = `https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem/content`;
+
+  const res = await fetch(graphUrl, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res;
+}
+
+export async function fetchSharePointFile(url: string) {
+  const direct = await fetch(url, { method: "GET" });
+
+  if (direct.ok) {
+    return {
+      contentType:
+        direct.headers.get("content-type") || "application/octet-stream",
+      buffer: Buffer.from(await direct.arrayBuffer()),
+    };
+  }
+
+  const candidates = [url];
+  try {
+    const parsed = new URL(url);
+    if (parsed.search) {
+      candidates.push(`${parsed.origin}${parsed.pathname}`);
+    }
+  } catch {
+    // Keep original URL only.
+  }
+
+  for (const candidate of candidates) {
+    const graphRes = await fetchViaGraphShare(candidate);
+    if (graphRes.ok) {
+      return {
+        contentType:
+          graphRes.headers.get("content-type") || "application/octet-stream",
+        buffer: Buffer.from(await graphRes.arrayBuffer()),
+      };
+    }
+  }
+
+  throw new Error(`Failed to fetch attachment source (${direct.status})`);
+}
+
 export async function uploadBufferToSharePoint(params: {
   buffer: Buffer;
   originalName: string;

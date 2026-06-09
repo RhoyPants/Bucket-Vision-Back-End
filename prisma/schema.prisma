@@ -292,25 +292,38 @@ model ApprovalStepUser {
 }
 
 model ProgressLog {
-  id                String   @id @default(uuid())
+  id                String                   @id @default(uuid())
   subtaskId         String
   date              DateTime
   dailyPercent      Float
   cumulativePercent Float
   latitude          Float?
   longitude         Float?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
   photoUrl          String?
   remarks           String?
   attachmentUrl     String?
   dayNumber         Int?
   location          String?
   userId            String?
-  subtask           Subtask  @relation(fields: [subtaskId], references: [id])
-  user              User?    @relation(fields: [userId], references: [id])
+  subtask           Subtask                  @relation(fields: [subtaskId], references: [id])
+  user              User?                    @relation(fields: [userId], references: [id])
+  attachments       ProgressLogAttachment[]
 
   @@unique([subtaskId, date])
+}
+
+model ProgressLogAttachment {
+  id            String      @id @default(uuid())
+  progressLogId String
+  url           String
+  name          String
+  mimeType      String?
+  size          Int?
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  progressLog   ProgressLog @relation(fields: [progressLogId], references: [id], onDelete: Cascade)
 }
 
 model Checklist {
@@ -342,16 +355,22 @@ model Comment {
 }
 
 model Attachment {
-  id         String   @id @default(uuid())
-  fileUrl    String
-  fileName   String
-  createdAt  DateTime @default(now())
-  subtaskId  String?
-  uploadedBy String
-  projectId  String?
-  project    Project? @relation(fields: [projectId], references: [id])
-  subtask    Subtask? @relation(fields: [subtaskId], references: [id])
-  user       User     @relation(fields: [uploadedBy], references: [id])
+  id             String        @id @default(uuid())
+  fileUrl        String
+  fileName       String
+  mimeType       String?
+  size           Int?
+  createdAt      DateTime      @default(now())
+  subtaskId      String?
+  uploadedBy     String
+  projectId      String?
+  dailyReportId  String?
+  weeklyReportId String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subtask        Subtask?      @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
+  dailyReport    DailyReport?  @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  weeklyReport   WeeklyReport? @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [uploadedBy], references: [id])
 }
 
 model ActivityLog {
@@ -377,11 +396,12 @@ model DailyReport {
   date        DateTime
   location    String
   remarks     String?
-  attachments String[]
-  createdAt   DateTime              @default(now())
-  project     Project               @relation(fields: [projectId], references: [id])
-  user        User                  @relation(fields: [userId], references: [id])
-  receivers   DailyReportReceiver[]
+  attachments     String[]
+  createdAt       DateTime              @default(now())
+  project         Project               @relation(fields: [projectId], references: [id])
+  user            User                  @relation(fields: [userId], references: [id])
+  receivers       DailyReportReceiver[]
+  uploadedFiles   Attachment[]
 }
 
 model DailyReportReceiver {
@@ -401,12 +421,13 @@ model WeeklyReport {
   dateFrom    DateTime
   dateTo      DateTime
   remarks     String?
-  attachments String[]
-  createdAt   DateTime               @default(now())
-  projectId   String?
-  project     Project?               @relation(fields: [projectId], references: [id])
-  user        User                   @relation(fields: [userId], references: [id])
-  receivers   WeeklyReportReceiver[]
+  attachments     String[]
+  createdAt       DateTime               @default(now())
+  projectId       String?
+  project         Project?               @relation(fields: [projectId], references: [id])
+  user            User                   @relation(fields: [userId], references: [id])
+  receivers       WeeklyReportReceiver[]
+  uploadedFiles   Attachment[]
 
   @@index([projectId])
 }

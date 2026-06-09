@@ -2,6 +2,14 @@ export interface GetBySubtaskParamsDTO {
   subtaskId: string;
 }
 
+export interface AttachmentInputDTO {
+  url: string;
+  name: string;
+  mimeType?: string;
+  size?: number;
+  sortOrder?: number;
+}
+
 export interface CreateProgressDTO {
   subtaskId: string;
   date: Date;
@@ -12,6 +20,7 @@ export interface CreateProgressDTO {
   latitude?: number | null;
   longitude?: number | null;
   userId?: string;
+  attachments?: AttachmentInputDTO[];
 }
 
 export interface UpdateProgressDTO {

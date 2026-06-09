@@ -25,7 +25,10 @@ router.post(
   "/",
   authenticate,
   authorize("SUBTASKS", "UPDATE"),
-  upload.single("photo"),
+  upload.fields([
+    { name: "attachments", maxCount: 10 },
+    { name: "photo", maxCount: 1 },
+  ]),
   ProgressController.addProgress
 );
 
@@ -57,6 +60,23 @@ router.get(
   authenticate,
   authorize("PROJECTS", "READ"),
   ProgressController.getSCurve
+);
+
+// ========================================
+// ❌ DELETE A SINGLE ATTACHMENT
+// ========================================
+router.delete(
+  "/attachments/:attachmentId",
+  authenticate,
+  authorize("SUBTASKS", "UPDATE"),
+  ProgressController.deleteProgressAttachment
+);
+
+router.get(
+  "/attachments/:attachmentId/file",
+  authenticate,
+  authorize("SUBTASKS", "READ"),
+  ProgressController.streamProgressAttachment
 );
 
 export default router;

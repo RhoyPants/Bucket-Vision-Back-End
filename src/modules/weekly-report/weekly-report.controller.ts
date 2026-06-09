@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
+import { fetchSharePointFile, uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
 import {
   CreateWeeklyReportDTO,
   UpdateWeeklyReportDTO,
@@ -634,5 +635,84 @@ export class WeeklyReportController {
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
+  }
+}
+
+// ========================================
+// 📎 WEEKLY REPORT ATTACHMENTS
+// ========================================
+export async function uploadWeeklyReportAttachment(req: any, res: Response) {
+  try {
+    const { id: reportId } = req.params;
+    const userId = req.user?.id;
+    const rawFiles = req.files;
+    const files: Express.Multer.File[] = Array.isArray(rawFiles)
+      ? rawFiles
+      : [
+          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
+          ...((rawFiles?.files as Express.Multer.File[]) ?? []),
+        ];
+
+    if (!files.length) {
+      return res.status(400).json({ success: false, message: "No files provided" });
+    }
+
+    const report = await prisma.weeklyReport.findUnique({ where: { id: reportId } });
+    if (!report) return res.status(404).json({ success: false, message: "Report not found" });
+
+    const created = await Promise.all(
+      files.map(async (file) => {
+        const result = await uploadBufferToSharePoint({
+          buffer: file.buffer,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          folder: "weekly-reports",
+        });
+        return prisma.attachment.create({
+          data: {
+            weeklyReportId: reportId,
+            uploadedBy: userId,
+            fileUrl: result.downloadUrl || result.webUrl || "",
+            fileName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+          },
+        });
+      })
+    );
+
+    res.json({ success: true, data: created });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function deleteWeeklyReportAttachment(req: any, res: Response) {
+  try {
+    let { attachmentId } = req.params;
+    if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+    await prisma.attachment.delete({ where: { id: attachmentId } });
+    res.json({ success: true, message: "Attachment deleted" });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function streamWeeklyReportAttachment(req: any, res: Response) {
+  try {
+    let { attachmentId } = req.params;
+    if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+
+    const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
+    if (!attachment) return res.status(404).json({ success: false, message: "Attachment not found" });
+
+    const file = await fetchSharePointFile(attachment.fileUrl);
+    const contentType = attachment.mimeType || file.contentType;
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(attachment.fileName)}"`);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(file.buffer);
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
   }
 }

@@ -192,6 +192,13 @@ export async function addProgressLog(data: {
   latitude?: number | null;
   longitude?: number | null;
   userId?: string;
+  attachments?: {
+    url: string;
+    name: string;
+    mimeType?: string;
+    size?: number;
+    sortOrder?: number;
+  }[];
 }) {
   // 1. Validate
   if (data.dailyPercent < 0 || data.dailyPercent > 100) {
@@ -232,7 +239,25 @@ export async function addProgressLog(data: {
   // 3. Recompute everything
   await recomputeSubtaskProgress(data.subtaskId);
 
+  // 4. Save attachments (delete existing first on upsert, then recreate)
+  if (data.attachments && data.attachments.length > 0) {
+    await prisma.progressLogAttachment.deleteMany({
+      where: { progressLogId: log.id },
+    });
+    await prisma.progressLogAttachment.createMany({
+      data: data.attachments.map((a, i) => ({
+        progressLogId: log.id,
+        url: a.url,
+        name: a.name,
+        mimeType: a.mimeType,
+        size: a.size,
+        sortOrder: a.sortOrder ?? i,
+      })),
+    });
+  }
+
   return await prisma.progressLog.findUnique({
     where: { id: log.id },
+    include: { attachments: { orderBy: { sortOrder: "asc" } } },
   });
 }

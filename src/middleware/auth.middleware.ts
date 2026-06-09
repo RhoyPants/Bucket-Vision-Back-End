@@ -6,14 +6,19 @@ export const authenticate = (req: any, res: any, next: any) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "No token provided" });
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else {
+      const queryToken = req.query?.token || req.query?.accessToken;
+      if (typeof queryToken === "string" && queryToken.trim()) {
+        token = queryToken;
+      }
     }
 
-    const token = authHeader.split(" ")[1];
-
     if (!token) {
-      return res.status(401).json({ message: "Invalid token format" });
+      return res.status(401).json({ message: "No token provided" });
     }
 
     const decoded = jwt.verify(token, ACCESS_SECRET) as {

@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { DailyReportController } from "./daily-report.controller";
+import { DailyReportController, uploadDailyReportAttachment, deleteDailyReportAttachment, streamDailyReportAttachment } from "./daily-report.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
+import upload from "../../middleware/upload.middleware";
 
 const router = Router();
 
@@ -83,6 +84,31 @@ router.delete(
   authenticate,
   authorize("DAILY_REPORTS", "DELETE"),
   DailyReportController.delete
+);
+
+// ========================================
+// 📎 DAILY REPORT ATTACHMENTS
+// ========================================
+router.post(
+  "/:id/attachments",
+  authenticate,
+  authorize("DAILY_REPORTS", "UPDATE"),
+  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
+  uploadDailyReportAttachment
+);
+
+router.delete(
+  "/attachments/:attachmentId",
+  authenticate,
+  authorize("DAILY_REPORTS", "UPDATE"),
+  deleteDailyReportAttachment
+);
+
+router.get(
+  "/attachments/:attachmentId/file",
+  authenticate,
+  authorize("DAILY_REPORTS", "READ"),
+  streamDailyReportAttachment
 );
 
 export default router;
