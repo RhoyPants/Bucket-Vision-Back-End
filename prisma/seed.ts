@@ -39,13 +39,15 @@ async function main() {
     { name: "SUBTASKS", path: "/subtasks" },
     { name: "PROGRESS", path: "/progress" },
     { name: "TIMELINE", path: "/timeline" },
+    { name: "CALENDAR", path: "/calendar" },
     { name: "DAILY_REPORTS", path: "/daily-reports" },
     { name: "WEEKLY_REPORTS", path: "/weekly-reports" },
     { name: "APPROVALS", path: "/approvals" },
-    { name: "ADMIN", path: "/approval-flows" },
-    { name: "SETTINGS", path: "/settings" },
+    { name: "ADMIN", path: "/admin" },
     { name: "BUSINESS_UNITS", path: "/business-units" },
+    { name: "GEOGRAPHICAL", path: "/geographical" },
     { name: "PERSONAL_DASHBOARDS", path: "/personal-dashboards" },
+    { name: "VERSIONING", path: "/versioning" },
   ];
 
   const modules = await Promise.all(
@@ -58,7 +60,7 @@ async function main() {
     ),
   );
 
-  console.log("✅ Modules created (17 total)");
+  console.log("✅ Modules created (19 total)");
 
   //////////////////////////////
   // ROLES
