@@ -33,7 +33,16 @@ export async function getBySubtask(req: Request, res: Response) {
     const logs = await prisma.progressLog.findMany({
       where: { subtaskId },
       orderBy: { date: "asc" },
-      include: { attachments: { orderBy: { sortOrder: "asc" } } },
+      include: { 
+        attachments: { orderBy: { sortOrder: "asc" } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      },
     });
 
     const authHeader = req.headers.authorization;
@@ -162,6 +171,16 @@ export async function updateProgress(req: Request, res: Response) {
     const log = await prisma.progressLog.update({
       where: { id },
       data: updateData,
+      include: {
+        attachments: { orderBy: { sortOrder: "asc" } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      }
     });
 
     await recomputeSubtaskProgress(log.subtaskId);
@@ -169,6 +188,7 @@ export async function updateProgress(req: Request, res: Response) {
     res.json({
       success: true,
       message: "Progress updated",
+      data: log,
     } as ProgressResponseDTO);
   } catch (error: any) {
     res.status(400).json({

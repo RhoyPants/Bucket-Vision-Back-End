@@ -258,6 +258,15 @@ export async function addProgressLog(data: {
 
   return await prisma.progressLog.findUnique({
     where: { id: log.id },
-    include: { attachments: { orderBy: { sortOrder: "asc" } } },
+    include: { 
+      attachments: { orderBy: { sortOrder: "asc" } },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        }
+      }
+    },
   });
 }
