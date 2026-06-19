@@ -10,6 +10,9 @@ datasource db {
 model User {
   id                 String                 @id @default(uuid())
   name               String
+  firstName          String?
+  lastName           String?
+  company            String?
   email              String                 @unique
   password           String
   roleId             String
@@ -19,6 +22,8 @@ model User {
   isActive           Boolean                @default(true)
   approverId         String?
   departmentId       String?
+  businessUnitId     String?
+  position           String?
   activities         ActivityLog[]
   approvalAuditLogs  ApprovalAuditLog[]     @relation("ApprovedBy")
   approvalStepUsers  ApprovalStepUser[]     @relation("ApprovalStepUsers")
@@ -35,11 +40,14 @@ model User {
   assignedSubtasks   SubtaskAssignee[]
   assignedTasks      TaskAssignee[]
   role               Role                   @relation(fields: [roleId], references: [id])
+  businessUnit       BusinessUnit?          @relation(fields: [businessUnitId], references: [id])
   managers           UserHierarchy[]        @relation("UserMembers")
   members            UserHierarchy[]        @relation("UserManagers")
   personalDashboards PersonalDashboard[]
   weeklyReports      WeeklyReport[]
   weeklyReports_recv WeeklyReportReceiver[]
+  reviewedSsoRegistrations SsoRegistration[] @relation("SsoRegistrationReviewedBy")
+  ssoRegistrationAuditChanges SsoRegistrationAudit[]
 }
 
 model Role {
@@ -48,6 +56,7 @@ model Role {
   isActive        Boolean          @default(true)
   rolePermissions RolePermission[]
   users           User[]
+  ssoRegistrations SsoRegistration[]
 }
 
 model Module {
@@ -691,9 +700,59 @@ model BusinessUnit {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  ssoRegistrations SsoRegistration[]
+  users          User[]
 
   @@index([code])
   @@index([entity])
+}
+
+model SsoRegistration {
+  id              String                @id @default(uuid())
+  referenceNo     String                @unique
+  email           String                @unique
+  fullName        String
+  firstName       String?
+  lastName        String?
+  company         String?
+  provider        String                @default("MICROSOFT")
+  providerOid     String?
+  mobileNo        String?
+  requestedRoleId String?
+  businessUnitId  String?
+  departmentId    String?
+  position        String?
+  remarks         String?
+  status          SsoRegistrationStatus @default(PENDING)
+  rejectReason    String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  requestedRole   Role?                 @relation(fields: [requestedRoleId], references: [id])
+  businessUnit    BusinessUnit?         @relation(fields: [businessUnitId], references: [id])
+  reviewedBy      User?                 @relation("SsoRegistrationReviewedBy", fields: [reviewedById], references: [id])
+  audits          SsoRegistrationAudit[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SsoRegistrationAudit {
+  id              String                @id @default(uuid())
+  registrationId  String
+  action          SsoRegistrationAction
+  fromStatus      SsoRegistrationStatus?
+  toStatus        SsoRegistrationStatus?
+  reason          String?
+  snapshot        Json?
+  changedById     String?
+  createdAt       DateTime              @default(now())
+  registration    SsoRegistration       @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  changedBy       User?                 @relation(fields: [changedById], references: [id])
+
+  @@index([registrationId])
+  @@index([createdAt])
 }
 
 enum ProjectStatus {
@@ -751,4 +810,18 @@ enum DashboardChartType {
   PROGRESS_TREND
   KPI_STATUS_DISTRIBUTION
   TASK_COMPLETION
+}
+
+enum SsoRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SsoRegistrationAction {
+  CREATED
+  RESUBMITTED
+  APPROVED
+  REJECTED
+  UPDATED
 }

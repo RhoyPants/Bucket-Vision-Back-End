@@ -29,8 +29,8 @@ router.delete(
 
 router.get(
   "/",
-  authenticate,
-  authorize("ROLES", "READ"),
+  // authenticate,
+  // authorize("ROLES", "READ"),
   getRoles
 ); 
 

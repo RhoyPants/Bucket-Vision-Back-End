@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUser, deleteUser, getMyMembers, getUsers, updateUser, getMyManagers, assignManager, removeManager, getOrgChart, getUserMembersById, getUserManagersById } from "./user.controller";
+import { createUser, deleteUser, getMyMembers, getUsers, getUserById, updateUser, updateUserStatus, getMyManagers, assignManager, removeManager, getOrgChart, getUserMembersById, getUserManagersById } from "./user.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -65,6 +65,13 @@ router.get(
   getUsers
 );
 
+router.get(
+  "/:userId",
+  authenticate,
+  authorize("USERS", "READ"),
+  getUserById
+);
+
 router.post(
   "/",
   authenticate,
@@ -77,6 +84,13 @@ router.put(
   authenticate,
   authorize("USERS", "UPDATE"),
   updateUser
+);
+
+router.patch(
+  "/:userId/status",
+  authenticate,
+  authorize("USERS", "UPDATE"),
+  updateUserStatus
 );
 
 router.delete(

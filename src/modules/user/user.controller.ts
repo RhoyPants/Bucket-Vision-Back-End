@@ -4,24 +4,132 @@ import bcrypt from "bcrypt";
 
 export const getUsers = async (req: Request, res: Response) => {
   const users = await prisma.user.findMany({
-    include: { role: true },
+    include: {
+      role: true,
+      businessUnit: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          entity: true,
+          buHead: true,
+        },
+      },
+    },
   });
 
   res.json(users);
 };
 
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const userId = String(req.params.userId || "");
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+          },
+        },
+        businessUnit: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            entity: true,
+            buHead: true,
+            assistantHead: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        message: "User not found",
+        error: "USER_NOT_FOUND",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        company: user.company,
+        role: user.role,
+        businessUnit: user.businessUnit,
+        buHead: user.businessUnit?.buHead || null,
+        position: user.position,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      message: "User fetched successfully",
+      error: null,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      data: null,
+      message: "Failed to fetch user",
+      error: err.message,
+    });
+  }
+};
+
 export const createUser = async (req: any, res: any) => {
   try {
-    const { name, email, password, roleId } = req.body;
+    const {
+      name,
+      firstName,
+      lastName,
+      company,
+      email,
+      password,
+      roleId,
+      businessUnitId,
+      position,
+    } = req.body;
+
+    const resolvedName =
+      name || `${firstName || ""} ${lastName || ""}`.trim() || email;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: resolvedName,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        company: company || null,
         email,
         password: hashedPassword,
         roleId,
+        businessUnitId: businessUnitId || null,
+        position: position || null,
+      },
+      include: {
+        role: true,
+        businessUnit: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            entity: true,
+            buHead: true,
+          },
+        },
       },
     });
 
@@ -34,7 +142,17 @@ export const createUser = async (req: any, res: any) => {
 export const updateUser = async (req: any, res: any) => {
   try {
     const { userId } = req.params;
-    const { name, email, roleId, password } = req.body;
+    const {
+      name,
+      firstName,
+      lastName,
+      company,
+      email,
+      roleId,
+      businessUnitId,
+      position,
+      password,
+    } = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -66,13 +184,30 @@ export const updateUser = async (req: any, res: any) => {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        name: name ?? existingUser.name,
+        name:
+          name ??
+          (`${firstName ?? existingUser.firstName ?? ""} ${lastName ?? existingUser.lastName ?? ""}`.trim() ||
+            existingUser.name),
+        firstName: firstName ?? existingUser.firstName,
+        lastName: lastName ?? existingUser.lastName,
+        company: company ?? existingUser.company,
         email: email ?? existingUser.email,
         roleId: roleId ?? existingUser.roleId,
+        businessUnitId: businessUnitId ?? existingUser.businessUnitId,
+        position: position ?? existingUser.position,
         password: hashedPassword,
       },
       include: {
         role: true,
+        businessUnit: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            entity: true,
+            buHead: true,
+          },
+        },
       },
     });
 
@@ -99,27 +234,136 @@ export const deleteUser = async (req: any, res: any) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    if (req.user.userId === userId) {
+    if (req.user.id === userId) {
+      return res.status(400).json({ message: "You cannot delete your own account" });
+    }
+
+    // Check associations
+    const [
+      projectCount,
+      dailyReportCount,
+      weeklyReportCount,
+      progressLogCount,
+      commentCount,
+      subtaskCreatedCount,
+      projectMemberCount,
+      ssoRegistrationCount,
+    ] = await Promise.all([
+      prisma.project.count({ where: { ownerId: userId } }),
+      prisma.dailyReport.count({ where: { userId } }),
+      prisma.weeklyReport.count({ where: { userId } }),
+      prisma.progressLog.count({ where: { userId } }),
+      prisma.comment.count({ where: { userId } }),
+      prisma.subtask.count({ where: { createdBy: userId } }),
+      prisma.projectMember.count({ where: { userId } }),
+      prisma.ssoRegistration.count({ where: { reviewedById: userId } }),
+    ]);
+
+    const associations: string[] = [];
+    if (projectCount > 0) associations.push(`${projectCount} project(s) owned`);
+    if (dailyReportCount > 0) associations.push(`${dailyReportCount} daily report(s)`);
+    if (weeklyReportCount > 0) associations.push(`${weeklyReportCount} weekly report(s)`);
+    if (progressLogCount > 0) associations.push(`${progressLogCount} progress log(s)`);
+    if (commentCount > 0) associations.push(`${commentCount} comment(s)`);
+    if (subtaskCreatedCount > 0) associations.push(`${subtaskCreatedCount} subtask(s) created`);
+    if (projectMemberCount > 0) associations.push(`${projectMemberCount} project membership(s)`);
+    if (ssoRegistrationCount > 0) associations.push(`${ssoRegistrationCount} SSO registration review(s)`);
+
+    if (associations.length > 0) {
       return res.status(400).json({
-        message: "You cannot delete your own account",
+        success: false,
+        message: `Cannot delete user "${user.name}". This user is associated with: ${associations.join(", ")}.`,
+        error: "USER_HAS_ASSOCIATIONS",
+        data: { associations },
       });
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isActive: false },
+    // Safe to hard delete
+    await prisma.userHierarchy.deleteMany({
+      where: { OR: [{ managerId: userId }, { memberId: userId }] },
     });
+    await prisma.notification.deleteMany({ where: { userId } });
+    await prisma.approvalStepUser.deleteMany({ where: { userId } });
+    await prisma.user.delete({ where: { id: userId } });
 
     res.json({
+      success: true,
       message: `User "${user.name}" deleted successfully`,
+      data: null,
+      error: null,
     });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateUserStatus = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean",
+        data: null,
+        error: "INVALID_STATUS_VALUE",
+      });
+    }
+
+    if (req.user.id === userId && isActive === false) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot deactivate your own account",
+        data: null,
+        error: "SELF_DEACTIVATION_NOT_ALLOWED",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: null,
+        error: "USER_NOT_FOUND",
+      });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      include: {
+        role: true,
+        businessUnit: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            entity: true,
+            buHead: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `User ${isActive ? "activated" : "deactivated"} successfully`,
+      data: updated,
+      error: null,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update user status",
+      data: null,
+      error: err.message,
+    });
   }
 };
 
