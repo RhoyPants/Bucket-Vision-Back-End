@@ -1,0 +1,1 @@
+-- No-op: report table is served by endpoint data and does not require a persisted chart enum.

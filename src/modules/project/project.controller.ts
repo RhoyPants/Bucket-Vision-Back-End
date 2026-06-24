@@ -6,7 +6,6 @@ import {
   ProjectParamsDTO,
   UpdateProjectDTO
 } from "./project.dto";
-import { getProjectDashboard } from "./project.dashboard.service";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 import { approvalService } from "../approval/approval.service";
 import { fetchSharePointFile, uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
@@ -34,27 +33,130 @@ export class ProjectController {
     }));
   }
 
-    // 🔥 DASHBOARD
-static async getDashboard(
-  req: Request<ProjectParamsDTO>,
-  res: Response
-) {
-  try {
-    const { id } = req.params;
+  private static async buildProjectFullTree(
+    projectId: string,
+    options?: {
+      includeOwner?: boolean;
+      basicAssigneeUser?: boolean;
+    }
+  ) {
+    const { includeOwner = false, basicAssigneeUser = false } = options || {};
 
-    const data = await getProjectDashboard(id);
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: includeOwner
+        ? { owner: { select: { id: true, name: true, email: true } } }
+        : undefined,
+    });
 
-    res.json({
-      success: true,
-      data
+    if (!project) return null;
+
+    const scopes = await prisma.scope.findMany({
+      where: { projectId },
+      orderBy: { order: "asc" },
     });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
+
+    if (!scopes.length) {
+      return { ...project, scopes: [] };
+    }
+
+    const scopeIds = scopes.map((scope) => scope.id);
+
+    const tasks = await prisma.task.findMany({
+      where: { scopeId: { in: scopeIds } },
+      orderBy: { order: "asc" },
     });
+
+    const taskIds = tasks.map((task) => task.id);
+
+    const subtasks = taskIds.length
+      ? await prisma.subtask.findMany({
+          where: { taskId: { in: taskIds } },
+          orderBy: { order: "asc" },
+        })
+      : [];
+
+    const subtaskIds = subtasks.map((subtask) => subtask.id);
+
+    const [progressLogs, checklists, assignees] = subtaskIds.length
+      ? await Promise.all([
+          prisma.progressLog.findMany({
+            where: { subtaskId: { in: subtaskIds } },
+          }),
+          prisma.checklist.findMany({
+            where: { subtaskId: { in: subtaskIds } },
+          }),
+          prisma.subtaskAssignee.findMany({
+            where: { subtaskId: { in: subtaskIds } },
+            include: basicAssigneeUser
+              ? { user: { select: { id: true, name: true, email: true } } }
+              : { user: true },
+          }),
+        ])
+      : [[], [], []];
+
+    const tasksByScopeId = new Map<string, any[]>();
+    const subtasksByTaskId = new Map<string, any[]>();
+    const progressLogsBySubtaskId = new Map<string, any[]>();
+    const checklistsBySubtaskId = new Map<string, any[]>();
+    const assigneesBySubtaskId = new Map<string, any[]>();
+
+    for (const task of tasks) {
+      const list = tasksByScopeId.get(task.scopeId) || [];
+      list.push(task);
+      tasksByScopeId.set(task.scopeId, list);
+    }
+
+    for (const subtask of subtasks) {
+      const list = subtasksByTaskId.get(subtask.taskId) || [];
+      list.push(subtask);
+      subtasksByTaskId.set(subtask.taskId, list);
+    }
+
+    for (const log of progressLogs) {
+      const list = progressLogsBySubtaskId.get(log.subtaskId) || [];
+      list.push(log);
+      progressLogsBySubtaskId.set(log.subtaskId, list);
+    }
+
+    for (const checklist of checklists) {
+      const list = checklistsBySubtaskId.get(checklist.subtaskId) || [];
+      list.push(checklist);
+      checklistsBySubtaskId.set(checklist.subtaskId, list);
+    }
+
+    for (const assignee of assignees) {
+      const list = assigneesBySubtaskId.get(assignee.subtaskId) || [];
+      list.push(assignee);
+      assigneesBySubtaskId.set(assignee.subtaskId, list);
+    }
+
+    const scopeTree = scopes.map((scope) => {
+      const scopeTasks = (tasksByScopeId.get(scope.id) || []).map((task) => {
+        const taskSubtasks = (subtasksByTaskId.get(task.id) || []).map((subtask) => ({
+          ...subtask,
+          progressLogs: progressLogsBySubtaskId.get(subtask.id) || [],
+          checklists: checklistsBySubtaskId.get(subtask.id) || [],
+          assignees: assigneesBySubtaskId.get(subtask.id) || [],
+        }));
+
+        return {
+          ...task,
+          subtasks: taskSubtasks,
+        };
+      });
+
+      return {
+        ...scope,
+        tasks: scopeTasks,
+      };
+    });
+
+    return {
+      ...project,
+      scopes: scopeTree,
+    };
   }
-}
 
   // CREATE
   static async create(
@@ -350,30 +452,9 @@ static async getDashboard(
     try {
       const { id } = req.params;
 
-      const project = await prisma.project.findUnique({
-        where: { id },
-        include: {
-          scopes: {
-            orderBy: { order: "asc" },
-            include: {
-              tasks: {
-                orderBy: { order: "asc" },
-                include: {
-                  subtasks: {
-                    orderBy: { order: "asc" },
-                    include: {
-                      progressLogs: true,
-                      checklists: true,
-                      assignees: {
-                        include: { user: true }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+      const project = await ProjectController.buildProjectFullTree(id, {
+        includeOwner: false,
+        basicAssigneeUser: false,
       });
 
       if (!project) {
@@ -399,31 +480,9 @@ static async getDashboard(
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const project = await prisma.project.findUnique({
-        where: { id },
-        include: {
-          owner: { select: { id: true, name: true, email: true } },
-          scopes: {
-            orderBy: { order: "asc" },
-            include: {
-              tasks: {
-                orderBy: { order: "asc" },
-                include: {
-                  subtasks: {
-                    orderBy: { order: "asc" },
-                    include: {
-                      progressLogs: true,
-                      checklists: true,
-                      assignees: {
-                        include: { user: { select: { id: true, name: true, email: true } } }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+      const project = await ProjectController.buildProjectFullTree(id, {
+        includeOwner: true,
+        basicAssigneeUser: true,
       });
 
       if (!project) {

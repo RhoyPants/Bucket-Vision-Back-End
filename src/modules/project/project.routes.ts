@@ -86,14 +86,6 @@ router.get(
   ProjectController.getFullForApproval,
 );
 
-// PROJECT DASHBOARD
-router.get(
-  "/:id/dashboard",
-  authenticate,
-  authorize("PROJECTS", "READ"),
-  ProjectController.getDashboard,
-);
-
 // 🔥 PROJECT MEMBER MANAGEMENT
 
 // Get all project members (grouped by role)

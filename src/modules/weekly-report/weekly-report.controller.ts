@@ -339,51 +339,51 @@ export class WeeklyReportController {
       currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
       currentWeekEnd.setHours(23, 59, 59, 999);
 
-      // Get all reports submitted this week with receivers
-      const thisWeekReports = await prisma.weeklyReport.findMany({
-        where: {
-          createdAt: {
-            gte: currentWeekStart,
-            lte: currentWeekEnd,
-          },
+      const weekWhere = {
+        createdAt: {
+          gte: currentWeekStart,
+          lte: currentWeekEnd,
         },
-        include: {
-          user: {
-            select: { id: true, name: true },
+      };
+
+      const now = new Date();
+
+      const [totalSubmitted, lateReports, totalReviewed, totalPending] = await Promise.all([
+        prisma.weeklyReport.count({ where: weekWhere }),
+        prisma.weeklyReport.count({
+          where: {
+            ...weekWhere,
+            dateTo: { lt: now },
           },
-          receivers: true,
-        },
-      });
-
-      // Count late reports (submitted after due date)
-      const lateReports = thisWeekReports.filter((report) => {
-        const daysOverdue = Math.floor(
-          (new Date().getTime() - report.dateTo.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return daysOverdue > 0;
-      });
-
-      // Count reviewed reports (all receivers have read it)
-      const reviewedReports = thisWeekReports.filter((report) => {
-        if (report.receivers.length === 0) return false; // No receivers = not reviewed
-        return report.receivers.every((receiver) => receiver.read);
-      });
-
-      // Count pending reports (at least one receiver hasn't read it)
-      const pendingReports = thisWeekReports.filter((report) => {
-        if (report.receivers.length === 0) return false;
-        return !report.receivers.every((receiver) => receiver.read);
-      });
+        }),
+        prisma.weeklyReport.count({
+          where: {
+            ...weekWhere,
+            receivers: {
+              some: {},
+              every: { read: true },
+            },
+          },
+        }),
+        prisma.weeklyReport.count({
+          where: {
+            ...weekWhere,
+            receivers: {
+              some: { read: false },
+            },
+          },
+        }),
+      ]);
 
       const summary: WeeklyReportSummaryDTO = {
-        totalSubmitted: thisWeekReports.length,
-        totalPending: pendingReports.length,
-        totalReviewed: reviewedReports.length,
-        lateReports: lateReports.length,
+        totalSubmitted,
+        totalPending,
+        totalReviewed,
+        lateReports,
         thisWeekHighlights: {
-          submittedCount: thisWeekReports.length,
-          lateCount: lateReports.length,
-          onTimeCount: thisWeekReports.length - lateReports.length,
+          submittedCount: totalSubmitted,
+          lateCount: lateReports,
+          onTimeCount: totalSubmitted - lateReports,
         },
       };
 

@@ -526,49 +526,46 @@ export class DailyReportController {
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Get all reports submitted today
-      const todayReports = await prisma.dailyReport.findMany({
-        where: {
-          date: {
-            gte: today,
-            lte: endOfDay,
+      const dayWhere = {
+        date: {
+          gte: today,
+          lte: endOfDay,
+        },
+      };
+
+      const [totalSubmitted, totalReviewed, totalPending] = await Promise.all([
+        prisma.dailyReport.count({ where: dayWhere }),
+        prisma.dailyReport.count({
+          where: {
+            ...dayWhere,
+            receivers: {
+              some: {},
+              every: { read: true },
+            },
           },
-        },
-        include: {
-          receivers: true,
-        },
-      });
+        }),
+        prisma.dailyReport.count({
+          where: {
+            ...dayWhere,
+            receivers: {
+              some: { read: false },
+            },
+          },
+        }),
+      ]);
 
-      // Count late reports (submitted after expected end date if any)
-      const lateReports = todayReports.filter((report) => {
-        const daysSinceCreation = Math.floor(
-          (new Date().getTime() - report.date.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        // Consider report late if created more than 1 day ago
-        return daysSinceCreation > 1;
-      });
-
-      // Count reviewed reports (all receivers have read it)
-      const reviewedReports = todayReports.filter((report) => {
-        if (report.receivers.length === 0) return false;
-        return report.receivers.every((receiver) => receiver.read);
-      });
-
-      // Count pending reports (at least one receiver hasn't read it)
-      const pendingReports = todayReports.filter((report) => {
-        if (report.receivers.length === 0) return false;
-        return !report.receivers.every((receiver) => receiver.read);
-      });
+      // Existing logic effectively yields zero because dataset is restricted to today's reports.
+      const lateReports = 0;
 
       const summary: DailyReportSummaryDTO = {
-        totalSubmitted: todayReports.length,
-        totalPending: pendingReports.length,
-        totalReviewed: reviewedReports.length,
-        lateReports: lateReports.length,
+        totalSubmitted,
+        totalPending,
+        totalReviewed,
+        lateReports,
         todayHighlights: {
-          submittedCount: todayReports.length,
-          lateCount: lateReports.length,
-          onTimeCount: todayReports.length - lateReports.length,
+          submittedCount: totalSubmitted,
+          lateCount: lateReports,
+          onTimeCount: totalSubmitted - lateReports,
         },
       };
 

@@ -90,6 +90,13 @@ router.get(
 );
 
 router.get(
+  "/:id/report-table",
+  authenticate,
+  authorize("PERSONAL_DASHBOARDS", "READ"),
+  personalDashboardController.getReportTable
+);
+
+router.get(
   "/:id/notes",
   authenticate,
   authorize("PERSONAL_DASHBOARDS", "READ"),

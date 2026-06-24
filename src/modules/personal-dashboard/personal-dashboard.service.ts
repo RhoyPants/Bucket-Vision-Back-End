@@ -502,14 +502,23 @@ export class PersonalDashboardService {
     const dashboard = await this.findOwnedDashboard(dashboardId, userId);
     const enriched = await this.enrichDashboard(dashboard);
     const scurve = await getSCurve(dashboard.projectId).catch(() => null);
+    const reportTable = scurve ? await this.buildReportTable(dashboard.projectId, scurve.data) : null;
 
     return {
       summary: enriched.summary,
       scurve,
       progressTrend: scurve?.data || [],
+      reportTable,
       kpiStatusDistribution: enriched.summary,
       taskCompletion: await this.getTaskCompletion(dashboard.projectId),
     };
+  }
+
+  async getReportTable(dashboardId: string, userId: string) {
+    const dashboard = await this.findOwnedDashboard(dashboardId, userId);
+    const scurve = await getSCurve(dashboard.projectId);
+
+    return this.buildReportTable(dashboard.projectId, scurve.data);
   }
 
   private async enrichDashboard(dashboard: any) {
@@ -940,6 +949,228 @@ export class PersonalDashboardService {
       pending: Math.max(0, subtasks.length - completed),
       total: subtasks.length,
     };
+  }
+
+  private async buildReportTable(
+    projectId: string,
+    scurveData: Array<{ date: string; planned: number; actual: number }>
+  ) {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        name: true,
+        totalBudget: true,
+        startDate: true,
+        expectedEndDate: true,
+      },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const points = [...scurveData].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const columns = points.map((point, index) => ({
+      index: index + 1,
+      label: String(index + 1),
+      date: point.date,
+      weekNumber: Math.floor(index / 7) + 1,
+    }));
+    const weekGroups = this.buildWeekGroups(columns);
+    const totalBudget = project.totalBudget || 0;
+    const averageDailyPlan = points.length > 0 ? 100 / points.length : 0;
+
+    const plannedDailyValues = points.map((point, index) =>
+      this.roundPercent(point.planned - (points[index - 1]?.planned || 0))
+    );
+    const actualDailyValues = points.map((point, index) =>
+      this.roundPercent(point.actual - (points[index - 1]?.actual || 0))
+    );
+    const plannedCumulativeValues = points.map((point) => this.roundPercent(point.planned));
+    const actualCumulativeValues = points.map((point) => this.roundPercent(point.actual));
+    const varianceValues = points.map((point) => this.roundPercent(point.actual - point.planned));
+    const daysValues = varianceValues.map((variance) =>
+      averageDailyPlan > 0 ? this.roundNumber(variance / averageDailyPlan, 2) : 0
+    );
+
+    const weeklyPlanned = this.sumValuesByWeek(plannedDailyValues, columns);
+    const weeklyActual = this.sumValuesByWeek(actualDailyValues, columns);
+    const cumulativeWeeklyPlanned = this.cumulativeValues(weeklyPlanned);
+    const cumulativeWeeklyActual = this.cumulativeValues(weeklyActual);
+
+    return {
+      project: {
+        id: project.id,
+        name: project.name,
+        totalBudget,
+        startDate: project.startDate,
+        expectedEndDate: project.expectedEndDate,
+      },
+      columns,
+      weekGroups,
+      summaryRows: [
+        this.buildWeeklyRow(
+          "weeklyAccomplishment",
+          "WEEKLY % ACCOMPLISHMENT",
+          weeklyPlanned,
+          "percent"
+        ),
+        this.buildWeeklyRow(
+          "weeklyCashFlow",
+          "WEEKLY CASH FLOW",
+          weeklyPlanned.map((value) => (value / 100) * totalBudget),
+          "currency"
+        ),
+        this.buildWeeklyRow(
+          "cumulativeWeeklyCashFlow",
+          "CUMULATIVE WEEKLY CASH FLOW",
+          cumulativeWeeklyPlanned.map((value) => (value / 100) * totalBudget),
+          "currency"
+        ),
+        this.buildWeeklyRow(
+          "actualWeeklyCashFlow",
+          "ACTUAL WEEKLY CASH FLOW",
+          weeklyActual.map((value) => (value / 100) * totalBudget),
+          "currency"
+        ),
+        this.buildWeeklyRow(
+          "cumulativeActualWeeklyCashFlow",
+          "CUMULATIVE ACTUAL WEEKLY CASH FLOW",
+          cumulativeWeeklyActual.map((value) => (value / 100) * totalBudget),
+          "currency"
+        ),
+      ],
+      detailRows: [
+        this.buildDailyRow("planned", "Planned", plannedDailyValues, columns, "percent"),
+        this.buildDailyRow("actual", "Actual", actualDailyValues, columns, "percent"),
+        this.buildDailyRow(
+          "plannedCumulative",
+          "Planned Cumulative",
+          plannedCumulativeValues,
+          columns,
+          "percent"
+        ),
+        this.buildDailyRow(
+          "actualCumulative",
+          "Actual Cumulative",
+          actualCumulativeValues,
+          columns,
+          "percent"
+        ),
+        this.buildDailyRow("variance", "Variance", varianceValues, columns, "percent"),
+        this.buildDailyRow("days", "Days", daysValues, columns, "number"),
+      ],
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  private buildWeekGroups(columns: Array<{ index: number; date: string; weekNumber: number }>) {
+    const groups = new Map<number, Array<{ index: number; date: string; weekNumber: number }>>();
+
+    for (const column of columns) {
+      const existing = groups.get(column.weekNumber) || [];
+      existing.push(column);
+      groups.set(column.weekNumber, existing);
+    }
+
+    return Array.from(groups.entries()).map(([weekNumber, items]) => ({
+      weekNumber,
+      label: `WEEK ${weekNumber}`,
+      startColumn: items[0].index,
+      endColumn: items[items.length - 1].index,
+      colspan: items.length,
+      dateFrom: items[0].date,
+      dateTo: items[items.length - 1].date,
+    }));
+  }
+
+  private sumValuesByWeek(
+    values: number[],
+    columns: Array<{ weekNumber: number }>
+  ) {
+    const sums = new Map<number, number>();
+
+    values.forEach((value, index) => {
+      const weekNumber = columns[index].weekNumber;
+      sums.set(weekNumber, (sums.get(weekNumber) || 0) + value);
+    });
+
+    return Array.from(sums.values()).map((value) => this.roundPercent(value));
+  }
+
+  private cumulativeValues(values: number[]) {
+    let runningTotal = 0;
+
+    return values.map((value) => {
+      runningTotal += value;
+      return this.roundPercent(runningTotal);
+    });
+  }
+
+  private buildWeeklyRow(
+    key: string,
+    label: string,
+    values: number[],
+    format: "percent" | "currency" | "number"
+  ) {
+    return {
+      key,
+      label,
+      format,
+      values: values.map((value, index) => ({
+        weekNumber: index + 1,
+        value: this.roundNumber(value, format === "currency" ? 2 : 2),
+        formattedValue: this.formatReportValue(value, format),
+      })),
+    };
+  }
+
+  private buildDailyRow(
+    key: string,
+    label: string,
+    values: number[],
+    columns: Array<{ index: number; date: string; weekNumber: number }>,
+    format: "percent" | "currency" | "number"
+  ) {
+    return {
+      key,
+      label,
+      format,
+      values: values.map((value, index) => ({
+        columnIndex: columns[index].index,
+        date: columns[index].date,
+        weekNumber: columns[index].weekNumber,
+        value: this.roundNumber(value, 2),
+        formattedValue: this.formatReportValue(value, format),
+      })),
+    };
+  }
+
+  private formatReportValue(value: number, format: "percent" | "currency" | "number") {
+    if (format === "percent") {
+      return `${this.roundNumber(value, 2).toFixed(2)}%`;
+    }
+
+    if (format === "currency") {
+      return this.roundNumber(value, 2).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    return this.roundNumber(value, 2).toFixed(2);
+  }
+
+  private roundPercent(value: number) {
+    return this.roundNumber(value, 2);
+  }
+
+  private roundNumber(value: number, decimals: number) {
+    const factor = 10 ** decimals;
+    return Math.round((value + Number.EPSILON) * factor) / factor;
   }
 }
 

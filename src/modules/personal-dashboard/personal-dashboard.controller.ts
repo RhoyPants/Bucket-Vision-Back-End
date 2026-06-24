@@ -199,6 +199,18 @@ export class PersonalDashboardController {
     }
   }
 
+  async getReportTable(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const data = await personalDashboardService.getReportTable(String(req.params.id), userId);
+
+      res.json({ success: true, data });
+    } catch (error: any) {
+      const status = error.message === "Dashboard not found" ? 404 : 400;
+      res.status(status).json({ success: false, message: error.message });
+    }
+  }
+
   async listNotes(req: Request, res: Response) {
     try {
       const userId = (req as any).user?.id;
