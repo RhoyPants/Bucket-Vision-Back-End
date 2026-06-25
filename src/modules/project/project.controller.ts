@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { ProjectStatus } from "@prisma/client";
 import prisma from "../../config/prisma";
 
 import {
@@ -401,6 +402,61 @@ export class ProjectController {
       });
       const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
       res.json(enriched);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  // GET BY STATUS
+  static async getByStatus(req: Request<{ status: string }>, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const userRoleId = (req as any).user.roleId;
+      const status = req.params.status?.toUpperCase() as ProjectStatus;
+
+      if (!Object.values(ProjectStatus).includes(status)) {
+        return res.status(400).json({
+          message: "Invalid project status",
+          allowedStatuses: Object.values(ProjectStatus),
+        });
+      }
+
+      const userRole = await (prisma as any).role.findUnique({
+        where: { id: userRoleId },
+      });
+
+      const projects = await prisma.project.findMany({
+        where:
+          userRole?.name === "SUPERADMIN"
+            ? { status }
+            : {
+                status,
+                OR: [
+                  { ownerId: userId },
+                  {
+                    projectMembers: {
+                      some: { userId },
+                    },
+                  },
+                ],
+              },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          pin: true,
+          status: true,
+        },
+      });
+
+      res.json(
+        projects.map((project) => ({
+          value: project.id,
+          label: project.name,
+          pin: project.pin,
+          status: project.status,
+        }))
+      );
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

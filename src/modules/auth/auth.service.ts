@@ -47,10 +47,6 @@ interface SsoRegistrationReviewPayload {
 
 const AZURE_CLIENT_ID = process.env.AZURE_CLIENT_ID || "";
 const AZURE_TENANT_ID = process.env.AZURE_TENANT_ID || "";
-const AZURE_ALLOWED_DOMAINS = (process.env.AZURE_ALLOWED_DOMAINS || "")
-  .split(",")
-  .map((value) => value.trim().toLowerCase())
-  .filter(Boolean);
 
 const AZURE_ISSUER = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0`;
 
@@ -73,17 +69,6 @@ const decodeJwtPayload = (token: string): JwtClaims => {
 
   const payload = Buffer.from(parts[1], "base64url").toString("utf8");
   return JSON.parse(payload) as JwtClaims;
-};
-
-const assertAllowedDomain = (email: string) => {
-  if (!AZURE_ALLOWED_DOMAINS.length) {
-    return;
-  }
-
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain || !AZURE_ALLOWED_DOMAINS.includes(domain)) {
-    throw new Error("Email domain is not allowed");
-  }
 };
 
 const buildRegistrationReferenceNo = () => {
@@ -186,9 +171,6 @@ const validateAndGetMicrosoftIdentity = (idToken: string) => {
   if (!email) {
     throw new Error("Email not found in Microsoft token");
   }
-
-  assertAllowedDomain(email);
-
   const nameData = extractMicrosoftName(claims);
 
   return {

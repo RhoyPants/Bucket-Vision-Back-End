@@ -38,6 +38,14 @@ router.get(
   ProjectController.getMyDrafts,
 );
 
+// GET BY STATUS
+router.get(
+  "/status/:status",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  ProjectController.getByStatus,
+);
+
 // GET ONE
 router.get(
   "/:id",
