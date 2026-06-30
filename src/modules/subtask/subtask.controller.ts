@@ -527,13 +527,38 @@ export class SubtaskController {
     try {
       const { checklistId } = req.params;
 
+      const existing = await prisma.checklist.findUnique({
+        where: { id: checklistId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: "Checklist not found",
+        });
+      }
+
       await prisma.checklist.delete({
         where: { id: checklistId },
       });
 
-      res.json({ message: "Checklist deleted" });
+      res.json({
+        success: true,
+        message: "Checklist deleted",
+      });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      if (error?.code === "P2025") {
+        return res.status(404).json({
+          success: false,
+          message: "Checklist not found",
+        });
+      }
+
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
     }
   }
 
@@ -570,24 +595,49 @@ export async function getMyTaskBoard(req: any, res: any) {
     const userId = req.user.id;
     const { projectId, scopeId, taskId, search } = req.query;
 
+    const page = Math.max(1, Number(req.query.page || 1));
+    const requestedLimit = Number(req.query.limit || 20);
+    const limit = Math.min(50, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 20));
+    const skip = (page - 1) * limit;
+
     // Build filter conditions
     const whereConditions: any = {
+      deletedAt: null,
       assignees: {
         some: { userId }
+      },
+      task: {
+        deletedAt: null,
+        scope: {
+          deletedAt: null,
+          project: {
+            isActive: true,
+            status: "ACTIVE"
+          }
+        }
       }
     };
 
     // Build task filter conditions (nested properly)
-    const taskFilter: any = {};
-    
+    const taskFilter: any = {
+      deletedAt: null,
+      scope: {
+        deletedAt: null,
+        project: {
+          isActive: true,
+          status: "ACTIVE"
+        }
+      }
+    };
+
     if (projectId) {
-      taskFilter.scope = { projectId };
+      taskFilter.scope.projectId = projectId;
     }
-    
+
     if (scopeId) {
       taskFilter.scopeId = scopeId;
     }
-    
+
     // Apply task filter only if needed
     if (Object.keys(taskFilter).length > 0) {
       whereConditions.task = taskFilter;
@@ -605,9 +655,151 @@ export async function getMyTaskBoard(req: any, res: any) {
       ];
     }
 
-    const subtasks = await prisma.subtask.findMany({
-      where: whereConditions,
+    const [subtasks, total] = await prisma.$transaction([
+      prisma.subtask.findMany({
+        where: whereConditions,
+        select: {
+          id: true,
+          title: true,
+          progress: true,
+          createdAt: true,
+          projectedStartDate: true,
+          projectedEndDate: true,
+          actualStartDate: true,
+          actualEndDate: true,
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          task: {
+            select: {
+              id: true,
+              title: true,
+              scope: {
+                select: {
+                  id: true,
+                  name: true,
+                  project: {
+                    select: {
+                      id: true,
+                      name: true,
+                    }
+                  }
+                }
+              }
+            }
+          },
+          assignees: {
+            select: {
+              userId: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          checklists: {
+            orderBy: { order: "asc" },
+            select: {
+              id: true,
+              title: true,
+              isCompleted: true,
+              order: true,
+            },
+          },
+        },
+        orderBy: [
+          { task: { scope: { projectId: 'asc' } } },
+          { task: { scopeId: 'asc' } },
+          { taskId: 'asc' },
+          { createdAt: 'asc' }
+        ],
+        skip,
+        take: limit,
+      }),
+      prisma.subtask.count({ where: whereConditions }),
+    ]);
+
+    const enrichedSubtasks = subtasks.map((subtask: any) => {
+      const project = subtask.task?.scope?.project || null;
+      const scope = subtask.task?.scope || null;
+      const task = subtask.task || null;
+      const assigneeNames = (subtask.assignees || [])
+        .map((a: any) => a.user?.name)
+        .filter(Boolean);
+
+      return {
+        id: subtask.id,
+        projectId: project?.id || null,
+        projectName: project?.name || null,
+        scopeId: scope?.id || null,
+        scopeName: scope?.name || null,
+        taskId: task?.id || null,
+        taskName: task?.title || null,
+        subtaskName: subtask.title,
+        startDate: subtask.projectedStartDate || subtask.actualStartDate || null,
+        endDate: subtask.projectedEndDate || subtask.actualEndDate || null,
+        assignorName: subtask.creator?.name || null,
+        assigneeNames,
+        progress: subtask.progress,
+        checklist: subtask.checklists || [],
+        checklistCount: Array.isArray(subtask.checklists) ? subtask.checklists.length : 0,
+        createdAt: subtask.createdAt,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: enrichedSubtasks,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+}
+
+// 🔥 TASK BOARD ITEM - Full detail for a single assigned subtask
+export async function getMyBoardItem(req: any, res: any) {
+  try {
+    const userId = req.user.id;
+    const { itemId } = req.params;
+
+    const subtask = await prisma.subtask.findFirst({
+      where: {
+        id: itemId,
+        deletedAt: null,
+        assignees: {
+          some: { userId },
+        },
+        task: {
+          deletedAt: null,
+          scope: {
+            deletedAt: null,
+            project: {
+              isActive: true,
+              status: "ACTIVE",
+            },
+          },
+        },
+      },
       include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         task: {
           include: {
             scope: {
@@ -616,12 +808,17 @@ export async function getMyTaskBoard(req: any, res: any) {
                   select: {
                     id: true,
                     name: true,
-                    description: true
-                  }
-                }
-              }
-            }
-          }
+                    description: true,
+                    status: true,
+                    isActive: true,
+                    progress: true,
+                    expectedEndDate: true,
+                    actualEndDate: true,
+                  },
+                },
+              },
+            },
+          },
         },
         assignees: {
           include: {
@@ -629,41 +826,59 @@ export async function getMyTaskBoard(req: any, res: any) {
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
+                email: true,
+              },
+            },
+          },
         },
-        progressLogs: {
-          where: { userId },
-          orderBy: { date: 'desc' },
-          take: 1
+        checklists: {
+          orderBy: { order: "asc" },
         },
-        checklists: true,
         comments: {
+          orderBy: { createdAt: "desc" },
           include: {
             user: {
-              select: { name: true }
-            }
-          }
-        }
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        progressLogs: {
+          orderBy: { date: "desc" },
+        },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            fileUrl: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
+            uploadedBy: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
-      orderBy: [
-        { task: { scope: { projectId: 'asc' } } },
-        { task: { scopeId: 'asc' } },
-        { taskId: 'asc' },
-        { createdAt: 'asc' }
-      ]
     });
+
+    if (!subtask) {
+      return res.status(404).json({
+        success: false,
+        data: null,
+        message: "Board item not found",
+      });
+    }
 
     res.json({
       success: true,
-      data: subtasks,
-      total: subtasks.length
+      data: subtask,
     });
   } catch (err: any) {
     res.status(500).json({
-      message: err.message
+      message: err.message,
     });
   }
 }

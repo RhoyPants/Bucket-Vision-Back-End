@@ -320,7 +320,7 @@ model ProgressLog {
   user              User?                    @relation(fields: [userId], references: [id])
   attachments       ProgressLogAttachment[]
 
-  @@unique([subtaskId, date])
+  @@unique([subtaskId, date, userId])
 }
 
 model ProgressLogAttachment {

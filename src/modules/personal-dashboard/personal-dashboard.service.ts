@@ -935,18 +935,36 @@ export class PersonalDashboardService {
   private async getTaskCompletion(projectId: string) {
     const subtasks = await prisma.subtask.findMany({
       where: {
+        deletedAt: null,
         task: {
-          scope: { projectId },
+          deletedAt: null,
+          scope: {
+            projectId,
+            deletedAt: null,
+          },
         },
       },
       select: { status: true, progress: true },
     });
 
-    const completed = subtasks.filter((subtask) => subtask.progress >= 100 || subtask.status === 2).length;
+    // Status mapping in the codebase is primarily 0=pending, 1=ongoing, 2=completed.
+    // Some historical data may use 3 as completed, so we treat both 2 and 3 as completed.
+    const completed = subtasks.filter(
+      (subtask) => subtask.progress >= 100 || subtask.status === 2 || subtask.status === 3
+    ).length;
+
+    const ongoing = subtasks.filter(
+      (subtask) =>
+        !(subtask.progress >= 100 || subtask.status === 2 || subtask.status === 3) &&
+        (subtask.status === 1 || (subtask.progress > 0 && subtask.progress < 100))
+    ).length;
+
+    const pending = Math.max(0, subtasks.length - completed - ongoing);
 
     return {
       completed,
-      pending: Math.max(0, subtasks.length - completed),
+      ongoing,
+      pending,
       total: subtasks.length,
     };
   }

@@ -289,20 +289,26 @@ export class ApprovalService {
     // Check if approval is disabled for this project
     if (!(project as any).approvalEnabled) {
       // Archive old versions if this is a new version
-      if (project.rootProjectId) {
-        await prisma.project.updateMany({
-          where: {
-            rootProjectId: project.rootProjectId,
-            NOT: { id: projectId },
-          },
-          data: {
-            status: "ARCHIVED" as ProjectStatus,
-            isActive: false,
-            isLatestVersion: false,
-            isLocked: true,
-          },
-        });
-      }
+      const rootId = project.rootProjectId ?? project.id;
+      await prisma.project.updateMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { id: rootId },
+                { rootProjectId: rootId },
+              ],
+            },
+            { NOT: { id: projectId } },
+          ],
+        },
+        data: {
+          status: "ARCHIVED" as ProjectStatus,
+          isActive: false,
+          isLatestVersion: false,
+          isLocked: true,
+        },
+      });
 
       // Auto-approve: skip workflow, activate project directly
       const updated = await prisma.project.update({
@@ -339,20 +345,26 @@ export class ApprovalService {
     const approvalEnabled = await this.isApprovalEnabled();
     if (!approvalEnabled) {
       // Archive old versions if this is a new version
-      if (project.rootProjectId) {
-        await prisma.project.updateMany({
-          where: {
-            rootProjectId: project.rootProjectId,
-            NOT: { id: projectId },
-          },
-          data: {
-            status: "ARCHIVED" as ProjectStatus,
-            isActive: false,
-            isLatestVersion: false,
-            isLocked: true,
-          },
-        });
-      }
+      const rootId = project.rootProjectId ?? project.id;
+      await prisma.project.updateMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { id: rootId },
+                { rootProjectId: rootId },
+              ],
+            },
+            { NOT: { id: projectId } },
+          ],
+        },
+        data: {
+          status: "ARCHIVED" as ProjectStatus,
+          isActive: false,
+          isLatestVersion: false,
+          isLocked: true,
+        },
+      });
 
       // Auto-approve: skip workflow, activate project directly
       const updated = await prisma.project.update({
@@ -588,20 +600,26 @@ export class ApprovalService {
     const newProjectStatus = postStatus || project.status;
 
     if (newProjectStatus === "ACTIVE") {
-      if (project.rootProjectId) {
-        await prisma.project.updateMany({
-          where: {
-            rootProjectId: project.rootProjectId,
-            NOT: { id: projectId },
-          },
-          data: {
-            status: "ARCHIVED" as ProjectStatus,
-            isActive: false,
-            isLatestVersion: false,
-            isLocked: true,
-          },
-        });
-      }
+      const rootId = project.rootProjectId ?? project.id;
+      await prisma.project.updateMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { id: rootId },
+                { rootProjectId: rootId },
+              ],
+            },
+            { NOT: { id: projectId } },
+          ],
+        },
+        data: {
+          status: "ARCHIVED" as ProjectStatus,
+          isActive: false,
+          isLatestVersion: false,
+          isLocked: true,
+        },
+      });
 
       await prisma.project.update({
         where: { id: projectId },

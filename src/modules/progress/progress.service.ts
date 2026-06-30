@@ -2,6 +2,16 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+function getProgressDateRange(date: Date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  return { start, end };
+}
+
 /**
  * 🔥 MAIN ENTRY POINT
  * Call this AFTER creating/updating a ProgressLog
@@ -205,26 +215,33 @@ export async function addProgressLog(data: {
     throw new Error("Daily percent must be between 0 and 100");
   }
 
-  // 2. Create / Update log
-  const log = await prisma.progressLog.upsert({
+  if (!data.userId) {
+    throw new Error("User is required to add progress");
+  }
+
+  const { start, end } = getProgressDateRange(data.date);
+
+  const existingLog = await prisma.progressLog.findFirst({
     where: {
-      subtaskId_date: {
-        subtaskId: data.subtaskId,
-        date: data.date,
+      subtaskId: data.subtaskId,
+      userId: data.userId,
+      date: {
+        gte: start,
+        lt: end,
       },
     },
-    update: {
-      dailyPercent: data.dailyPercent,
-      remarks: data.remarks,
-      photoUrl: data.photoUrl,
-      attachmentUrl: data.attachmentUrl,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      userId: data.userId,
-    },
-    create: {
+    select: { id: true },
+  });
+
+  if (existingLog) {
+    throw new Error("Progress can only be added once per assignee per day. Please update the existing progress entry.");
+  }
+
+  // 2. Create log
+  const log = await prisma.progressLog.create({
+    data: {
       subtaskId: data.subtaskId,
-      date: data.date,
+      date: start,
       dailyPercent: data.dailyPercent,
       cumulativePercent: 0,
       remarks: data.remarks,
@@ -239,7 +256,7 @@ export async function addProgressLog(data: {
   // 3. Recompute everything
   await recomputeSubtaskProgress(data.subtaskId);
 
-  // 4. Save attachments (delete existing first on upsert, then recreate)
+  // 4. Save attachments
   if (data.attachments && data.attachments.length > 0) {
     await prisma.progressLogAttachment.deleteMany({
       where: { progressLogId: log.id },

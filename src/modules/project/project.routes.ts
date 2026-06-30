@@ -38,6 +38,14 @@ router.get(
   ProjectController.getMyDrafts,
 );
 
+// GET ACTIVE PROJECTS FOR DROPDOWN
+router.get(
+  "/active/dropdown",
+  authenticate,
+  authorize("PROJECTS", "READ"),
+  ProjectController.getActiveDropdown,
+);
+
 // GET BY STATUS
 router.get(
   "/status/:status",

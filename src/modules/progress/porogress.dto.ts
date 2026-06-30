@@ -10,6 +10,12 @@ export interface AttachmentInputDTO {
   sortOrder?: number;
 }
 
+export interface UpdateAttachmentInputDTO {
+  id: string;
+  name?: string;
+  sortOrder?: number;
+}
+
 export interface CreateProgressDTO {
   subtaskId: string;
   date: Date;
@@ -24,7 +30,15 @@ export interface CreateProgressDTO {
 }
 
 export interface UpdateProgressDTO {
-  dailyPercent: number;
+  dailyPercent?: number;
+  remarks?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface UpdateProgressAttachmentsDTO {
+  attachmentUpdates?: UpdateAttachmentInputDTO[];
+  removeAttachmentIds?: string[];
 }
 
 export interface UpdateProgressParamsDTO {

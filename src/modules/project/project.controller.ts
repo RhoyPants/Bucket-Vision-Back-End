@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ProjectStatus } from "@prisma/client";
+import { Prisma, ProjectStatus } from "@prisma/client";
 import prisma from "../../config/prisma";
 
 import {
@@ -14,6 +14,129 @@ import { fetchSharePointFile, uploadBufferToSharePoint } from "../../services/sh
 
 
 export class ProjectController {
+  private static readonly LIST_SORTABLE_FIELDS = new Set([
+    "createdAt",
+    "updatedAt",
+    "name",
+    "status",
+    "startDate",
+    "expectedEndDate",
+    "priority",
+  ]);
+
+  private static parseListQuery(req: Request) {
+    const pageRaw = Array.isArray(req.query.page) ? req.query.page[0] : req.query.page;
+    const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+    const searchRaw = Array.isArray(req.query.search) ? req.query.search[0] : req.query.search;
+    const statusRaw = Array.isArray(req.query.status) ? req.query.status[0] : req.query.status;
+    const businessUnitIdRaw = Array.isArray(req.query.businessUnitId)
+      ? req.query.businessUnitId[0]
+      : req.query.businessUnitId;
+    const sortByRaw = Array.isArray(req.query.sortBy) ? req.query.sortBy[0] : req.query.sortBy;
+    const sortOrderRaw = Array.isArray(req.query.sortOrder) ? req.query.sortOrder[0] : req.query.sortOrder;
+
+    const page = Math.max(1, Number(pageRaw || 1));
+    const limit = Math.min(100, Math.max(1, Number(limitRaw || 10)));
+    const skip = (page - 1) * limit;
+
+    const search = typeof searchRaw === "string" ? searchRaw.trim() : "";
+    const status = typeof statusRaw === "string" ? statusRaw.trim().toUpperCase() : "";
+    const businessUnitId = typeof businessUnitIdRaw === "string" ? businessUnitIdRaw.trim() : "";
+
+    const sortBy =
+      typeof sortByRaw === "string" && ProjectController.LIST_SORTABLE_FIELDS.has(sortByRaw)
+        ? sortByRaw
+        : "createdAt";
+
+    const sortOrder: Prisma.SortOrder =
+      typeof sortOrderRaw === "string" && sortOrderRaw.toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
+
+    return {
+      page,
+      limit,
+      skip,
+      search,
+      status,
+      businessUnitId,
+      sortBy,
+      sortOrder,
+    };
+  }
+
+  private static buildListMeta(page: number, limit: number, total: number) {
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    return {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
+  private static buildProjectWhereFilters(filters: {
+    search: string;
+    status: string;
+    businessUnitId: string;
+  }): Prisma.ProjectWhereInput {
+    const where: Prisma.ProjectWhereInput = {};
+    const and: Prisma.ProjectWhereInput[] = [];
+
+    if (filters.search) {
+      and.push({
+        OR: [
+          { name: { contains: filters.search, mode: "insensitive" } },
+          { description: { contains: filters.search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (filters.status) {
+      if (!Object.values(ProjectStatus).includes(filters.status as ProjectStatus)) {
+        throw new Error("Invalid status filter");
+      }
+      and.push({ status: filters.status as ProjectStatus });
+    }
+
+    if (filters.businessUnitId) {
+      and.push({ businessUnit: filters.businessUnitId });
+    }
+
+    if (and.length > 0) {
+      where.AND = and;
+    }
+
+    return where;
+  }
+
+  private static sortProjectsInMemory(projects: any[], sortBy: string, sortOrder: Prisma.SortOrder) {
+    const direction = sortOrder === "asc" ? 1 : -1;
+
+    return [...projects].sort((a, b) => {
+      const aVal = a?.[sortBy];
+      const bVal = b?.[sortBy];
+
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1 * direction;
+      if (bVal == null) return -1 * direction;
+
+      if (aVal instanceof Date || bVal instanceof Date) {
+        const aTime = new Date(aVal).getTime();
+        const bTime = new Date(bVal).getTime();
+        return (aTime - bTime) * direction;
+      }
+
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return (aVal - bVal) * direction;
+      }
+
+      return String(aVal).localeCompare(String(bVal)) * direction;
+    });
+  }
+
   private static async enrichBusinessUnitDetails(projects: any[]) {
     const buIds = [
       ...new Set(projects.map((p: any) => p.businessUnit).filter(Boolean)),
@@ -361,49 +484,150 @@ export class ProjectController {
   static async getMyApprovals(req: Request, res: Response) {
     try {
       const userId = (req as any).user.id;
+      const {
+        page,
+        limit,
+        skip,
+        search,
+        status,
+        businessUnitId,
+        sortBy,
+        sortOrder,
+      } = ProjectController.parseListQuery(req);
+
       const projects = await approvalService.getPendingProjectsForApproval(userId);
       const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
-      res.json(enriched);
+
+      let filtered = enriched;
+
+      if (search) {
+        const needle = search.toLowerCase();
+        filtered = filtered.filter(
+          (p: any) =>
+            String(p.name || "").toLowerCase().includes(needle) ||
+            String(p.description || "").toLowerCase().includes(needle)
+        );
+      }
+
+      if (status) {
+        if (!Object.values(ProjectStatus).includes(status as ProjectStatus)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid status filter",
+          });
+        }
+        filtered = filtered.filter((p: any) => p.status === status);
+      }
+
+      if (businessUnitId) {
+        filtered = filtered.filter((p: any) => p.businessUnit === businessUnitId);
+      }
+
+      const sorted = ProjectController.sortProjectsInMemory(filtered, sortBy, sortOrder);
+      const pageData = sorted.slice(skip, skip + limit);
+      const total = sorted.length;
+
+      res.json({
+        success: true,
+        data: pageData,
+        meta: ProjectController.buildListMeta(page, limit, total),
+      });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ success: false, message: error.message });
     }
   }
 
   static async getMyRequests(req: Request, res: Response) {
     try {
       const userId = (req as any).user.id;
-      const projects = await prisma.project.findMany({
-        where: { ownerId: userId, status: { not: "DRAFT" } },
-        orderBy: { createdAt: "desc" },
-        include: {
-          projectMembers: {
-            include: { user: { select: { id: true, name: true, email: true } } },
+      const {
+        page,
+        limit,
+        skip,
+        search,
+        status,
+        businessUnitId,
+        sortBy,
+        sortOrder,
+      } = ProjectController.parseListQuery(req);
+
+      const where: Prisma.ProjectWhereInput = {
+        ownerId: userId,
+        status: { not: "DRAFT" },
+        ...ProjectController.buildProjectWhereFilters({ search, status, businessUnitId }),
+      };
+
+      const [projects, total] = await Promise.all([
+        prisma.project.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { [sortBy]: sortOrder },
+          include: {
+            projectMembers: {
+              include: { user: { select: { id: true, name: true, email: true } } },
+            },
           },
-        },
-      });
+        }),
+        prisma.project.count({ where }),
+      ]);
+
       const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
-      res.json(enriched);
+
+      res.json({
+        success: true,
+        data: enriched,
+        meta: ProjectController.buildListMeta(page, limit, total),
+      });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ success: false, message: error.message });
     }
   }
 
   static async getMyDrafts(req: Request, res: Response) {
     try {
       const userId = (req as any).user.id;
-      const projects = await prisma.project.findMany({
-        where: { ownerId: userId, status: "DRAFT" },
-        orderBy: { createdAt: "desc" },
-        include: {
-          projectMembers: {
-            include: { user: { select: { id: true, name: true, email: true } } },
+      const {
+        page,
+        limit,
+        skip,
+        search,
+        status,
+        businessUnitId,
+        sortBy,
+        sortOrder,
+      } = ProjectController.parseListQuery(req);
+
+      const where: Prisma.ProjectWhereInput = {
+        ownerId: userId,
+        status: "DRAFT",
+        ...ProjectController.buildProjectWhereFilters({ search, status, businessUnitId }),
+      };
+
+      const [projects, total] = await Promise.all([
+        prisma.project.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { [sortBy]: sortOrder },
+          include: {
+            projectMembers: {
+              include: { user: { select: { id: true, name: true, email: true } } },
+            },
           },
-        },
-      });
+        }),
+        prisma.project.count({ where }),
+      ]);
+
       const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
-      res.json(enriched);
+
+      res.json({
+        success: true,
+        data: enriched,
+        meta: ProjectController.buildListMeta(page, limit, total),
+      });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ success: false, message: error.message });
     }
   }
 
@@ -440,6 +664,54 @@ export class ProjectController {
                   },
                 ],
               },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          pin: true,
+          status: true,
+        },
+      });
+
+      res.json(
+        projects.map((project) => ({
+          value: project.id,
+          label: project.name,
+          pin: project.pin,
+          status: project.status,
+        }))
+      );
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  // GET ACTIVE PROJECTS FOR DROPDOWN
+  static async getActiveDropdown(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const userRoleId = (req as any).user.roleId;
+
+      const userRole = await (prisma as any).role.findUnique({
+        where: { id: userRoleId },
+      });
+
+      const canSeeAllActiveProjects = ["OP", "SUPERADMIN"].includes(userRole?.name);
+
+      const projects = await prisma.project.findMany({
+        where: canSeeAllActiveProjects
+          ? { status: "ACTIVE" }
+          : {
+              status: "ACTIVE",
+              OR: [
+                { ownerId: userId },
+                {
+                  projectMembers: {
+                    some: { userId },
+                  },
+                },
+              ],
+            },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,

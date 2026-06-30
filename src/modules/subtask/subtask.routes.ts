@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { SubtaskController, getMyTaskBoard } from "./subtask.controller";
+import { SubtaskController, getMyBoardItem, getMyTaskBoard } from "./subtask.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -11,6 +11,13 @@ router.get(
   authenticate,
   authorize("SUBTASKS", "READ"),
   getMyTaskBoard
+);
+
+router.get(
+  "/board/item/:itemId",
+  authenticate,
+  authorize("SUBTASKS", "READ"),
+  getMyBoardItem
 );
 
 // GET (Kanban View)

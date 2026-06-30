@@ -102,21 +102,28 @@ export class AdminProjectApprovalController {
           },
         });
 
-        // Archive all previous versions under the same root project
-        if (project.rootProjectId) {
-          await prisma.project.updateMany({
-            where: {
-              rootProjectId: project.rootProjectId,
-              NOT: { id: projectId },
-            },
-            data: {
-              status: "ARCHIVED",
-              isActive: false,
-              isLatestVersion: false,
-              isLocked: true,
-            },
-          });
-        }
+        // Archive all previous versions under the same root project,
+        // including the root record itself when rootProjectId is null.
+        const rootId = project.rootProjectId ?? project.id;
+        await prisma.project.updateMany({
+          where: {
+            AND: [
+              {
+                OR: [
+                  { id: rootId },
+                  { rootProjectId: rootId },
+                ],
+              },
+              { NOT: { id: projectId } },
+            ],
+          },
+          data: {
+            status: "ARCHIVED",
+            isActive: false,
+            isLatestVersion: false,
+            isLocked: true,
+          },
+        });
       }
 
       const updated = await prisma.project.update({

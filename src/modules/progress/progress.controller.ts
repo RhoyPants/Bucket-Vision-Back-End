@@ -10,6 +10,8 @@ import {
 import {
   GetBySubtaskParamsDTO,
   CreateProgressDTO,
+  UpdateAttachmentInputDTO,
+  UpdateProgressAttachmentsDTO,
   UpdateProgressDTO,
   UpdateProgressParamsDTO,
   DeleteProgressParamsDTO,
@@ -18,6 +20,110 @@ import {
 } from "./porogress.dto";
 
 const prisma = new PrismaClient();
+const MAX_PROGRESS_UPDATE_ATTEMPTS = 2;
+
+function getProgressDayRange(date: any) {
+  const progressDate = new Date(date);
+
+  if (isNaN(progressDate.getTime())) {
+    throw new Error("date must be a valid date");
+  }
+
+  const dayStart = new Date(progressDate);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  return { dayStart, dayEnd };
+}
+
+async function checkProgressAddEligibility(params: {
+  subtaskId: string;
+  date: any;
+  userId: string;
+}) {
+  const { subtaskId, date, userId } = params;
+  const { dayStart, dayEnd } = getProgressDayRange(date);
+
+  if (!subtaskId) {
+    throw new Error("subtaskId is required");
+  }
+
+  const subtask = await prisma.subtask.findUnique({
+    where: { id: subtaskId },
+    select: { id: true },
+  });
+
+  if (!subtask) {
+    return {
+      canAdd: false,
+      reason: "SUBTASK_NOT_FOUND",
+      message: "Subtask not found.",
+      dayStart,
+      dayEnd,
+      existingLog: null,
+    };
+  }
+
+  const assignee = await prisma.subtaskAssignee.findFirst({
+    where: { subtaskId, userId },
+    select: { userId: true },
+  });
+
+  if (!assignee) {
+    return {
+      canAdd: false,
+      reason: "NOT_ASSIGNED",
+      message: "You cannot add progress because you are not assigned to this subtask.",
+      dayStart,
+      dayEnd,
+      existingLog: null,
+    };
+  }
+
+  const existingLog = await prisma.progressLog.findFirst({
+    where: {
+      subtaskId,
+      userId,
+      date: {
+        gte: dayStart,
+        lt: dayEnd,
+      },
+    },
+    select: {
+      id: true,
+      subtaskId: true,
+      userId: true,
+      date: true,
+      dailyPercent: true,
+      cumulativePercent: true,
+      remarks: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (existingLog) {
+    return {
+      canAdd: false,
+      reason: "ALREADY_ADDED",
+      message: "You cannot add progress because you already added progress for this subtask today.",
+      dayStart,
+      dayEnd,
+      existingLog,
+    };
+  }
+
+  return {
+    canAdd: true,
+    reason: null,
+    message: "You can add progress for this subtask today.",
+    dayStart,
+    dayEnd,
+    existingLog: null,
+  };
+}
 
 // ========================================
 // GET ALL PROGRESS LOGS FOR SUBTASK
@@ -74,6 +180,52 @@ export async function getBySubtask(req: Request, res: Response) {
 }
 
 // ========================================
+// CHECK IF CURRENT ASSIGNEE CAN ADD PROGRESS
+// ========================================
+export async function canAddProgress(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        canAdd: false,
+        reason: "UNAUTHORIZED",
+        message: "Unauthorized",
+        data: null,
+      });
+    }
+
+    const subtaskId = String(req.query.subtaskId || "");
+    const date = req.query.date || new Date();
+    const eligibility = await checkProgressAddEligibility({ subtaskId, date, userId });
+
+    res.json({
+      success: true,
+      canAdd: eligibility.canAdd,
+      reason: eligibility.reason,
+      message: eligibility.message,
+      data: {
+        subtaskId,
+        date: eligibility.dayStart,
+        existingLog: eligibility.existingLog,
+        viewUrl: eligibility.existingLog
+          ? `/api/progress/subtask/${subtaskId}`
+          : null,
+      },
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      canAdd: false,
+      reason: "INVALID_REQUEST",
+      message: error.message,
+      data: null,
+    });
+  }
+}
+
+// ========================================
 // ADD / UPSERT PROGRESS (🔥 FIXED)
 // ========================================
 export async function addProgress(req: Request, res: Response) {
@@ -89,6 +241,10 @@ export async function addProgress(req: Request, res: Response) {
         ];
     const userId = (req as any).user?.id;
 
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
     // 🔥 FIX: parse everything properly
     const parsedDaily = Number(dailyPercent);
     const parsedLat = req.body.lat ? Number(req.body.lat) : null;
@@ -101,6 +257,12 @@ export async function addProgress(req: Request, res: Response) {
 
     if (parsedDaily < 0 || parsedDaily > 100) {
       throw new Error("dailyPercent must be between 0 and 100");
+    }
+
+    const eligibility = await checkProgressAddEligibility({ subtaskId, date, userId });
+
+    if (!eligibility.canAdd) {
+      throw new Error(eligibility.message);
     }
 
     // Upload all files to SharePoint in parallel
@@ -124,7 +286,7 @@ export async function addProgress(req: Request, res: Response) {
 
     const progressData: CreateProgressDTO = {
       subtaskId,
-      date: new Date(date),
+      date: eligibility.dayStart,
       dailyPercent: parsedDaily, // ✅ FIXED
       remarks: remarks || null,
       latitude: parsedLat,
@@ -159,18 +321,79 @@ export async function updateProgress(req: Request, res: Response) {
       id = id[0];
     }
 
-    const body = req.body;
+    const existingLog = await prisma.progressLog.findUnique({
+      where: { id },
+      include: {
+        attachments: { orderBy: { sortOrder: "asc" } },
+      },
+    });
 
-    const updateData: UpdateProgressDTO = {
-      ...body,
-      dailyPercent: body.dailyPercent
-        ? Number(body.dailyPercent)
-        : undefined,
-    };
+    if (!existingLog) {
+      throw new Error("Progress log not found");
+    }
+
+    const currentUpdateAttempts = existingLog.dayNumber ?? 0;
+    if (currentUpdateAttempts >= MAX_PROGRESS_UPDATE_ATTEMPTS) {
+      return res.status(400).json({
+        success: false,
+        message: `Update limit reached. You can only update/resubmit this progress ${MAX_PROGRESS_UPDATE_ATTEMPTS} times.`,
+        error: "UPDATE_LIMIT_REACHED",
+      });
+    }
+
+    const body = req.body ?? {};
+
+    const updateData: UpdateProgressDTO = {};
+
+    if (body.dailyPercent !== undefined && body.dailyPercent !== "") {
+      const parsedDaily = Number(body.dailyPercent);
+      if (isNaN(parsedDaily)) {
+        throw new Error("dailyPercent must be a number");
+      }
+      if (parsedDaily < 0 || parsedDaily > 100) {
+        throw new Error("dailyPercent must be between 0 and 100");
+      }
+      updateData.dailyPercent = parsedDaily;
+    }
+
+    if (body.remarks !== undefined) {
+      updateData.remarks = body.remarks || null;
+    }
+
+    if (body.latitude !== undefined || body.lat !== undefined) {
+      const latitudeValue = body.latitude ?? body.lat;
+      updateData.latitude = latitudeValue === "" || latitudeValue === null
+        ? null
+        : Number(latitudeValue);
+      if (updateData.latitude !== null && isNaN(updateData.latitude)) {
+        throw new Error("latitude must be a number");
+      }
+    }
+
+    if (body.longitude !== undefined || body.lng !== undefined) {
+      const longitudeValue = body.longitude ?? body.lng;
+      updateData.longitude = longitudeValue === "" || longitudeValue === null
+        ? null
+        : Number(longitudeValue);
+      if (updateData.longitude !== null && isNaN(updateData.longitude)) {
+        throw new Error("longitude must be a number");
+      }
+    }
+
+    const rawFiles = (req as any).files;
+    const files: Express.Multer.File[] = Array.isArray(rawFiles)
+      ? rawFiles
+      : [
+          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
+          ...((rawFiles?.photo as Express.Multer.File[]) ?? []),
+        ];
 
     const log = await prisma.progressLog.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        dayNumber: currentUpdateAttempts + 1,
+      },
       include: {
         attachments: { orderBy: { sortOrder: "asc" } },
         user: {
@@ -183,12 +406,151 @@ export async function updateProgress(req: Request, res: Response) {
       }
     });
 
+    // Optional metadata updates for existing attachments.
+    // Accepts either JSON string or parsed array in multipart/form-data.
+    const attachmentUpdatesRaw = body.attachmentUpdates;
+    let attachmentUpdates: UpdateAttachmentInputDTO[] = [];
+    const removeAttachmentIdsRaw = body.removeAttachmentIds;
+    let removeAttachmentIds: string[] = [];
+
+    const attachmentPayload: UpdateProgressAttachmentsDTO = {};
+
+    if (attachmentUpdatesRaw) {
+      if (typeof attachmentUpdatesRaw === "string") {
+        try {
+          attachmentUpdates = JSON.parse(attachmentUpdatesRaw);
+        } catch {
+          throw new Error("attachmentUpdates must be a valid JSON array");
+        }
+      } else if (Array.isArray(attachmentUpdatesRaw)) {
+        attachmentUpdates = attachmentUpdatesRaw;
+      } else {
+        throw new Error("attachmentUpdates must be an array");
+      }
+
+      attachmentPayload.attachmentUpdates = attachmentUpdates;
+    }
+
+    if (removeAttachmentIdsRaw) {
+      if (typeof removeAttachmentIdsRaw === "string") {
+        try {
+          removeAttachmentIds = JSON.parse(removeAttachmentIdsRaw);
+        } catch {
+          throw new Error("removeAttachmentIds must be a valid JSON array");
+        }
+      } else if (Array.isArray(removeAttachmentIdsRaw)) {
+        removeAttachmentIds = removeAttachmentIdsRaw;
+      } else {
+        throw new Error("removeAttachmentIds must be an array");
+      }
+
+      attachmentPayload.removeAttachmentIds = removeAttachmentIds;
+    }
+
+    if (attachmentPayload.removeAttachmentIds && attachmentPayload.removeAttachmentIds.length > 0) {
+      const existingAttachmentIds = new Set(existingLog.attachments.map((a) => a.id));
+      const invalidIds = attachmentPayload.removeAttachmentIds.filter(
+        (attachmentId) => !existingAttachmentIds.has(attachmentId)
+      );
+
+      if (invalidIds.length > 0) {
+        throw new Error("One or more removeAttachmentIds are invalid for this progress log");
+      }
+
+      await prisma.progressLogAttachment.deleteMany({
+        where: {
+          progressLogId: id,
+          id: {
+            in: attachmentPayload.removeAttachmentIds,
+          },
+        },
+      });
+    }
+
+    if (attachmentPayload.attachmentUpdates && attachmentPayload.attachmentUpdates.length > 0) {
+      const existingAttachmentIds = new Set(existingLog.attachments.map((a) => a.id));
+
+      for (const update of attachmentPayload.attachmentUpdates) {
+        if (!update?.id || !existingAttachmentIds.has(update.id)) {
+          throw new Error("One or more attachment ids are invalid for this progress log");
+        }
+
+        const patch: { name?: string; sortOrder?: number } = {};
+
+        if (update.name !== undefined) {
+          patch.name = String(update.name);
+        }
+
+        if (update.sortOrder !== undefined) {
+          const parsedSort = Number(update.sortOrder);
+          if (isNaN(parsedSort)) {
+            throw new Error("attachment sortOrder must be a number");
+          }
+          patch.sortOrder = parsedSort;
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await prisma.progressLogAttachment.update({
+            where: { id: update.id },
+            data: patch,
+          });
+        }
+      }
+    }
+
+    // Optional new files to append as attachments during update.
+    if (files.length > 0) {
+      const latestAttachments = await prisma.progressLogAttachment.findMany({
+        where: { progressLogId: id },
+        orderBy: { sortOrder: "desc" },
+        take: 1,
+      });
+      const baseSortOrder = latestAttachments[0]?.sortOrder ?? -1;
+
+      const uploadedAttachments = await Promise.all(
+        files.map(async (file, i) => {
+          const result = await uploadBufferToSharePoint({
+            buffer: file.buffer,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            folder: "progress",
+          });
+          return {
+            progressLogId: id,
+            url: result.downloadUrl || result.webUrl || "",
+            name: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            sortOrder: baseSortOrder + i + 1,
+          };
+        })
+      );
+
+      await prisma.progressLogAttachment.createMany({
+        data: uploadedAttachments,
+      });
+    }
+
     await recomputeSubtaskProgress(log.subtaskId);
+
+    const updatedLog = await prisma.progressLog.findUnique({
+      where: { id },
+      include: {
+        attachments: { orderBy: { sortOrder: "asc" } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      },
+    });
 
     res.json({
       success: true,
       message: "Progress updated",
-      data: log,
+      data: updatedLog,
     } as ProgressResponseDTO);
   } catch (error: any) {
     res.status(400).json({

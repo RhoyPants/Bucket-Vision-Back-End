@@ -1305,27 +1305,36 @@ console.log("✅ Real construction project created");
           // Only create log if there's actual progress
           if (dailyIncrement > 0 || dayOffset === daysCount - 1) {
             try {
-              await prisma.progressLog.upsert({
+              const existingLog = await prisma.progressLog.findFirst({
                 where: {
-                  subtaskId_date: {
-                    subtaskId: subtask.id,
-                    date: logDate,
-                  },
-                },
-                update: {
-                  dailyPercent: dailyIncrement,
-                  cumulativePercent: cumulativeProgress,
-                },
-                create: {
                   subtaskId: subtask.id,
                   userId: leader.id,
                   date: logDate,
-                  dailyPercent: dailyIncrement,
-                  cumulativePercent: cumulativeProgress,
-                  location: (realProject.location as any)?.city || "Manuel Roxas Blvd, Manila",
-                  dayNumber: dayOffset + 1,
                 },
+                select: { id: true },
               });
+
+              if (existingLog) {
+                await prisma.progressLog.update({
+                  where: { id: existingLog.id },
+                  data: {
+                    dailyPercent: dailyIncrement,
+                    cumulativePercent: cumulativeProgress,
+                  },
+                });
+              } else {
+                await prisma.progressLog.create({
+                  data: {
+                    subtaskId: subtask.id,
+                    userId: leader.id,
+                    date: logDate,
+                    dailyPercent: dailyIncrement,
+                    cumulativePercent: cumulativeProgress,
+                    location: (realProject.location as any)?.city || "Manuel Roxas Blvd, Manila",
+                    dayNumber: dayOffset + 1,
+                  },
+                });
+              }
             } catch (err) {
               // Skip duplicate or constraint errors
             }

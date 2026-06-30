@@ -21,6 +21,13 @@ router.get(
 // ➕ ADD / UPDATE DAILY PROGRESS
 // (calendar input)
 // ========================================
+router.get(
+  "/can-add",
+  authenticate,
+  authorize("SUBTASKS", "UPDATE"),
+  ProgressController.canAddProgress
+);
+
 router.post(
   "/",
   authenticate,
@@ -39,6 +46,10 @@ router.put(
   "/:id",
   authenticate,
   authorize("SUBTASKS", "UPDATE"),
+  upload.fields([
+    { name: "attachments", maxCount: 10 },
+    { name: "photo", maxCount: 1 },
+  ]),
   ProgressController.updateProgress
 );
 
