@@ -9,7 +9,7 @@ const router = Router();
 router.get(
   "/project/:projectId",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ScopeController.getByProject
 );
 
@@ -17,7 +17,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ScopeController.getById
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.post(
   "/",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   ScopeController.create
 );
 
@@ -33,7 +33,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   ScopeController.update
 );
 
@@ -41,7 +41,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("PROJECTS", "DELETE"),
+  authorize("projects", "DELETE"),
   ScopeController.delete
 );
 

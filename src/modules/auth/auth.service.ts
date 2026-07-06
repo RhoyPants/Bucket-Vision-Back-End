@@ -71,6 +71,62 @@ const decodeJwtPayload = (token: string): JwtClaims => {
   return JSON.parse(payload) as JwtClaims;
 };
 
+const buildPermissionPayload = (
+  rolePermissions: Array<{
+    module: { name: string; path?: string | null };
+    permission: { action: string };
+  }>
+) => {
+  const permissions: Record<string, string[]> = {};
+  const pageMap: Record<
+    string,
+    {
+      key: string;
+      name: string;
+      path: string;
+      canView: number;
+      canCreate: number;
+      canUpdate: number;
+      canDelete: number;
+      canApprove: number;
+    }
+  > = {};
+
+  rolePermissions.forEach((rp) => {
+    const key = rp.module.name;
+    const action = rp.permission.action;
+
+    if (!permissions[key]) {
+      permissions[key] = [];
+    }
+    permissions[key].push(action);
+
+    if (!pageMap[key]) {
+      pageMap[key] = {
+        key,
+        name: key,
+        path: rp.module.path || "",
+        canView: 0,
+        canCreate: 0,
+        canUpdate: 0,
+        canDelete: 0,
+        canApprove: 0,
+      };
+    }
+
+    if (action === "READ") pageMap[key].canView = 1;
+    if (action === "CREATE") pageMap[key].canCreate = 1;
+    if (action === "UPDATE") pageMap[key].canUpdate = 1;
+    if (action === "DELETE") pageMap[key].canDelete = 1;
+    if (action === "APPROVE") pageMap[key].canApprove = 1;
+  });
+
+  return {
+    permissions,
+    pagePermissions: Object.values(pageMap),
+  };
+};
+
 const buildRegistrationReferenceNo = () => {
   const timestamp = Date.now().toString().slice(-8);
   return `REG-${new Date().getFullYear()}-${timestamp}`;
@@ -205,6 +261,7 @@ const buildAuthPayloadForUser = async (userId: string) => {
               module: {
                 select: {
                   name: true,
+                  path: true,
                 },
               },
               permission: {
@@ -240,14 +297,7 @@ const buildAuthPayloadForUser = async (userId: string) => {
     throw new Error("Assigned role is inactive. Please contact your administrator.");
   }
 
-  const permissions: Record<string, string[]> = {};
-  user.role.rolePermissions.forEach((rp) => {
-    const moduleName = rp.module.name;
-    if (!permissions[moduleName]) {
-      permissions[moduleName] = [];
-    }
-    permissions[moduleName].push(rp.permission.action);
-  });
+  const { permissions, pagePermissions } = buildPermissionPayload(user.role.rolePermissions as any);
 
   const accessToken = jwt.sign(
     { id: user.id, roleId: user.roleId },
@@ -284,6 +334,7 @@ const buildAuthPayloadForUser = async (userId: string) => {
       buHead: user.businessUnit?.buHead || null,
     },
     permissions,
+    pagePermissions,
   };
 };
 
@@ -383,15 +434,7 @@ export const getUserInfo = async (userId: string) => {
 
   if (!user) throw new Error("User not found");
 
-  // Transform permissions into a structured format
-  const permissions: Record<string, string[]> = {};
-  user.role.rolePermissions.forEach((rp) => {
-    const moduleName = rp.module.name;
-    if (!permissions[moduleName]) {
-      permissions[moduleName] = [];
-    }
-    permissions[moduleName].push(rp.permission.action);
-  });
+  const { permissions, pagePermissions } = buildPermissionPayload(user.role.rolePermissions as any);
 
   return {
     user: {
@@ -408,6 +451,7 @@ export const getUserInfo = async (userId: string) => {
       buHead: user.businessUnit?.buHead || null,
     },
     permissions, // { USERS: ["CREATE", "READ", "UPDATE", "DELETE"], ... }
+    pagePermissions,
   };
 };
 

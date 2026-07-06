@@ -68,6 +68,28 @@ export const getMe = async (req: Request, res: Response) => {
   }
 };
 
+export const getMyPermissions = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const result = await getUserInfo(userId);
+
+    res.json({
+      success: true,
+      data: {
+        role: result.user.role,
+        pages: result.pagePermissions || [],
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const exchangeMicrosoft = async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;

@@ -12,7 +12,7 @@ const controller = new ApprovalStepUserController();
 router.get(
   "/roles/:roleId/users",
   authenticate,
-  authorize("APPROVALS", "READ"),
+  // authorize("APPROVALS", "READ"),
   (req: Request, res: Response) => controller.getUsersByRole(req, res)
 );
 
@@ -22,7 +22,7 @@ router.get(
 router.post(
   "/steps/:stepId/users",
   authenticate,
-  authorize("APPROVALS", "UPDATE"),
+  // authorize("APPROVALS", "UPDATE"),
   (req: Request, res: Response) => controller.assignUsersToStep(req, res)
 );
 
@@ -30,7 +30,7 @@ router.post(
 router.get(
   "/steps/:stepId/users",
   authenticate,
-  authorize("APPROVALS", "READ"),
+  // authorize("APPROVALS", "READ"),
   (req: Request, res: Response) => controller.getAssignedUsers(req, res)
 );
 
@@ -38,7 +38,7 @@ router.get(
 router.post(
   "/steps/:stepId/users/add",
   authenticate,
-  authorize("APPROVALS", "UPDATE"),
+  // authorize("APPROVALS", "UPDATE"),
   (req: Request, res: Response) => controller.addUserToStep(req, res)
 );
 
@@ -46,7 +46,7 @@ router.post(
 router.delete(
   "/steps/:stepId/users/:userId",
   authenticate,
-  authorize("APPROVALS", "DELETE"),
+  // authorize("APPROVALS", "DELETE"),
   (req: Request, res: Response) => controller.removeUserFromStep(req, res)
 );
 
@@ -54,7 +54,7 @@ router.delete(
 router.delete(
   "/steps/:stepId/users",
   authenticate,
-  authorize("APPROVALS", "DELETE"),
+  // authorize("APPROVALS", "DELETE"),
   (req: Request, res: Response) => controller.clearStepAssignments(req, res)
 );
 

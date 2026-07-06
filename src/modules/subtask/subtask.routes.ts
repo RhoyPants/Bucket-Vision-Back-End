@@ -9,14 +9,14 @@ const router = Router();
 router.get(
   "/board/my",
   authenticate,
-  authorize("SUBTASKS", "READ"),
+  // authorize("projects", "READ"),
   getMyTaskBoard
 );
 
 router.get(
   "/board/item/:itemId",
   authenticate,
-  authorize("SUBTASKS", "READ"),
+  // authorize("projects", "READ"),
   getMyBoardItem
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   "/task/:taskId",
   authenticate,
-  authorize("SUBTASKS", "READ"),
+  // authorize("projects", "READ"),
   SubtaskController.getByTask,
 );
 
@@ -32,7 +32,7 @@ router.get(
 router.post(
   "/",
   authenticate,
-  authorize("SUBTASKS", "CREATE"),
+  authorize("projects", "CREATE"),
   SubtaskController.create,
 );
 
@@ -48,7 +48,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("SUBTASKS", "DELETE"),
+  authorize("projects", "DELETE"),
   SubtaskController.delete,
 );
 
@@ -56,7 +56,7 @@ router.delete(
 router.patch(
   "/:subtaskId/move",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   SubtaskController.move,
 );
 
@@ -64,7 +64,7 @@ router.patch(
 router.patch(
   "/checklists/:checklistId/toggle",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   SubtaskController.toggleChecklist,
 );
 
@@ -72,7 +72,7 @@ router.patch(
 router.patch(
   "/checklists/:checklistId/move",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   SubtaskController.moveChecklist,
 );
 
@@ -80,7 +80,7 @@ router.patch(
 router.patch(
   "/checklists/:checklistId",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   SubtaskController.editChecklist,
 );
 
@@ -88,7 +88,7 @@ router.patch(
 router.post(
   "/checklists",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   SubtaskController.addChecklist,
 );
 
@@ -96,7 +96,7 @@ router.post(
 router.delete(
   "/checklists/:checklistId",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   SubtaskController.deleteChecklist,
 );
 
@@ -104,7 +104,7 @@ router.delete(
 router.get(
   "/:id",
 //   authenticate,
-//   authorize("SUBTASKS", "READ"),
+//   authorize("projects", "READ"),
   SubtaskController.getById,
 );
 
@@ -112,7 +112,7 @@ router.get(
 router.get(
   "/task/:taskId",
 //   authenticate,
-//   authorize("SUBTASKS", "READ"),
+//   authorize("projects", "READ"),
   SubtaskController.getByTask,
 );
 

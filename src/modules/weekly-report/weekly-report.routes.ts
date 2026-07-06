@@ -10,7 +10,7 @@ const router = Router();
 router.post(
   "/",
   authenticate,
-  authorize("WEEKLY_REPORTS", "CREATE"),
+  authorize("weekly_reports", "CREATE"),
   WeeklyReportController.create
 );
 
@@ -18,7 +18,7 @@ router.post(
 router.get(
   "/inbox",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getInbox
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   "/my-submitted",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getMySubmitted
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
   "/summary",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getSummary
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.get(
   "/range",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getByDateRange
 );
 
@@ -50,7 +50,7 @@ router.get(
 router.get(
   "/my",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getMyReports
 );
 
@@ -58,7 +58,7 @@ router.get(
 router.get(
   "/",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getAll
 );
 
@@ -66,7 +66,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   WeeklyReportController.getById
 );
 
@@ -74,7 +74,7 @@ router.get(
 router.put(
   "/:id",
   authenticate,
-  authorize("WEEKLY_REPORTS", "UPDATE"),
+  authorize("weekly_reports", "UPDATE"),
   WeeklyReportController.update
 );
 
@@ -82,7 +82,7 @@ router.put(
 router.put(
   "/:id/mark-read",
   authenticate,
-  authorize("WEEKLY_REPORTS", "UPDATE"),
+  authorize("weekly_reports", "UPDATE"),
   WeeklyReportController.markAsRead
 );
 
@@ -90,7 +90,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("WEEKLY_REPORTS", "DELETE"),
+  authorize("weekly_reports", "DELETE"),
   WeeklyReportController.delete
 );
 
@@ -100,7 +100,7 @@ router.delete(
 router.post(
   "/:id/attachments",
   authenticate,
-  authorize("WEEKLY_REPORTS", "UPDATE"),
+  authorize("weekly_reports", "UPDATE"),
   upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   uploadWeeklyReportAttachment
 );
@@ -108,14 +108,14 @@ router.post(
 router.delete(
   "/attachments/:attachmentId",
   authenticate,
-  authorize("WEEKLY_REPORTS", "UPDATE"),
+  authorize("weekly_reports", "UPDATE"),
   deleteWeeklyReportAttachment
 );
 
 router.get(
   "/attachments/:attachmentId/file",
   authenticate,
-  authorize("WEEKLY_REPORTS", "READ"),
+  // authorize("weekly_reports", "READ"),
   streamWeeklyReportAttachment
 );
 

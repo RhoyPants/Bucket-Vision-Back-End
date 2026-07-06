@@ -823,9 +823,101 @@ export class VersioningService {
       throw new Error("Can only delete draft versions");
     }
 
-    // Delete all related data (relies on cascade deletes in schema)
-    const deleted = await prisma.project.delete({
-      where: { id: projectId },
+    // Some project relations are RESTRICT in schema, so delete dependents first.
+    const deleted = await prisma.$transaction(async (tx) => {
+      // Break self-references from child versions first (defensive cleanup).
+      await tx.project.updateMany({
+        where: {
+          OR: [{ parentProjectId: projectId }, { rootProjectId: projectId }],
+        },
+        data: {
+          parentProjectId: null,
+          rootProjectId: null,
+        },
+      });
+
+      await tx.projectMember.deleteMany({
+        where: { projectId },
+      });
+
+      await tx.projectTimeline.deleteMany({
+        where: { projectId },
+      });
+
+      await tx.dailyReport.deleteMany({
+        where: { projectId },
+      });
+
+      await tx.weeklyReport.deleteMany({
+        where: { projectId },
+      });
+
+      const scopeIds = (
+        await tx.scope.findMany({
+          where: { projectId },
+          select: { id: true },
+        })
+      ).map((scope) => scope.id);
+
+      if (scopeIds.length > 0) {
+        const taskIds = (
+          await tx.task.findMany({
+            where: { scopeId: { in: scopeIds } },
+            select: { id: true },
+          })
+        ).map((task) => task.id);
+
+        if (taskIds.length > 0) {
+          const subtaskIds = (
+            await tx.subtask.findMany({
+              where: { taskId: { in: taskIds } },
+              select: { id: true },
+            })
+          ).map((subtask) => subtask.id);
+
+          if (subtaskIds.length > 0) {
+            await tx.activityLog.deleteMany({
+              where: { subtaskId: { in: subtaskIds } },
+            });
+
+            await tx.comment.deleteMany({
+              where: { subtaskId: { in: subtaskIds } },
+            });
+
+            await tx.checklist.deleteMany({
+              where: { subtaskId: { in: subtaskIds } },
+            });
+
+            await tx.subtaskAssignee.deleteMany({
+              where: { subtaskId: { in: subtaskIds } },
+            });
+
+            await tx.progressLog.deleteMany({
+              where: { subtaskId: { in: subtaskIds } },
+            });
+          }
+
+          await tx.taskAssignee.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+
+          await tx.subtask.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+
+          await tx.task.deleteMany({
+            where: { scopeId: { in: scopeIds } },
+          });
+        }
+
+        await tx.scope.deleteMany({
+          where: { projectId },
+        });
+      }
+
+      return tx.project.delete({
+        where: { id: projectId },
+      });
     });
 
     await this.notifyVersionDeleted(deleted.id, deleted.name, deleted.versionNumber);

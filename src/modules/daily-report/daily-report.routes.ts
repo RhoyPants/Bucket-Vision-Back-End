@@ -10,7 +10,7 @@ const router = Router();
 router.post(
   "/",
   authenticate,
-  authorize("DAILY_REPORTS", "CREATE"),
+  authorize("daily_reports", "CREATE"),
   DailyReportController.create
 );
 
@@ -18,7 +18,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   DailyReportController.getAll
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   "/inbox",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   DailyReportController.getInbox
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
   "/my-submitted",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   DailyReportController.getMySubmitted
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.get(
   "/summary",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   DailyReportController.getSummary
 );
 
@@ -50,7 +50,7 @@ router.get(
 router.get(
   "/project/:projectId",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   DailyReportController.getByProject
 );
 
@@ -58,7 +58,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   DailyReportController.getById
 );
 
@@ -66,7 +66,7 @@ router.get(
 router.put(
   "/:id",
   authenticate,
-  authorize("DAILY_REPORTS", "UPDATE"),
+  authorize("daily_reports", "UPDATE"),
   DailyReportController.update
 );
 
@@ -74,7 +74,7 @@ router.put(
 router.put(
   "/:id/mark-read",
   authenticate,
-  authorize("DAILY_REPORTS", "UPDATE"),
+  authorize("daily_reports", "UPDATE"),
   DailyReportController.markAsRead
 );
 
@@ -82,7 +82,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("DAILY_REPORTS", "DELETE"),
+  authorize("daily_reports", "DELETE"),
   DailyReportController.delete
 );
 
@@ -92,7 +92,7 @@ router.delete(
 router.post(
   "/:id/attachments",
   authenticate,
-  authorize("DAILY_REPORTS", "UPDATE"),
+  authorize("daily_reports", "UPDATE"),
   upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   uploadDailyReportAttachment
 );
@@ -100,14 +100,14 @@ router.post(
 router.delete(
   "/attachments/:attachmentId",
   authenticate,
-  authorize("DAILY_REPORTS", "UPDATE"),
+  authorize("daily_reports", "UPDATE"),
   deleteDailyReportAttachment
 );
 
 router.get(
   "/attachments/:attachmentId/file",
   authenticate,
-  authorize("DAILY_REPORTS", "READ"),
+  // authorize("daily_reports", "READ"),
   streamDailyReportAttachment
 );
 

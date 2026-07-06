@@ -8,6 +8,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding comprehensive system data...\n");
 
+  const dataDir = path.join(__dirname, "../data");
+
   //////////////////////////////
   // PERMISSIONS
   //////////////////////////////
@@ -26,41 +28,59 @@ async function main() {
   console.log("✅ Permissions created");
 
   //////////////////////////////
-  // MODULES (ALL FROM CODEBASE)
+  // MODULES (FRONTEND PAGE PATHS ONLY)
   //////////////////////////////
-  const moduleNames = [
-    { name: "AUTH", path: "/auth" },
-    { name: "USERS", path: "/users" },
-    { name: "ROLES", path: "/roles" },
-    { name: "MODULES", path: "/modules" },
-    { name: "PROJECTS", path: "/projects" },
-    { name: "SCOPES", path: "/scopes" },
-    { name: "TASKS", path: "/tasks" },
-    { name: "SUBTASKS", path: "/subtasks" },
-    { name: "PROGRESS", path: "/progress" },
-    { name: "TIMELINE", path: "/timeline" },
-    { name: "CALENDAR", path: "/calendar" },
-    { name: "DAILY_REPORTS", path: "/daily-reports" },
-    { name: "WEEKLY_REPORTS", path: "/weekly-reports" },
-    { name: "APPROVALS", path: "/approvals" },
-    { name: "ADMIN", path: "/admin" },
-    { name: "BUSINESS_UNITS", path: "/business-units" },
-    { name: "GEOGRAPHICAL", path: "/geographical" },
-    { name: "PERSONAL_DASHBOARDS", path: "/personal-dashboards" },
-    { name: "VERSIONING", path: "/versioning" },
-  ];
+
+  const pagePathsData = JSON.parse(
+    fs.readFileSync(path.join(dataDir, "pagePath.json"), "utf-8"),
+  );
+
+  type FrontendModule = {
+    name: string;
+    path: string;
+  };
+
+  const pagePathModules = pagePathsData
+    .map((item: any) => ({
+      name: String(item.key || item.name || "").trim(),
+      path: String(item.path || "").trim(),
+    }))
+    .filter((item: FrontendModule) => item.name && item.path);
+
+  const moduleNameSet = new Set<string>();
+  const moduleNames: FrontendModule[] = pagePathModules.filter(
+    (mod: FrontendModule) => {
+    if (moduleNameSet.has(mod.name)) return false;
+    moduleNameSet.add(mod.name);
+    return true;
+    },
+  );
+
+  // Hard refresh modules from frontend pagePath.json
+  // 1) Remove all existing role-permission links referencing modules.
+  // 2) Remove all modules.
+  // 3) Recreate modules from current frontend paths only.
+  await prisma.rolePermission.deleteMany({});
+  await prisma.module.deleteMany({});
 
   const modules = await Promise.all(
     moduleNames.map((mod) =>
       prisma.module.upsert({
         where: { name: mod.name },
-        update: {},
-        create: mod,
+        update: {
+          path: mod.path,
+          isActive: true,
+        },
+        create: {
+          name: mod.name,
+          path: mod.path,
+          isActive: true,
+        },
       }),
     ),
   );
 
-  console.log("✅ Modules created (19 total)");
+  console.log(`✅ Modules created (${modules.length} total)`);
 
   //////////////////////////////
   // ROLES
@@ -1484,8 +1504,6 @@ console.log("✅ Real construction project created");
   //////////////////////////////
 
   // Load JSON data files
-  const dataDir = path.join(__dirname, "../data");
-  
   const regionsData = JSON.parse(
     fs.readFileSync(path.join(dataDir, "regions.json"), "utf-8")
   );

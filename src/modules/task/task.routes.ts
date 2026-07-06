@@ -9,7 +9,7 @@ const router = Router();
 router.get(
   "/scope/:scopeId",
   authenticate,
-  authorize("TASKS", "READ"),
+  // authorize("projects", "READ"),
   TaskController.getByScope
 );
 
@@ -17,7 +17,7 @@ router.get(
 router.get(
   "/:id",
 //   authenticate,
-//   authorize("TASKS", "READ"),
+//   authorize("projects", "READ"),
   TaskController.getById
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.post(
   "/",
   authenticate,
-  authorize("TASKS", "CREATE"),
+  authorize("projects", "CREATE"),
   TaskController.create
 );
 
@@ -33,7 +33,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("TASKS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   TaskController.update
 );
 
@@ -41,7 +41,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("TASKS", "DELETE"),
+  authorize("projects", "DELETE"),
   TaskController.delete
 );
 

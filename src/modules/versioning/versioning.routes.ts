@@ -18,7 +18,7 @@ const router = Router();
 router.post(
   "/:projectId/create",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("versioning", "UPDATE"),
   (req: Request, res: Response) =>
     versioningController.createNewVersion(req, res)
 );
@@ -30,7 +30,7 @@ router.post(
 router.get(
   "/:projectId/detail",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("versioning", "READ"),
   (req: Request, res: Response) =>
     versioningController.getVersionDetail(req, res)
 );
@@ -42,7 +42,7 @@ router.get(
 router.get(
   "/pin/:pin",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("versioning", "READ"),
   (req: Request, res: Response) =>
     versioningController.getProjectVersions(req, res)
 );
@@ -54,7 +54,7 @@ router.get(
 router.get(
   "/:projectId/history",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("versioning", "READ"),
   (req: Request, res: Response) =>
     versioningController.getVersionHistory(req, res)
 );
@@ -66,7 +66,7 @@ router.get(
 router.get(
   "/compare/:v1/:v2",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("versioning", "READ"),
   (req: Request, res: Response) =>
     versioningController.compareVersions(req, res)
 );
@@ -78,7 +78,7 @@ router.get(
 router.get(
   "/active/pin/:pin",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("versioning", "READ"),
   (req: Request, res: Response) =>
     versioningController.getActiveVersionByPin(req, res)
 );
@@ -90,7 +90,7 @@ router.get(
 router.delete(
   "/:projectId/delete-draft",
   authenticate,
-  authorize("PROJECTS", "DELETE"),
+  authorize("versioning", "DELETE"),
   (req: Request, res: Response) =>
     versioningController.deleteDraftVersion(req, res)
 );

@@ -8,140 +8,140 @@ const router = Router();
 router.get(
   "/",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.list
 );
 
 router.post(
   "/",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "CREATE"),
+  authorize("personal_dashboard", "CREATE"),
   personalDashboardController.create
 );
 
 router.get(
   "/:id",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.getById
 );
 
 router.put(
   "/:id",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  authorize("personal_dashboard", "UPDATE"),
   personalDashboardController.update
 );
 
 router.delete(
   "/:id",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "DELETE"),
+  authorize("personal_dashboard", "DELETE"),
   personalDashboardController.delete
 );
 
 router.get(
   "/:id/source-options",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.getSourceOptions
 );
 
 router.get(
   "/:id/source-preview",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.previewSource
 );
 
 router.post(
   "/:id/kpis",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "CREATE"),
+  authorize("personal_dashboard", "CREATE"),
   personalDashboardController.createKpi
 );
 
 router.put(
   "/:id/kpis/:kpiId",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  authorize("personal_dashboard", "UPDATE"),
   personalDashboardController.updateKpi
 );
 
 router.delete(
   "/:id/kpis/:kpiId",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "DELETE"),
+  authorize("personal_dashboard", "DELETE"),
   personalDashboardController.deleteKpi
 );
 
 router.put(
   "/:id/charts",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  authorize("personal_dashboard", "UPDATE"),
   personalDashboardController.updateCharts
 );
 
 router.get(
   "/:id/charts/data",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.getChartData
 );
 
 router.get(
   "/:id/report-table",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.getReportTable
 );
 
 router.get(
   "/:id/notes",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "READ"),
+  // authorize("personal_dashboard", "READ"),
   personalDashboardController.listNotes
 );
 
 router.post(
   "/:id/notes",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "CREATE"),
+  authorize("personal_dashboard", "CREATE"),
   personalDashboardController.createNote
 );
 
 router.put(
   "/:id/notes/:noteId",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  authorize("personal_dashboard", "UPDATE"),
   personalDashboardController.updateNote
 );
 
 router.delete(
   "/:id/notes/:noteId",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "DELETE"),
+  authorize("personal_dashboard", "DELETE"),
   personalDashboardController.deleteNote
 );
 
 router.post(
   "/:id/notes/:noteId/items",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "CREATE"),
+  authorize("personal_dashboard", "CREATE"),
   personalDashboardController.addNoteItem
 );
 
 router.put(
   "/:id/notes/:noteId/items/:itemId",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "UPDATE"),
+  authorize("personal_dashboard", "UPDATE"),
   personalDashboardController.updateNoteItem
 );
 
 router.delete(
   "/:id/notes/:noteId/items/:itemId",
   authenticate,
-  authorize("PERSONAL_DASHBOARDS", "DELETE"),
+  authorize("personal_dashboard", "DELETE"),
   personalDashboardController.deleteNoteItem
 );
 

@@ -17,14 +17,14 @@ router.post(
 router.get(
   "/pending",
   authenticate,
-  authorize("APPROVALS", "READ"),
+  // authorize("approval_review", "READ"),
   (req: Request, res: Response) => approvalController.getPendingApprovals(req, res)
 );
 
 router.get(
   "/pending-projects",
   authenticate,
-  authorize("APPROVALS", "READ"),
+  // authorize("approval_review", "READ"),
   (req: Request, res: Response) => approvalController.getPendingProjectsForApproval(req, res)
 );
 
@@ -33,28 +33,28 @@ router.get(
 router.get(
   "/:projectId",
   authenticate,
-  authorize("APPROVALS", "READ"),
+  // authorize("approval_review", "READ"),
   (req: Request, res: Response) => approvalController.getProjectApprovals(req, res)
 );
 
 router.get(
   "/:projectId/audit",
   authenticate,
-  authorize("APPROVALS", "READ"),
+  // authorize("approval_review", "READ"),
   (req: Request, res: Response) => approvalController.getApprovalAuditLog(req, res)
 );
 
 router.post(
   "/:projectId/approve",
   authenticate,
-  authorize("APPROVALS", "APPROVE"),
+  authorize("approval_review", "APPROVE"),
   (req: Request, res: Response) => approvalController.approveProject(req, res)
 );
 
 router.post(
   "/:projectId/reject",
   authenticate,
-  authorize("APPROVALS", "APPROVE"),
+  authorize("approval_review", "APPROVE"),
   (req: Request, res: Response) => approvalController.rejectProject(req, res)
 );
 

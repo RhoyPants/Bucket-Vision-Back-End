@@ -28,7 +28,7 @@ router.get(
 router.get(
   "/",
   authenticate,
-  authorize("BUSINESS_UNITS", "READ"),
+  // authorize("settings_business_units", "READ"),
   (req: Request, res: Response) => businessUnitController.getAllBusinessUnits(req, res)
 );
 
@@ -36,7 +36,7 @@ router.get(
 router.get(
   "/code/:code",
   authenticate,
-  authorize("BUSINESS_UNITS", "READ"),
+  // authorize("settings_business_units", "READ"),
   (req: Request, res: Response) => businessUnitController.getBusinessUnitByCode(req, res)
 );
 
@@ -44,7 +44,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("BUSINESS_UNITS", "READ"),
+  // authorize("settings_business_units", "READ"),
   (req: Request, res: Response) => businessUnitController.getBusinessUnitById(req, res)
 );
 
@@ -52,7 +52,7 @@ router.get(
 router.post(
   "/",
   authenticate,
-  authorize("BUSINESS_UNITS", "CREATE"),
+  authorize("settings_business_units", "CREATE"),
   (req: Request, res: Response) => businessUnitController.createBusinessUnit(req, res)
 );
 
@@ -60,14 +60,14 @@ router.post(
 router.put(
   "/:id/bu-head",
   authenticate,
-  authorize("BUSINESS_UNITS", "UPDATE"),
+  authorize("settings_business_units", "UPDATE"),
   (req: Request, res: Response) => businessUnitController.assignBUHead(req, res)
 );
 
 router.put(
   "/:id/assistant-bu-head",
   authenticate,
-  authorize("BUSINESS_UNITS", "UPDATE"),
+  authorize("settings_business_units", "UPDATE"),
   (req: Request, res: Response) => businessUnitController.assignAssistantBUHead(req, res)
 );
 
@@ -75,7 +75,7 @@ router.put(
 router.put(
   "/:id",
   authenticate,
-  authorize("BUSINESS_UNITS", "UPDATE"),
+  authorize("settings_business_units", "UPDATE"),
   (req: Request, res: Response) => businessUnitController.updateBusinessUnit(req, res)
 );
 
@@ -83,7 +83,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("BUSINESS_UNITS", "DELETE"),
+  authorize("settings_business_units", "DELETE"),
   (req: Request, res: Response) => businessUnitController.deleteBusinessUnit(req, res)
 );
 

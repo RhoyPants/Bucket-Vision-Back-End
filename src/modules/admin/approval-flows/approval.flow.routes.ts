@@ -14,14 +14,14 @@ const router = Router();
 router.get(
   "/default",
   authenticate,
-  authorize("ADMIN", "READ"),
+  // authorize("settings_approval_flows", "READ"),
   ApprovalFlowController.getDefaultFlow
 );
 
 router.get(
   "/roles/:roleId/users",
   authenticate,
-  authorize("ADMIN", "READ"),
+  // authorize("settings_approval_flows", "READ"),
   ApprovalFlowController.getUsersByRole
 );
 
@@ -30,7 +30,7 @@ router.get(
 router.post(
   "/",
   authenticate,
-  authorize("ADMIN", "CREATE"),
+  authorize("settings_approval_flows", "CREATE"),
   ApprovalFlowController.createFlow
 );
 
@@ -39,7 +39,7 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize("ADMIN", "READ"),
+  // authorize("settings_approval_flows", "READ"),
   ApprovalFlowController.getAllFlows
 );
 
@@ -48,7 +48,7 @@ router.get(
 router.get(
   "/:flowId",
   authenticate,
-  authorize("ADMIN", "READ"),
+  // authorize("settings_approval_flows", "READ"),
   ApprovalFlowController.getFlowById
 );
 
@@ -57,7 +57,7 @@ router.get(
 router.patch(
   "/:flowId",
   authenticate,
-  authorize("ADMIN", "UPDATE"),
+  authorize("settings_approval_flows", "UPDATE"),
   ApprovalFlowController.updateFlow
 );
 
@@ -66,7 +66,7 @@ router.patch(
 router.delete(
   "/:flowId",
   authenticate,
-  authorize("ADMIN", "DELETE"),
+  authorize("settings_approval_flows", "DELETE"),
   ApprovalFlowController.deleteFlow
 );
 
@@ -75,7 +75,7 @@ router.delete(
 router.post(
   "/:flowId/set-default",
   authenticate,
-  authorize("ADMIN", "UPDATE"),
+  authorize("settings_approval_flows", "UPDATE"),
   ApprovalFlowController.setDefaultFlow
 );
 

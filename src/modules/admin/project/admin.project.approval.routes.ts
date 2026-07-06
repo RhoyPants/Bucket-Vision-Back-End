@@ -9,7 +9,7 @@ const router = Router();
 router.get(
   "/:projectId/approval-config",
   authenticate,
-  authorize("ADMIN", "READ"),
+  // authorize("settings_project_approvals", "READ"),
   AdminProjectApprovalController.getProjectApprovalConfig
 );
 
@@ -17,7 +17,7 @@ router.get(
 router.patch(
   "/:projectId/approval-config",
   authenticate,
-  authorize("ADMIN", "UPDATE"),
+  authorize("settings_project_approvals", "UPDATE"),
   AdminProjectApprovalController.configureProjectApproval
 );
 

@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 
+const normalizeResourceKey = (resourceKey: string) =>
+  String(resourceKey || "").trim().toLowerCase();
+
+const normalizeAction = (action: string) => {
+  const upper = String(action || "").trim().toUpperCase();
+  if (upper === "VIEW") return "READ";
+  return upper;
+};
+
 export const authorize = (moduleName: string, action: string) => {
   return async (req: any, res: Response, next: NextFunction) => {
     try {
@@ -10,12 +19,21 @@ export const authorize = (moduleName: string, action: string) => {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
+      const resourceKey = normalizeResourceKey(moduleName);
+      const actionKey = normalizeAction(action);
+
       // find permission
       const permission = await prisma.rolePermission.findFirst({
         where: {
           roleId: user.roleId,
-          module: { name: moduleName, isActive: true },
-          permission: { action: action },
+          module: {
+            isActive: true,
+            name: {
+              equals: resourceKey,
+              mode: "insensitive",
+            },
+          },
+          permission: { action: actionKey },
         },
         include: {
           module: true,

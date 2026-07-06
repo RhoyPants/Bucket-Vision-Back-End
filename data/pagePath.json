@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Personal Dashboard",
+    "key": "personal_dashboard",
+    "path": "/personalDashboard"
+  },
+  {
+    "name": "Projects",
+    "key": "projects",
+    "path": "/projects"
+  },
+  {
+    "name": "Project Setup",
+    "key": "project_setup",
+    "path": "/projects/:id/setup"
+  },
+  {
+    "name": "Approval Review",
+    "key": "approval_review",
+    "path": "/approvals/:projectId"
+  },
+  {
+    "name": "My Requests",
+    "key": "my_requests",
+    "path": "/myRequests"
+  },
+  {
+    "name": "My Approvals",
+    "key": "my_approvals",
+    "path": "/myApprovals"
+  },
+  {
+    "name": "My Drafts",
+    "key": "my_drafts",
+    "path": "/myDrafts"
+  },
+  {
+    "name": "Sprint Management",
+    "key": "sprint_management",
+    "path": "/sprintManagement"
+  },
+  {
+    "name": "Task Board",
+    "key": "task_board",
+    "path": "/taskboard"
+  },
+  {
+    "name": "Team Overview",
+    "key": "team_overview",
+    "path": "/teamOverview"
+  },
+  {
+    "name": "Team Management",
+    "key": "team_management",
+    "path": "/teamManagement"
+  },
+  {
+    "name": "Reports",
+    "key": "reports",
+    "path": "/reports"
+  },
+  {
+    "name": "Daily Reports",
+    "key": "daily_reports",
+    "path": "/reports/daily"
+  },
+  {
+    "name": "Weekly Reports",
+    "key": "weekly_reports",
+    "path": "/reports/weekly"
+  },
+  {
+    "name": "Project Calendar",
+    "key": "project_calendar",
+    "path": "/projectCalendar"
+  },
+  {
+    "name": "Project Timeline",
+    "key": "project_timeline",
+    "path": "/projectTimeline"
+  },
+  {
+    "name": "Progress",
+    "key": "progress",
+    "path": "/progress"
+  },
+  {
+    "name": "Versioning",
+    "key": "versioning",
+    "path": "/versioning"
+  },
+  {
+    "name": "Settings",
+    "key": "settings",
+    "path": "/settings"
+  },
+  {
+    "name": "My Profile",
+    "key": "settings_profile",
+    "path": "/settings?tab=profile"
+  },
+  {
+    "name": "Roles",
+    "key": "settings_roles",
+    "path": "/settings?tab=roles"
+  },
+  {
+    "name": "Users",
+    "key": "settings_users",
+    "path": "/settings?tab=users"
+  },
+  {
+    "name": "User Requests",
+    "key": "settings_user_requests",
+    "path": "/settings?tab=userRequests"
+  },
+  {
+    "name": "User Relations",
+    "key": "settings_user_relations",
+    "path": "/settings?tab=relations"
+  },
+  {
+    "name": "Approval Flows",
+    "key": "settings_approval_flows",
+    "path": "/settings?tab=approvals"
+  },
+  {
+    "name": "Project Approvals",
+    "key": "settings_project_approvals",
+    "path": "/settings?tab=projectApprovals"
+  },
+  {
+    "name": "Modules",
+    "key": "settings_modules",
+    "path": "/settings?tab=modules"
+  },
+  {
+    "name": "Business Units",
+    "key": "settings_business_units",
+    "path": "/settings?tab=businessUnits"
+  }
+]

@@ -17,7 +17,7 @@ const router = Router();
 router.get(
   "/:projectId/subtasks",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("PROJECTS", "READ"),
   (req: Request, res: Response) =>
     calendarController.getCalendarSubtasks(req, res)
 );
@@ -30,7 +30,7 @@ router.get(
 router.get(
   "/:projectId/month/:year/:month",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("PROJECTS", "READ"),
   (req: Request, res: Response) =>
     calendarController.getMonthCalendar(req, res)
 );
@@ -42,7 +42,7 @@ router.get(
 router.get(
   "/:projectId/scopes",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("PROJECTS", "READ"),
   (req: Request, res: Response) =>
     calendarController.getProjectScopes(req, res)
 );
@@ -55,7 +55,7 @@ router.get(
 router.get(
   "/subtask/:subtaskId",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("PROJECTS", "READ"),
   (req: Request, res: Response) =>
     calendarController.getSubtaskDetail(req, res)
 );

@@ -13,7 +13,7 @@ const router = Router();
 router.get(
   "/:projectId",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("PROJECTS", "READ"),
   TimelineController.getTimeline
 );
 
@@ -21,7 +21,7 @@ router.get(
 router.get(
   "/:projectId/today",
   authenticate,
-  authorize("TIMELINES", "READ"),
+  // authorize("TIMELINES", "READ"),
   TimelineController.getTodaySnapshot
 );
 
@@ -29,7 +29,7 @@ router.get(
 router.get(
   "/:projectId/latest",
   authenticate,
-  authorize("TIMELINES", "READ"),
+  // authorize("TIMELINES", "READ"),
   TimelineController.getLatestSnapshot
 );
 
@@ -37,7 +37,7 @@ router.get(
 router.get(
   "/:projectId/variance",
   authenticate,
-  authorize("TIMELINES", "READ"),
+  // authorize("TIMELINES", "READ"),
   TimelineController.getVarianceReport
 );
 
@@ -45,7 +45,7 @@ router.get(
 router.get(
   "/:projectId/forecast",
   authenticate,
-  authorize("TIMELINES", "READ"),
+  // authorize("TIMELINES", "READ"),
   TimelineController.getForecast
 );
 
@@ -53,7 +53,7 @@ router.get(
 router.post(
   "/:projectId/generate",
   authenticate,
-  authorize("TIMELINES", "UPDATE"),
+  // authorize("TIMELINES", "UPDATE"),
   TimelineController.generateTimeline
 );
 
@@ -61,7 +61,7 @@ router.post(
 router.post(
   "/:projectId/refresh",
   authenticate,
-  authorize("TIMELINES", "UPDATE"),
+  // authorize("TIMELINES", "UPDATE"),
   TimelineController.refreshTimeline
 );
 

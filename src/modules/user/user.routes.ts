@@ -8,35 +8,35 @@ const router = Router();
 router.get(
   "/my-members",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getMyMembers
 );
 
 router.get(
   "/my-managers",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getMyManagers
 );
 
 router.post(
   "/assign-manager",
   authenticate,
-  authorize("USERS", "UPDATE"),
+  authorize("settings_users", "UPDATE"),
   assignManager
 );
 
 router.post(
   "/remove-manager",
   authenticate,
-  authorize("USERS", "UPDATE"),
+  authorize("settings_users", "UPDATE"),
   removeManager
 );
 
 router.get(
   "/org-chart/:userId",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getOrgChart
 );
 
@@ -44,14 +44,14 @@ router.get(
 router.get(
   "/:userId/members",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getUserMembersById
 );
 
 router.get(
   "/:userId/managers",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getUserManagersById
 );
 
@@ -61,42 +61,42 @@ router.get(
 router.get(
   "/",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getUsers
 );
 
 router.get(
   "/:userId",
   authenticate,
-  authorize("USERS", "READ"),
+  // authorize("settings_users", "READ"),
   getUserById
 );
 
 router.post(
   "/",
   authenticate,
-  authorize("USERS", "CREATE"),
+  authorize("settings_users", "CREATE"),
   createUser
 );
 
 router.put(
   "/:userId",
   authenticate,
-  authorize("USERS", "UPDATE"),
+  authorize("settings_users", "UPDATE"),
   updateUser
 );
 
 router.patch(
   "/:userId/status",
   authenticate,
-  authorize("USERS", "UPDATE"),
+  authorize("settings_users", "UPDATE"),
   updateUserStatus
 );
 
 router.delete(
   "/:userId",
   authenticate,
-  authorize("USERS", "DELETE"),
+  authorize("settings_users", "DELETE"),
   deleteUser
 );
 export default router;

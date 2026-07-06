@@ -13,7 +13,7 @@ const router = Router();
 router.get(
   "/subtask/:subtaskId",
   authenticate,
-  authorize("SUBTASKS", "READ"),
+  // authorize("progress", "READ"),
   ProgressController.getBySubtask
 );
 
@@ -24,14 +24,14 @@ router.get(
 router.get(
   "/can-add",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  // authorize("progress", "UPDATE"),
   ProgressController.canAddProgress
 );
 
 router.post(
   "/",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("progress", "UPDATE"),
   upload.fields([
     { name: "attachments", maxCount: 10 },
     { name: "photo", maxCount: 1 },
@@ -45,7 +45,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("progress", "UPDATE"),
   upload.fields([
     { name: "attachments", maxCount: 10 },
     { name: "photo", maxCount: 1 },
@@ -59,7 +59,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("SUBTASKS", "DELETE"),
+  authorize("progress", "DELETE"),
   ProgressController.deleteProgress
 );
 
@@ -69,7 +69,7 @@ router.delete(
 router.get(
   "/scurve/:projectId",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("progress", "READ"),
   ProgressController.getSCurve
 );
 
@@ -79,14 +79,14 @@ router.get(
 router.delete(
   "/attachments/:attachmentId",
   authenticate,
-  authorize("SUBTASKS", "UPDATE"),
+  authorize("progress", "UPDATE"),
   ProgressController.deleteProgressAttachment
 );
 
 router.get(
   "/attachments/:attachmentId/file",
   authenticate,
-  authorize("SUBTASKS", "READ"),
+  // authorize("progress", "READ"),
   ProgressController.streamProgressAttachment
 );
 

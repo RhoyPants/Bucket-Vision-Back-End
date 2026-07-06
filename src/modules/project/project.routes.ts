@@ -10,7 +10,7 @@ const router = Router();
 router.get(
   "/",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getAll,
 );
 
@@ -18,7 +18,7 @@ router.get(
 router.get(
   "/my-approvals",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getMyApprovals,
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   "/my-requests",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getMyRequests,
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
   "/my-drafts",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getMyDrafts,
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.get(
   "/active/dropdown",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getActiveDropdown,
 );
 
@@ -50,7 +50,7 @@ router.get(
 router.get(
   "/status/:status",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getByStatus,
 );
 
@@ -58,7 +58,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getById,
 );
 
@@ -66,7 +66,7 @@ router.get(
 router.post(
   "/",
   authenticate,
-  authorize("PROJECTS", "CREATE"),
+  authorize("projects", "CREATE"),
   upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   ProjectController.create,
 );
@@ -75,7 +75,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   ProjectController.update,
 );
 
@@ -83,7 +83,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorize("PROJECTS", "DELETE"),
+  authorize("projects", "DELETE"),
   ProjectController.delete,
 );
 
@@ -91,7 +91,7 @@ router.delete(
 router.get(
   "/:id/full",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   ProjectController.getFull,
 );
 
@@ -108,7 +108,7 @@ router.get(
 router.get(
   "/:projectId/members",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  authorize("team_management", "READ"),
   getProjectMembers
 );
 
@@ -116,7 +116,7 @@ router.get(
 router.get(
   "/:projectId/engaged-users",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  authorize("team_management", "READ"),
   getProjectEngagedUsers
 );
 
@@ -124,7 +124,7 @@ router.get(
 router.post(
   "/:projectId/assign-member",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("team_management", "CREATE"),
   assignProjectMember
 );
 
@@ -132,7 +132,7 @@ router.post(
 router.patch(
   "/:projectId/members/:userId/role",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("team_management", "UPDATE"),
   updateProjectMemberRole
 );
 
@@ -140,7 +140,7 @@ router.patch(
 router.post(
   "/:projectId/remove-member",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("team_management", "DELETE"),
   removeProjectMember
 );
 
@@ -150,7 +150,7 @@ router.post(
 router.post(
   "/:id/attachments",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   uploadProjectAttachment
 );
@@ -158,21 +158,21 @@ router.post(
 router.get(
   "/:id/attachments",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   getProjectAttachments
 );
 
 router.delete(
   "/attachments/:attachmentId",
   authenticate,
-  authorize("PROJECTS", "UPDATE"),
+  authorize("projects", "UPDATE"),
   deleteProjectAttachment
 );
 
 router.get(
   "/attachments/:attachmentId/file",
   authenticate,
-  authorize("PROJECTS", "READ"),
+  // authorize("projects", "READ"),
   streamProjectAttachment
 );
 

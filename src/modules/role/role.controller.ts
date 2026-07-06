@@ -1,5 +1,15 @@
 import prisma from "../../config/prisma";
 
+const ACTION_FROM_FLAG: Record<string, string> = {
+  canView: "READ",
+  canCreate: "CREATE",
+  canUpdate: "UPDATE",
+  canDelete: "DELETE",
+  canApprove: "APPROVE",
+};
+
+const toBoolFlag = (value: any) => value === 1 || value === "1" || value === true;
+
 // REUSABLE LOGIC (NO req/res here)
 const syncRolePermissions = async (roleId: string, permissions: any[]) => {
   // delete all existing permissions
@@ -26,6 +36,42 @@ const syncRolePermissions = async (roleId: string, permissions: any[]) => {
           roleId,
           moduleId: moduleData.id,
           permissionId: permissionData.id,
+        },
+      });
+    }
+  }
+};
+
+const syncRolePagePermissions = async (roleId: string, pages: any[]) => {
+  await prisma.rolePermission.deleteMany({ where: { roleId } });
+
+  const actionNames = Object.values(ACTION_FROM_FLAG);
+  const permissionRows = await prisma.permission.findMany({
+    where: { action: { in: actionNames } },
+    select: { id: true, action: true },
+  });
+  const permissionIdByAction = Object.fromEntries(permissionRows.map((p) => [p.action, p.id]));
+
+  for (const page of pages) {
+    const key = String(page.key || page.module || page.name || "").trim();
+    if (!key) continue;
+
+    const moduleData = await prisma.module.findUnique({ where: { name: key } });
+    if (!moduleData) continue;
+
+    const actionsToGrant = Object.entries(ACTION_FROM_FLAG)
+      .filter(([flag]) => toBoolFlag(page[flag]))
+      .map(([, action]) => action);
+
+    for (const action of actionsToGrant) {
+      const permissionId = permissionIdByAction[action];
+      if (!permissionId) continue;
+
+      await prisma.rolePermission.create({
+        data: {
+          roleId,
+          moduleId: moduleData.id,
+          permissionId,
         },
       });
     }
@@ -77,15 +123,47 @@ export const createRole = async (req: any, res: any) => {
 export const syncPermissions = async (req: any, res: any) => {
   try {
     const { roleId } = req.params;
-    const { permissions } = req.body;
+    const { permissions, pages } = req.body;
+
+    if (Array.isArray(pages)) {
+      await syncRolePagePermissions(roleId, pages);
+      return res.json({
+        success: true,
+        message: "Page permissions synced successfully",
+      });
+    }
 
     await syncRolePermissions(roleId, permissions);
 
     res.json({
+      success: true,
       message: "Permissions synced successfully",
     });
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const syncRolePagePermissionsController = async (req: any, res: any) => {
+  try {
+    const { roleId } = req.params;
+    const { pages } = req.body;
+
+    if (!Array.isArray(pages)) {
+      return res.status(400).json({
+        success: false,
+        message: "pages array is required",
+      });
+    }
+
+    await syncRolePagePermissions(roleId, pages);
+
+    res.json({
+      success: true,
+      message: "Page permissions synced successfully",
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -176,10 +254,41 @@ export const getRolePermissions = async (req: any, res: any) => {
       actions: grouped[module],
     }));
 
+    const pagePermissions = rolePermissions.reduce((acc: any[], rp: any) => {
+      const existing = acc.find((item) => item.key === rp.module.name);
+
+      if (!existing) {
+        const created = {
+          key: rp.module.name,
+          name: rp.module.name,
+          path: rp.module.path,
+          canView: 0,
+          canCreate: 0,
+          canUpdate: 0,
+          canDelete: 0,
+          canApprove: 0,
+        };
+        acc.push(created);
+      }
+
+      const target = acc.find((item) => item.key === rp.module.name);
+      if (!target) return acc;
+
+      if (rp.permission.action === "READ") target.canView = 1;
+      if (rp.permission.action === "CREATE") target.canCreate = 1;
+      if (rp.permission.action === "UPDATE") target.canUpdate = 1;
+      if (rp.permission.action === "DELETE") target.canDelete = 1;
+      if (rp.permission.action === "APPROVE") target.canApprove = 1;
+
+      return acc;
+    }, []);
+
     res.json({
+      success: true,
       permissions: formatted,
+      pages: pagePermissions,
     });
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
