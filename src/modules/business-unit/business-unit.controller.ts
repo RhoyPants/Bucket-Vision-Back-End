@@ -120,7 +120,7 @@ export class BusinessUnitController {
    */
   async createBusinessUnit(req: Request, res: Response): Promise<void> {
     try {
-      const { code, name, entity, buHead, assistantHead } = req.body;
+      const { code, name, entity, buHeadUserId, assistantHeadUserId } = req.body;
 
       if (!code || !name || !entity) {
         res.status(400).json({
@@ -134,8 +134,8 @@ export class BusinessUnitController {
         code,
         name,
         entity,
-        buHead,
-        assistantHead,
+        buHeadUserId,
+        assistantHeadUserId,
       });
 
       res.status(201).json({
@@ -158,13 +158,13 @@ export class BusinessUnitController {
   async updateBusinessUnit(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params as { id: string };
-      const { name, entity, buHead, assistantHead, isActive } = req.body;
+      const { name, entity, buHeadUserId, assistantHeadUserId, isActive } = req.body;
 
       const businessUnit = await businessUnitService.updateBusinessUnit(id, {
         name,
         entity,
-        buHead,
-        assistantHead,
+        buHeadUserId,
+        assistantHeadUserId,
         isActive,
       });
 
@@ -188,9 +188,9 @@ export class BusinessUnitController {
   async assignBUHead(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params as { id: string };
-      const { buHead } = req.body;
+      const { buHeadUserId } = req.body;
 
-      const businessUnit = await businessUnitService.assignBUHead(id, buHead || null);
+      const businessUnit = await businessUnitService.assignBUHead(id, buHeadUserId || null);
 
       res.status(200).json({
         success: true,
@@ -212,11 +212,11 @@ export class BusinessUnitController {
   async assignAssistantBUHead(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params as { id: string };
-      const { assistantHead } = req.body;
+      const { assistantHeadUserId } = req.body;
 
       const businessUnit = await businessUnitService.assignAssistantBUHead(
         id,
-        assistantHead || null
+        assistantHeadUserId || null
       );
 
       res.status(200).json({

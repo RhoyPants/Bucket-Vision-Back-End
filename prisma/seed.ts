@@ -1599,23 +1599,61 @@ console.log("✅ Real construction project created");
   console.log(`✅ Barangays created (${barangaysProcessed} total)`);
 
   // Seed Business Units
+  const activeUsers = await prisma.user.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      role: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  const userByName = new Map(
+    activeUsers.map((user) => [String(user.name || "").trim().toLowerCase(), user]),
+  );
+
   const businessUnits = await Promise.all(
-    businessUnitsData.map((bu: any) =>
-      prisma.businessUnit.upsert({
+    businessUnitsData.map((bu: any) => {
+      const buHeadName = String(bu.BUHead || "").trim() || null;
+      const assistantHeadName = String(bu.asstBUhead || "").trim() || null;
+
+      const buHeadUser = buHeadName
+        ? userByName.get(buHeadName.toLowerCase())
+        : null;
+      const assistantHeadUser = assistantHeadName
+        ? userByName.get(assistantHeadName.toLowerCase())
+        : null;
+
+      const buHeadUserId = buHeadUser && buHeadUser.role?.name === "BU_HEAD" ? buHeadUser.id : null;
+      const assistantHeadUserId = assistantHeadUser ? assistantHeadUser.id : null;
+
+      return prisma.businessUnit.upsert({
         where: { code: bu.Title },
         update: {
           name: bu.BusinessUnit,
           entity: bu.Entity,
+          buHead: buHeadName,
+          buHeadUserId,
+          assistantHead: assistantHeadName,
+          assistantHeadUserId,
           isActive: true,
         },
         create: {
           code: bu.Title,
           name: bu.BusinessUnit,
           entity: bu.Entity,
+          buHead: buHeadName,
+          buHeadUserId,
+          assistantHead: assistantHeadName,
+          assistantHeadUserId,
           isActive: true,
         },
-      })
-    )
+      });
+    })
   );
 
   console.log(`✅ Business Units created (${businessUnits.length} total)`);

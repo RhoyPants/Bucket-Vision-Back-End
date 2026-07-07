@@ -56,22 +56,7 @@ router.post(
   (req: Request, res: Response) => businessUnitController.createBusinessUnit(req, res)
 );
 
-// ✏️ UPDATE - STATIC ROUTES FIRST
-router.put(
-  "/:id/bu-head",
-  authenticate,
-  authorize("settings_business_units", "UPDATE"),
-  (req: Request, res: Response) => businessUnitController.assignBUHead(req, res)
-);
-
-router.put(
-  "/:id/assistant-bu-head",
-  authenticate,
-  authorize("settings_business_units", "UPDATE"),
-  (req: Request, res: Response) => businessUnitController.assignAssistantBUHead(req, res)
-);
-
-// ✏️ UPDATE Business Unit - GENERIC PARAM ROUTE LAST
+// ✏️ UPDATE Business Unit (combined fields including assigned BU users)
 router.put(
   "/:id",
   authenticate,
