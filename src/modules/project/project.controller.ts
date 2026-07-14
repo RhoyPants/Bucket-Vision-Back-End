@@ -1198,12 +1198,12 @@ export async function assignProjectMember(req: any, res: any) {
     // 🔥 VALIDATE ROLE RULES
     if (role === "SUB_OWNER") {
       const invalid = users.find(
-        (u) => u.role?.name !== "LEADER"
+        (u) => u.role?.name !== "BU_HEAD"
       );
 
       if (invalid) {
         return res.status(403).json({
-          message: `User ${invalid.name} is not LEADER`,
+          message: `User ${invalid.name} is not BU_HEAD`,
         });
       }
     }
