@@ -2,6 +2,66 @@ import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import bcrypt from "bcrypt";
 
+const deleteProjectCascade = async (tx: any, projectId: string) => {
+  // Break project self-references first so parent/root constraints do not block deletes.
+  await tx.project.updateMany({
+    where: {
+      OR: [{ parentProjectId: projectId }, { rootProjectId: projectId }],
+    },
+    data: {
+      parentProjectId: null,
+      rootProjectId: null,
+    },
+  });
+
+  await tx.projectMember.deleteMany({ where: { projectId } });
+  await tx.projectTimeline.deleteMany({ where: { projectId } });
+  await tx.dailyReport.deleteMany({ where: { projectId } });
+  await tx.weeklyReport.deleteMany({ where: { projectId } });
+  await tx.attachment.deleteMany({ where: { projectId } });
+
+  const scopeIds = (
+    await tx.scope.findMany({
+      where: { projectId },
+      select: { id: true },
+    })
+  ).map((scope: any) => scope.id);
+
+  if (scopeIds.length > 0) {
+    const taskIds = (
+      await tx.task.findMany({
+        where: { scopeId: { in: scopeIds } },
+        select: { id: true },
+      })
+    ).map((task: any) => task.id);
+
+    if (taskIds.length > 0) {
+      const subtaskIds = (
+        await tx.subtask.findMany({
+          where: { taskId: { in: taskIds } },
+          select: { id: true },
+        })
+      ).map((subtask: any) => subtask.id);
+
+      if (subtaskIds.length > 0) {
+        await tx.activityLog.deleteMany({ where: { subtaskId: { in: subtaskIds } } });
+        await tx.comment.deleteMany({ where: { subtaskId: { in: subtaskIds } } });
+        await tx.checklist.deleteMany({ where: { subtaskId: { in: subtaskIds } } });
+        await tx.subtaskAssignee.deleteMany({ where: { subtaskId: { in: subtaskIds } } });
+        await tx.progressLog.deleteMany({ where: { subtaskId: { in: subtaskIds } } });
+      }
+
+      await tx.taskAssignee.deleteMany({ where: { taskId: { in: taskIds } } });
+      await tx.subtask.deleteMany({ where: { taskId: { in: taskIds } } });
+      await tx.task.deleteMany({ where: { scopeId: { in: scopeIds } } });
+    }
+
+    await tx.scope.deleteMany({ where: { projectId } });
+  }
+
+  await tx.project.delete({ where: { id: projectId } });
+};
+
 export const getUsers = async (req: Request, res: Response) => {
   const users = await prisma.user.findMany({
     include: {
@@ -241,57 +301,70 @@ export const deleteUser = async (req: any, res: any) => {
       return res.status(400).json({ message: "You cannot delete your own account" });
     }
 
-    // Check associations
-    const [
-      projectCount,
-      dailyReportCount,
-      weeklyReportCount,
-      progressLogCount,
-      commentCount,
-      subtaskCreatedCount,
-      projectMemberCount,
-      ssoRegistrationCount,
-    ] = await Promise.all([
-      prisma.project.count({ where: { ownerId: userId } }),
-      prisma.dailyReport.count({ where: { userId } }),
-      prisma.weeklyReport.count({ where: { userId } }),
-      prisma.progressLog.count({ where: { userId } }),
-      prisma.comment.count({ where: { userId } }),
-      prisma.subtask.count({ where: { createdBy: userId } }),
-      prisma.projectMember.count({ where: { userId } }),
-      prisma.ssoRegistration.count({ where: { reviewedById: userId } }),
-    ]);
-
-    const associations: string[] = [];
-    if (projectCount > 0) associations.push(`${projectCount} project(s) owned`);
-    if (dailyReportCount > 0) associations.push(`${dailyReportCount} daily report(s)`);
-    if (weeklyReportCount > 0) associations.push(`${weeklyReportCount} weekly report(s)`);
-    if (progressLogCount > 0) associations.push(`${progressLogCount} progress log(s)`);
-    if (commentCount > 0) associations.push(`${commentCount} comment(s)`);
-    if (subtaskCreatedCount > 0) associations.push(`${subtaskCreatedCount} subtask(s) created`);
-    if (projectMemberCount > 0) associations.push(`${projectMemberCount} project membership(s)`);
-    if (ssoRegistrationCount > 0) associations.push(`${ssoRegistrationCount} SSO registration review(s)`);
-
-    if (associations.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete user "${user.name}". This user is associated with: ${associations.join(", ")}.`,
-        error: "USER_HAS_ASSOCIATIONS",
-        data: { associations },
-      });
-    }
-
-    // Safe to hard delete
-    await prisma.userHierarchy.deleteMany({
-      where: { OR: [{ managerId: userId }, { memberId: userId }] },
+    const ownedProjects = await prisma.project.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
     });
-    await prisma.notification.deleteMany({ where: { userId } });
-    await prisma.approvalStepUser.deleteMany({ where: { userId } });
-    await prisma.user.delete({ where: { id: userId } });
+
+    await prisma.$transaction(async (tx) => {
+      // Requirement: if user owns project(s), delete those projects using cascade cleanup.
+      for (const project of ownedProjects) {
+        await deleteProjectCascade(tx, project.id);
+      }
+
+      // Requirement: if user is member/assignee, remove user from those project links.
+      await tx.projectMember.deleteMany({ where: { userId } });
+      await tx.taskAssignee.deleteMany({ where: { userId } });
+      await tx.subtaskAssignee.deleteMany({ where: { userId } });
+
+      // Cleanup remaining user references that can still block user deletion.
+      await tx.dailyReportReceiver.deleteMany({ where: { userId } });
+      await tx.weeklyReportReceiver.deleteMany({ where: { userId } });
+      await tx.projectApproval.deleteMany({ where: { approverId: userId } });
+      await tx.approvalAuditLog.deleteMany({ where: { approverId: userId } });
+      await tx.approvalStepUser.deleteMany({ where: { userId } });
+      await tx.notification.deleteMany({ where: { userId } });
+      await tx.userHierarchy.deleteMany({
+        where: { OR: [{ managerId: userId }, { memberId: userId }] },
+      });
+
+      await tx.ssoRegistration.updateMany({
+        where: { reviewedById: userId },
+        data: { reviewedById: null },
+      });
+
+      await tx.ssoRegistrationAudit.updateMany({
+        where: { changedById: userId },
+        data: { changedById: null },
+      });
+
+      await tx.progressLog.updateMany({
+        where: { userId },
+        data: { userId: null },
+      });
+
+      await tx.dailyReport.deleteMany({ where: { userId } });
+      await tx.weeklyReport.deleteMany({ where: { userId } });
+      await tx.comment.deleteMany({ where: { userId } });
+      await tx.activityLog.deleteMany({ where: { userId } });
+      await tx.attachment.deleteMany({ where: { uploadedBy: userId } });
+
+      const remainingSubtaskCreatedCount = await tx.subtask.count({ where: { createdBy: userId } });
+      if (remainingSubtaskCreatedCount > 0) {
+        throw new Error(
+          `Cannot delete user \"${user.name}\" because ${remainingSubtaskCreatedCount} subtask(s) were created by this user in projects they do not own.`
+        );
+      }
+
+      await tx.user.delete({ where: { id: userId } });
+    });
 
     res.json({
       success: true,
-      message: `User "${user.name}" deleted successfully`,
+      message:
+        ownedProjects.length > 0
+          ? `User "${user.name}" deleted successfully. ${ownedProjects.length} owned project(s) were also deleted.`
+          : `User "${user.name}" deleted successfully`,
       data: null,
       error: null,
     });

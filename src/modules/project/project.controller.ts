@@ -5,13 +5,14 @@ import prisma from "../../config/prisma";
 import {
   CreateProjectDTO,
   ProjectParamsDTO,
-  UpdateProjectDTO
+  UpdateProjectDTO,
 } from "./project.dto";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 import { approvalService } from "../approval/approval.service";
-import { fetchSharePointFile, uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
-
-
+import {
+  fetchSharePointFile,
+  uploadBufferToSharePoint,
+} from "../../services/sharepoint-upload.service";
 
 export class ProjectController {
   private static readonly LIST_SORTABLE_FIELDS = new Set([
@@ -25,26 +26,41 @@ export class ProjectController {
   ]);
 
   private static parseListQuery(req: Request) {
-    const pageRaw = Array.isArray(req.query.page) ? req.query.page[0] : req.query.page;
-    const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
-    const searchRaw = Array.isArray(req.query.search) ? req.query.search[0] : req.query.search;
-    const statusRaw = Array.isArray(req.query.status) ? req.query.status[0] : req.query.status;
+    const pageRaw = Array.isArray(req.query.page)
+      ? req.query.page[0]
+      : req.query.page;
+    const limitRaw = Array.isArray(req.query.limit)
+      ? req.query.limit[0]
+      : req.query.limit;
+    const searchRaw = Array.isArray(req.query.search)
+      ? req.query.search[0]
+      : req.query.search;
+    const statusRaw = Array.isArray(req.query.status)
+      ? req.query.status[0]
+      : req.query.status;
     const businessUnitIdRaw = Array.isArray(req.query.businessUnitId)
       ? req.query.businessUnitId[0]
       : req.query.businessUnitId;
-    const sortByRaw = Array.isArray(req.query.sortBy) ? req.query.sortBy[0] : req.query.sortBy;
-    const sortOrderRaw = Array.isArray(req.query.sortOrder) ? req.query.sortOrder[0] : req.query.sortOrder;
+    const sortByRaw = Array.isArray(req.query.sortBy)
+      ? req.query.sortBy[0]
+      : req.query.sortBy;
+    const sortOrderRaw = Array.isArray(req.query.sortOrder)
+      ? req.query.sortOrder[0]
+      : req.query.sortOrder;
 
     const page = Math.max(1, Number(pageRaw || 1));
     const limit = Math.min(100, Math.max(1, Number(limitRaw || 10)));
     const skip = (page - 1) * limit;
 
     const search = typeof searchRaw === "string" ? searchRaw.trim() : "";
-    const status = typeof statusRaw === "string" ? statusRaw.trim().toUpperCase() : "";
-    const businessUnitId = typeof businessUnitIdRaw === "string" ? businessUnitIdRaw.trim() : "";
+    const status =
+      typeof statusRaw === "string" ? statusRaw.trim().toUpperCase() : "";
+    const businessUnitId =
+      typeof businessUnitIdRaw === "string" ? businessUnitIdRaw.trim() : "";
 
     const sortBy =
-      typeof sortByRaw === "string" && ProjectController.LIST_SORTABLE_FIELDS.has(sortByRaw)
+      typeof sortByRaw === "string" &&
+      ProjectController.LIST_SORTABLE_FIELDS.has(sortByRaw)
         ? sortByRaw
         : "createdAt";
 
@@ -95,7 +111,9 @@ export class ProjectController {
     }
 
     if (filters.status) {
-      if (!Object.values(ProjectStatus).includes(filters.status as ProjectStatus)) {
+      if (
+        !Object.values(ProjectStatus).includes(filters.status as ProjectStatus)
+      ) {
         throw new Error("Invalid status filter");
       }
       and.push({ status: filters.status as ProjectStatus });
@@ -112,7 +130,11 @@ export class ProjectController {
     return where;
   }
 
-  private static sortProjectsInMemory(projects: any[], sortBy: string, sortOrder: Prisma.SortOrder) {
+  private static sortProjectsInMemory(
+    projects: any[],
+    sortBy: string,
+    sortOrder: Prisma.SortOrder,
+  ) {
     const direction = sortOrder === "asc" ? 1 : -1;
 
     return [...projects].sort((a, b) => {
@@ -153,7 +175,9 @@ export class ProjectController {
 
     return projects.map((p: any) => ({
       ...p,
-      businessUnitDetails: p.businessUnit ? buMap[p.businessUnit] ?? null : null,
+      businessUnitDetails: p.businessUnit
+        ? (buMap[p.businessUnit] ?? null)
+        : null,
     }));
   }
 
@@ -162,7 +186,7 @@ export class ProjectController {
     options?: {
       includeOwner?: boolean;
       basicAssigneeUser?: boolean;
-    }
+    },
   ) {
     const { includeOwner = false, basicAssigneeUser = false } = options || {};
 
@@ -257,12 +281,14 @@ export class ProjectController {
 
     const scopeTree = scopes.map((scope) => {
       const scopeTasks = (tasksByScopeId.get(scope.id) || []).map((task) => {
-        const taskSubtasks = (subtasksByTaskId.get(task.id) || []).map((subtask) => ({
-          ...subtask,
-          progressLogs: progressLogsBySubtaskId.get(subtask.id) || [],
-          checklists: checklistsBySubtaskId.get(subtask.id) || [],
-          assignees: assigneesBySubtaskId.get(subtask.id) || [],
-        }));
+        const taskSubtasks = (subtasksByTaskId.get(task.id) || []).map(
+          (subtask) => ({
+            ...subtask,
+            progressLogs: progressLogsBySubtaskId.get(subtask.id) || [],
+            checklists: checklistsBySubtaskId.get(subtask.id) || [],
+            assignees: assigneesBySubtaskId.get(subtask.id) || [],
+          }),
+        );
 
         return {
           ...task,
@@ -283,132 +309,129 @@ export class ProjectController {
   }
 
   // CREATE
-  static async create(
-  req: Request<{}, {}, CreateProjectDTO>,
-  res: Response
-) {
-  try {
-    const {
-      name,
-      description,
-      location,
-      startDate,
-      expectedEndDate,
-      totalBudget,
-      priority,
-      pin,
-      businessUnit,
-      entity,
-      monday,
-      tuesday,
-      wednesday,
-      thursday,
-      friday,
-      saturday,
-      sunday,
-      includeHolidays
-    } = req.body;
-
-    const rawFiles = (req as any).files;
-    const files: Express.Multer.File[] = Array.isArray(rawFiles)
-      ? rawFiles
-      : [
-          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
-          ...((rawFiles?.files as Express.Multer.File[]) ?? []),
-        ];
-
-    const userId = (req as any).user.id;
-
-    const project = await prisma.project.create({
-      data: {
+  static async create(req: Request<{}, {}, CreateProjectDTO>, res: Response) {
+    try {
+      const {
         name,
         description,
-
-        // 🔥 FIX (JSON SAFE)
-        location: location || undefined,
-
-        ownerId: userId,
-
-        startDate: startDate ? new Date(startDate) : undefined,
-        expectedEndDate: expectedEndDate
-          ? new Date(expectedEndDate)
-          : undefined,
-
+        location,
+        startDate,
+        expectedEndDate,
         totalBudget,
         priority,
         pin,
-
-        // 🔥 NEW FIELDS
         businessUnit,
         entity,
+        monday,
+        tuesday,
+        wednesday,
+        thursday,
+        friday,
+        saturday,
+        sunday,
+        includeHolidays,
+      } = req.body;
 
-        monday: monday ?? undefined,
-        tuesday: tuesday ?? undefined,
-        wednesday: wednesday ?? undefined,
-        thursday: thursday ?? undefined,
-        friday: friday ?? undefined,
-        saturday: saturday ?? undefined,
-        sunday: sunday ?? undefined,
-        includeHolidays: includeHolidays ?? undefined
+      const rawFiles = (req as any).files;
+      const files: Express.Multer.File[] = Array.isArray(rawFiles)
+        ? rawFiles
+        : [
+            ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
+            ...((rawFiles?.files as Express.Multer.File[]) ?? []),
+          ];
+
+      const userId = (req as any).user.id;
+
+      const project = await prisma.project.create({
+        data: {
+          name,
+          description,
+
+          // 🔥 FIX (JSON SAFE)
+          location: location || undefined,
+
+          ownerId: userId,
+
+          startDate: startDate ? new Date(startDate) : undefined,
+          expectedEndDate: expectedEndDate
+            ? new Date(expectedEndDate)
+            : undefined,
+
+          totalBudget,
+          priority,
+          pin,
+
+          // 🔥 NEW FIELDS
+          businessUnit,
+          entity,
+
+          monday: monday ?? undefined,
+          tuesday: tuesday ?? undefined,
+          wednesday: wednesday ?? undefined,
+          thursday: thursday ?? undefined,
+          friday: friday ?? undefined,
+          saturday: saturday ?? undefined,
+          sunday: sunday ?? undefined,
+          includeHolidays: includeHolidays ?? undefined,
+        },
+      });
+
+      // 🔥 AUTO-ASSIGN CURRENT USER AS OWNER
+      await prisma.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId,
+          role: "OWNER",
+        },
+      });
+
+      // 🔥 AUTO-GENERATE TIMELINE if dates are provided
+      if (project.startDate && project.expectedEndDate) {
+        try {
+          await generateProjectTimeline(project.id, "daily");
+        } catch (timelineError: any) {
+          console.error("Timeline generation warning:", timelineError.message);
+          // Don't fail project creation if timeline fails
+        }
       }
-    });
 
-    // 🔥 AUTO-ASSIGN CURRENT USER AS OWNER
-    await prisma.projectMember.create({
-      data: {
-        projectId: project.id,
-        userId,
-        role: "OWNER"
-      }
-    });
-
-    // 🔥 AUTO-GENERATE TIMELINE if dates are provided
-    if (project.startDate && project.expectedEndDate) {
-      try {
-        await generateProjectTimeline(project.id, "daily");
-      } catch (timelineError: any) {
-        console.error("Timeline generation warning:", timelineError.message);
-        // Don't fail project creation if timeline fails
-      }
-    }
-
-    // Optional create-time attachments: same submit request as project creation.
-    if (files.length > 0) {
-      await Promise.all(
-        files.map(async (file) => {
-          const uploaded = await uploadBufferToSharePoint({
-            buffer: file.buffer,
-            originalName: file.originalname,
-            mimeType: file.mimetype,
-            folder: "projects",
-          });
-
-          await prisma.attachment.create({
-            data: {
-              projectId: project.id,
-              uploadedBy: userId,
-              fileUrl: uploaded.downloadUrl || uploaded.webUrl || "",
-              fileName: file.originalname,
+      // Optional create-time attachments: same submit request as project creation.
+      if (files.length > 0) {
+        await Promise.all(
+          files.map(async (file) => {
+            const uploaded = await uploadBufferToSharePoint({
+              buffer: file.buffer,
+              originalName: file.originalname,
               mimeType: file.mimetype,
-              size: file.size,
-            },
-          });
-        })
-      );
+              folder: "projects",
+            });
+
+            await prisma.attachment.create({
+              data: {
+                projectId: project.id,
+                uploadedBy: userId,
+                fileUrl: uploaded.downloadUrl || uploaded.webUrl || "",
+                fileName: file.originalname,
+                mimeType: file.mimetype,
+                size: file.size,
+              },
+            });
+          }),
+        );
+      }
+
+      const projectWithAttachments = await prisma.project.findUnique({
+        where: { id: project.id },
+        include: {
+          attachments: true,
+        },
+      });
+
+      res.json(projectWithAttachments);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
-
-    const projectWithAttachments = await prisma.project.findUnique({
-      where: { id: project.id },
-      include: {
-        attachments: true,
-      },
-    });
-
-    res.json(projectWithAttachments);
-  } catch (error: any) {
-    res.status(400).json({ message: error.message });
   }
-}
 
   // GET ALL
   static async getAll(req: Request, res: Response) {
@@ -418,7 +441,7 @@ export class ProjectController {
 
       // Check if user is SUPER_ADMIN
       const userRole = await (prisma as any).role.findUnique({
-        where: { id: userRoleId }
+        where: { id: userRoleId },
       });
 
       let projects;
@@ -434,12 +457,39 @@ export class ProjectController {
                   select: {
                     id: true,
                     name: true,
-                    email: true
-                  }
-                }
-              }
-            }
-          }
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+      } else if (userRole?.name === "BU_HEAD") {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            businessUnitId: true,
+          },
+        });
+
+        projects = await prisma.project.findMany({
+          where: {
+            businessUnit: user?.businessUnitId,
+          },
+          orderBy: { createdAt: "desc" },
+          include: {
+            projectMembers: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              }, 
+            },
+          },
         });
       } else {
         // Regular users see: projects they own + projects they're members of
@@ -450,11 +500,11 @@ export class ProjectController {
               {
                 projectMembers: {
                   some: {
-                    userId: userId // User is member (SUB_OWNER or MEMBER)
-                  }
-                }
-              }
-            ]
+                    userId: userId, // User is member (SUB_OWNER or MEMBER)
+                  },
+                },
+              },
+            ],
           },
           orderBy: { createdAt: "desc" },
           include: {
@@ -464,16 +514,17 @@ export class ProjectController {
                   select: {
                     id: true,
                     name: true,
-                    email: true
-                  }
-                }
-              }
-            }
-          }
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
         });
       }
 
-      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      const enriched =
+        await ProjectController.enrichBusinessUnitDetails(projects);
 
       res.json(enriched);
     } catch (error: any) {
@@ -495,8 +546,10 @@ export class ProjectController {
         sortOrder,
       } = ProjectController.parseListQuery(req);
 
-      const projects = await approvalService.getPendingProjectsForApproval(userId);
-      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      const projects =
+        await approvalService.getPendingProjectsForApproval(userId);
+      const enriched =
+        await ProjectController.enrichBusinessUnitDetails(projects);
 
       let filtered = enriched;
 
@@ -504,8 +557,12 @@ export class ProjectController {
         const needle = search.toLowerCase();
         filtered = filtered.filter(
           (p: any) =>
-            String(p.name || "").toLowerCase().includes(needle) ||
-            String(p.description || "").toLowerCase().includes(needle)
+            String(p.name || "")
+              .toLowerCase()
+              .includes(needle) ||
+            String(p.description || "")
+              .toLowerCase()
+              .includes(needle),
         );
       }
 
@@ -520,10 +577,16 @@ export class ProjectController {
       }
 
       if (businessUnitId) {
-        filtered = filtered.filter((p: any) => p.businessUnit === businessUnitId);
+        filtered = filtered.filter(
+          (p: any) => p.businessUnit === businessUnitId,
+        );
       }
 
-      const sorted = ProjectController.sortProjectsInMemory(filtered, sortBy, sortOrder);
+      const sorted = ProjectController.sortProjectsInMemory(
+        filtered,
+        sortBy,
+        sortOrder,
+      );
       const pageData = sorted.slice(skip, skip + limit);
       const total = sorted.length;
 
@@ -554,7 +617,11 @@ export class ProjectController {
       const where: Prisma.ProjectWhereInput = {
         ownerId: userId,
         status: { not: "DRAFT" },
-        ...ProjectController.buildProjectWhereFilters({ search, status, businessUnitId }),
+        ...ProjectController.buildProjectWhereFilters({
+          search,
+          status,
+          businessUnitId,
+        }),
       };
 
       const [projects, total] = await Promise.all([
@@ -565,14 +632,17 @@ export class ProjectController {
           orderBy: { [sortBy]: sortOrder },
           include: {
             projectMembers: {
-              include: { user: { select: { id: true, name: true, email: true } } },
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+              },
             },
           },
         }),
         prisma.project.count({ where }),
       ]);
 
-      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      const enriched =
+        await ProjectController.enrichBusinessUnitDetails(projects);
 
       res.json({
         success: true,
@@ -601,7 +671,11 @@ export class ProjectController {
       const where: Prisma.ProjectWhereInput = {
         ownerId: userId,
         status: "DRAFT",
-        ...ProjectController.buildProjectWhereFilters({ search, status, businessUnitId }),
+        ...ProjectController.buildProjectWhereFilters({
+          search,
+          status,
+          businessUnitId,
+        }),
       };
 
       const [projects, total] = await Promise.all([
@@ -612,14 +686,17 @@ export class ProjectController {
           orderBy: { [sortBy]: sortOrder },
           include: {
             projectMembers: {
-              include: { user: { select: { id: true, name: true, email: true } } },
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+              },
             },
           },
         }),
         prisma.project.count({ where }),
       ]);
 
-      const enriched = await ProjectController.enrichBusinessUnitDetails(projects);
+      const enriched =
+        await ProjectController.enrichBusinessUnitDetails(projects);
 
       res.json({
         success: true,
@@ -679,7 +756,7 @@ export class ProjectController {
           label: project.name,
           pin: project.pin,
           status: project.status,
-        }))
+        })),
       );
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -696,7 +773,9 @@ export class ProjectController {
         where: { id: userRoleId },
       });
 
-      const canSeeAllActiveProjects = ["OP", "SUPERADMIN"].includes(userRole?.name);
+      const canSeeAllActiveProjects = ["OP", "SUPERADMIN"].includes(
+        userRole?.name,
+      );
 
       const projects = await prisma.project.findMany({
         where: canSeeAllActiveProjects
@@ -727,7 +806,7 @@ export class ProjectController {
           label: project.name,
           pin: project.pin,
           status: project.status,
-        }))
+        })),
       );
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -735,10 +814,7 @@ export class ProjectController {
   }
 
   // GET SINGLE (LIGHT)
-  static async getById(
-    req: Request<ProjectParamsDTO>,
-    res: Response
-  ) {
+  static async getById(req: Request<ProjectParamsDTO>, res: Response) {
     try {
       const { id } = req.params;
 
@@ -746,7 +822,7 @@ export class ProjectController {
         where: { id },
         include: {
           scopes: {
-            orderBy: { order: "asc" }
+            orderBy: { order: "asc" },
           },
           projectMembers: {
             include: {
@@ -754,12 +830,12 @@ export class ProjectController {
                 select: {
                   id: true,
                   name: true,
-                  email: true
-                }
-              }
-            }
-          }
-        }
+                  email: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!project) {
@@ -773,10 +849,7 @@ export class ProjectController {
   }
 
   // 🔥 FULL TREE (VERY IMPORTANT)
-  static async getFull(
-    req: Request<ProjectParamsDTO>,
-    res: Response
-  ) {
+  static async getFull(req: Request<ProjectParamsDTO>, res: Response) {
     try {
       const { id } = req.params;
 
@@ -798,7 +871,7 @@ export class ProjectController {
   // GET FULL PROJECT FOR APPROVAL VIEW
   static async getFullForApproval(
     req: Request<ProjectParamsDTO>,
-    res: Response
+    res: Response,
   ) {
     try {
       const { id } = req.params;
@@ -819,26 +892,26 @@ export class ProjectController {
 
       // Check if user has access: either owner or approver
       const isOwner = project.ownerId === userId;
-      
+
       if (!isOwner) {
         // Check if user is an approver in this project's approval chain
         const isApprover = await prisma.projectApproval.findFirst({
           where: {
             projectId: id,
-            approverId: userId
-          }
+            approverId: userId,
+          },
         });
 
         if (!isApprover) {
           return res.status(403).json({
-            error: "Access denied - you are not an approver for this project"
+            error: "Access denied - you are not an approver for this project",
           });
         }
       }
 
       res.json({
         success: true,
-        data: project
+        data: project,
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -847,199 +920,201 @@ export class ProjectController {
 
   // UPDATE (SAFE)
   static async update(
-  req: Request<ProjectParamsDTO, {}, UpdateProjectDTO>,
-  res: Response
-) {
-  try {
-    const { id } = req.params;
+    req: Request<ProjectParamsDTO, {}, UpdateProjectDTO>,
+    res: Response,
+  ) {
+    try {
+      const { id } = req.params;
 
-    const {
-      name,
-      description,
-      location,
-      managerId,
-      startDate,
-      expectedEndDate,
-      totalBudget,
-      priority,
-      pin,
-      businessUnit,
-      entity,
-      monday,
-      tuesday,
-      wednesday,
-      thursday,
-      friday,
-      saturday,
-      sunday,
-      includeHolidays
-    } = req.body;
-
-    const updated = await prisma.project.update({
-      where: { id },
-      data: {
+      const {
         name,
         description,
-
-        // 🔥 FIX JSON
-        location: location || undefined,
-        startDate: startDate ? new Date(startDate) : undefined,
-        expectedEndDate: expectedEndDate
-          ? new Date(expectedEndDate)
-          : undefined,
-
+        location,
+        managerId,
+        startDate,
+        expectedEndDate,
         totalBudget,
         priority,
         pin,
-
-        // 🔥 NEW
         businessUnit,
         entity,
+        monday,
+        tuesday,
+        wednesday,
+        thursday,
+        friday,
+        saturday,
+        sunday,
+        includeHolidays,
+      } = req.body;
 
-        monday: monday ?? undefined,
-        tuesday: tuesday ?? undefined,
-        wednesday: wednesday ?? undefined,
-        thursday: thursday ?? undefined,
-        friday: friday ?? undefined,
-        saturday: saturday ?? undefined,
-        sunday: sunday ?? undefined,
-        includeHolidays: includeHolidays ?? undefined
-      },
-    });
+      const updated = await prisma.project.update({
+        where: { id },
+        data: {
+          name,
+          description,
 
-    // 🔥 REGENERATE TIMELINE if dates changed
-    if ((startDate || expectedEndDate) && updated.startDate && updated.expectedEndDate) {
-      try {
-        await generateProjectTimeline(updated.id, "daily");
-      } catch (timelineError: any) {
-        console.error("Timeline regeneration warning:", timelineError.message);
-        // Don't fail project update if timeline fails
+          // 🔥 FIX JSON
+          location: location || undefined,
+          startDate: startDate ? new Date(startDate) : undefined,
+          expectedEndDate: expectedEndDate
+            ? new Date(expectedEndDate)
+            : undefined,
+
+          totalBudget,
+          priority,
+          pin,
+
+          // 🔥 NEW
+          businessUnit,
+          entity,
+
+          monday: monday ?? undefined,
+          tuesday: tuesday ?? undefined,
+          wednesday: wednesday ?? undefined,
+          thursday: thursday ?? undefined,
+          friday: friday ?? undefined,
+          saturday: saturday ?? undefined,
+          sunday: sunday ?? undefined,
+          includeHolidays: includeHolidays ?? undefined,
+        },
+      });
+
+      // 🔥 REGENERATE TIMELINE if dates changed
+      if (
+        (startDate || expectedEndDate) &&
+        updated.startDate &&
+        updated.expectedEndDate
+      ) {
+        try {
+          await generateProjectTimeline(updated.id, "daily");
+        } catch (timelineError: any) {
+          console.error(
+            "Timeline regeneration warning:",
+            timelineError.message,
+          );
+          // Don't fail project update if timeline fails
+        }
       }
-    }
 
-    res.json(updated);
-  } catch (error: any) {
-    res.status(400).json({ message: error.message });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
   }
-}
 
   // DELETE (FULL CASCADE CLEANUP)
-static async delete(
-  req: Request<ProjectParamsDTO>,
-  res: Response
-) {
-  try {
-    const { id } = req.params;
+  static async delete(req: Request<ProjectParamsDTO>, res: Response) {
+    try {
+      const { id } = req.params;
 
-    // 🔥 1. GET FULL TREE (ids only is enough)
-    const project = await prisma.project.findUnique({
-      where: { id },
-      include: {
-        scopes: {
-          include: {
-            tasks: {
-              include: {
-                subtasks: true,
+      // 🔥 1. GET FULL TREE (ids only is enough)
+      const project = await prisma.project.findUnique({
+        where: { id },
+        include: {
+          scopes: {
+            include: {
+              tasks: {
+                include: {
+                  subtasks: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
 
-    // 🔥 2. DELETE EVERYTHING BOTTOM → TOP
-    for (const scope of project.scopes) {
-      for (const task of scope.tasks) {
-        for (const subtask of task.subtasks) {
-          
-          // --- CHILD TABLES (SUBTASK RELATED) ---
-          await prisma.progressLog.deleteMany({
-            where: { subtaskId: subtask.id },
+      // 🔥 2. DELETE EVERYTHING BOTTOM → TOP
+      for (const scope of project.scopes) {
+        for (const task of scope.tasks) {
+          for (const subtask of task.subtasks) {
+            // --- CHILD TABLES (SUBTASK RELATED) ---
+            await prisma.progressLog.deleteMany({
+              where: { subtaskId: subtask.id },
+            });
+
+            await prisma.checklist.deleteMany({
+              where: { subtaskId: subtask.id },
+            });
+
+            await prisma.subtaskAssignee.deleteMany({
+              where: { subtaskId: subtask.id },
+            });
+
+            await prisma.comment.deleteMany({
+              where: { subtaskId: subtask.id },
+            });
+
+            await prisma.attachment.deleteMany({
+              where: { subtaskId: subtask.id },
+            });
+
+            await prisma.activityLog.deleteMany({
+              where: { subtaskId: subtask.id },
+            });
+
+            // --- SUBTASK ---
+            await prisma.subtask.delete({
+              where: { id: subtask.id },
+            });
+          }
+
+          // --- TASK ASSIGNEES ---
+          await prisma.taskAssignee.deleteMany({
+            where: { taskId: task.id },
           });
 
-          await prisma.checklist.deleteMany({
-            where: { subtaskId: subtask.id },
-          });
-
-          await prisma.subtaskAssignee.deleteMany({
-            where: { subtaskId: subtask.id },
-          });
-
-          await prisma.comment.deleteMany({
-            where: { subtaskId: subtask.id },
-          });
-
-          await prisma.attachment.deleteMany({
-            where: { subtaskId: subtask.id },
-          });
-
-          await prisma.activityLog.deleteMany({
-            where: { subtaskId: subtask.id },
-          });
-
-          // --- SUBTASK ---
-          await prisma.subtask.delete({
-            where: { id: subtask.id },
+          // --- TASK ---
+          await prisma.task.delete({
+            where: { id: task.id },
           });
         }
 
-        // --- TASK ASSIGNEES ---
-        await prisma.taskAssignee.deleteMany({
-          where: { taskId: task.id },
-        });
-
-        // --- TASK ---
-        await prisma.task.delete({
-          where: { id: task.id },
+        // --- scope ---
+        await prisma.scope.delete({
+          where: { id: scope.id },
         });
       }
 
-      // --- scope ---
-      await prisma.scope.delete({
-        where: { id: scope.id },
+      // 🔥 3. DELETE PROJECT-LEVEL DATA
+      // Delete project members (important!)
+      await prisma.projectMember.deleteMany({
+        where: { projectId: id },
       });
+
+      // Delete timeline snapshots
+      await prisma.projectTimeline.deleteMany({
+        where: { projectId: id },
+      });
+
+      // Delete project attachments
+      await prisma.attachment.deleteMany({
+        where: { projectId: id },
+      });
+
+      // Delete daily reports
+      await prisma.dailyReport.deleteMany({
+        where: { projectId: id },
+      });
+
+      // 🔥 4. FINALLY DELETE PROJECT
+      await prisma.project.delete({
+        where: { id },
+      });
+
+      res.json({
+        success: true,
+        message: "Project deleted successfully (full cascade cleanup)",
+      });
+    } catch (error: any) {
+      console.error("❌ Project delete error:", error);
+      res.status(400).json({ message: error.message });
     }
-
-    // 🔥 3. DELETE PROJECT-LEVEL DATA
-    // Delete project members (important!)
-    await prisma.projectMember.deleteMany({
-      where: { projectId: id },
-    });
-
-    // Delete timeline snapshots
-    await prisma.projectTimeline.deleteMany({
-      where: { projectId: id },
-    });
-
-    // Delete project attachments
-    await prisma.attachment.deleteMany({
-      where: { projectId: id },
-    });
-
-    // Delete daily reports
-    await prisma.dailyReport.deleteMany({
-      where: { projectId: id },
-    });
-
-    // 🔥 4. FINALLY DELETE PROJECT
-    await prisma.project.delete({
-      where: { id },
-    });
-
-    res.json({ 
-      success: true,
-      message: "Project deleted successfully (full cascade cleanup)" 
-    });
-
-  } catch (error: any) {
-    console.error("❌ Project delete error:", error);
-    res.status(400).json({ message: error.message });
   }
-}
 }
 
 // ========================================
@@ -1058,11 +1133,18 @@ export async function uploadProjectAttachment(req: any, res: Response) {
         ];
 
     if (!files.length) {
-      return res.status(400).json({ success: false, message: "No files provided" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No files provided" });
     }
 
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) return res.status(404).json({ success: false, message: "Project not found" });
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+    if (!project)
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
 
     const created = await Promise.all(
       files.map(async (file) => {
@@ -1082,7 +1164,7 @@ export async function uploadProjectAttachment(req: any, res: Response) {
             size: file.size,
           },
         });
-      })
+      }),
     );
 
     res.json({ success: true, data: created });
@@ -1095,9 +1177,13 @@ export async function getProjectAttachments(req: any, res: Response) {
   try {
     const { id: projectId } = req.params;
 
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!project) {
-      return res.status(404).json({ success: false, message: "Project not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Project not found" });
     }
 
     const authHeader = req.headers.authorization;
@@ -1140,13 +1226,21 @@ export async function streamProjectAttachment(req: any, res: Response) {
     let { attachmentId } = req.params;
     if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
 
-    const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
-    if (!attachment) return res.status(404).json({ success: false, message: "Attachment not found" });
+    const attachment = await prisma.attachment.findUnique({
+      where: { id: attachmentId },
+    });
+    if (!attachment)
+      return res
+        .status(404)
+        .json({ success: false, message: "Attachment not found" });
 
     const file = await fetchSharePointFile(attachment.fileUrl);
     const contentType = attachment.mimeType || file.contentType;
     res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(attachment.fileName)}"`);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
+    );
     res.setHeader("Cache-Control", "private, max-age=300");
     res.send(file.buffer);
   } catch (error: any) {
@@ -1197,9 +1291,7 @@ export async function assignProjectMember(req: any, res: any) {
 
     // 🔥 VALIDATE ROLE RULES
     if (role === "SUB_OWNER") {
-      const invalid = users.find(
-        (u) => u.role?.name !== "LEADER"
-      );
+      const invalid = users.find((u) => u.role?.name !== "BU_HEAD");
 
       if (invalid) {
         return res.status(403).json({
@@ -1265,38 +1357,38 @@ export async function getProjectMembers(req: any, res: any) {
 
     // Check project exists
     const project = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
     });
 
     if (!project) {
       return res.status(404).json({
-        message: "Project not found"
+        message: "Project not found",
       });
     }
 
     const members = await prisma.projectMember.findMany({
       where: { projectId },
       include: {
-        user: { include: { role: true } }
+        user: { include: { role: true } },
       },
-      orderBy: { createdAt: "asc" }
+      orderBy: { createdAt: "asc" },
     });
 
     // 🔥 GROUP BY ROLE
     const grouped = {
       owner: members.filter((m: any) => m.role === "OWNER"),
       subOwners: members.filter((m: any) => m.role === "SUB_OWNER"),
-      members: members.filter((m: any) => m.role === "MEMBER")
+      members: members.filter((m: any) => m.role === "MEMBER"),
     };
 
     res.json({
       success: true,
       data: grouped,
-      total: members.length
+      total: members.length,
     });
   } catch (err: any) {
     res.status(500).json({
-      message: err.message
+      message: err.message,
     });
   }
 }
@@ -1363,8 +1455,8 @@ export async function getProjectEngagedUsers(req: any, res: any) {
     const members = await prisma.projectMember.findMany({
       where: { projectId },
       include: {
-        user: { include: { role: true } }
-      }
+        user: { include: { role: true } },
+      },
     });
 
     const users = members.map((m: any) => ({
@@ -1372,17 +1464,17 @@ export async function getProjectEngagedUsers(req: any, res: any) {
       name: m.user.name,
       email: m.user.email,
       role: m.user.role?.name || null,
-      projectRole: m.role
+      projectRole: m.role,
     }));
 
     res.json({
       success: true,
       data: users,
-      total: users.length
+      total: users.length,
     });
   } catch (err: any) {
     res.status(500).json({
-      message: err.message
+      message: err.message,
     });
   }
 }
@@ -1400,14 +1492,14 @@ export async function updateProjectMemberRole(req: any, res: any) {
         success: false,
         error: {
           code: "INVALID_ROLE",
-          message: "Invalid role. Must be 'SUB_OWNER' or 'MEMBER'"
-        }
+          message: "Invalid role. Must be 'SUB_OWNER' or 'MEMBER'",
+        },
       });
     }
 
     // CHECK: Project exists
     const project = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
     });
 
     if (!project) {
@@ -1415,8 +1507,8 @@ export async function updateProjectMemberRole(req: any, res: any) {
         success: false,
         error: {
           code: "PROJECT_NOT_FOUND",
-          message: "Project not found"
-        }
+          message: "Project not found",
+        },
       });
     }
 
@@ -1424,8 +1516,8 @@ export async function updateProjectMemberRole(req: any, res: any) {
     const requesterMember = await prisma.projectMember.findFirst({
       where: {
         projectId,
-        userId: requesterId
-      }
+        userId: requesterId,
+      },
     });
 
     if (!requesterMember || requesterMember.role !== "OWNER") {
@@ -1433,8 +1525,8 @@ export async function updateProjectMemberRole(req: any, res: any) {
         success: false,
         error: {
           code: "INSUFFICIENT_PERMISSIONS",
-          message: "Only project owner can modify member roles"
-        }
+          message: "Only project owner can modify member roles",
+        },
       });
     }
 
@@ -1442,11 +1534,11 @@ export async function updateProjectMemberRole(req: any, res: any) {
     const member = await prisma.projectMember.findFirst({
       where: {
         projectId,
-        userId
+        userId,
       },
       include: {
-        user: { include: { role: true } }
-      }
+        user: { include: { role: true } },
+      },
     });
 
     if (!member) {
@@ -1454,8 +1546,8 @@ export async function updateProjectMemberRole(req: any, res: any) {
         success: false,
         error: {
           code: "MEMBER_NOT_FOUND",
-          message: "User is not a member of this project"
-        }
+          message: "User is not a member of this project",
+        },
       });
     }
 
@@ -1465,8 +1557,8 @@ export async function updateProjectMemberRole(req: any, res: any) {
         success: false,
         error: {
           code: "CANNOT_MODIFY_OWNER",
-          message: "Cannot change role of project owner"
-        }
+          message: "Cannot change role of project owner",
+        },
       });
     }
 
@@ -1474,11 +1566,11 @@ export async function updateProjectMemberRole(req: any, res: any) {
     const updated = await prisma.projectMember.update({
       where: { id: member.id },
       data: {
-        role: newRole
+        role: newRole,
       },
       include: {
-        user: { include: { role: true } }
-      }
+        user: { include: { role: true } },
+      },
     });
 
     // 🔥 FORMAT RESPONSE
@@ -1496,20 +1588,19 @@ export async function updateProjectMemberRole(req: any, res: any) {
           email: updated.user.email,
           role: {
             id: updated.user.role?.id,
-            name: updated.user.role?.name
-          }
+            name: updated.user.role?.name,
+          },
         },
-        updatedAt: updated.createdAt // Using createdAt as we don't have updatedAt in schema yet
-      }
+        updatedAt: updated.createdAt, // Using createdAt as we don't have updatedAt in schema yet
+      },
     });
-
   } catch (err: any) {
     return res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_ERROR",
-        message: err.message || "Failed to update member role"
-      }
+        message: err.message || "Failed to update member role",
+      },
     });
   }
 }

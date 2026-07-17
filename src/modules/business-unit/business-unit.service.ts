@@ -1,6 +1,50 @@
 import prisma from "../../config/prisma";
 
 export class BusinessUnitService {
+  private businessUnitWithAssignedUsersSelect = {
+    id: true,
+    code: true,
+    name: true,
+    entity: true,
+    buHead: true,
+    buHeadUserId: true,
+    assistantHead: true,
+    assistantHeadUserId: true,
+    isActive: true,
+    createdAt: true,
+    updatedAt: true,
+    buHeadUser: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+    assistantHeadUser: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+  };
+
+  private async resolveAssignedUser(userId: string, fieldName: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error(`${fieldName} user not found`);
+    }
+
+    return user;
+  }
+
   /**
    * Get all business units
    */
@@ -17,6 +61,7 @@ export class BusinessUnitService {
 
     return await prisma.businessUnit.findMany({
       where,
+      select: this.businessUnitWithAssignedUsersSelect,
       orderBy: { code: "asc" },
     });
   }
@@ -27,6 +72,7 @@ export class BusinessUnitService {
   async getBusinessUnitByCode(code: string) {
     return await prisma.businessUnit.findUnique({
       where: { code: code.toUpperCase() },
+      select: this.businessUnitWithAssignedUsersSelect,
     });
   }
 
@@ -36,6 +82,7 @@ export class BusinessUnitService {
   async getBusinessUnitById(id: string) {
     return await prisma.businessUnit.findUnique({
       where: { id },
+      select: this.businessUnitWithAssignedUsersSelect,
     });
   }
 
@@ -46,12 +93,19 @@ export class BusinessUnitService {
     code: string;
     name: string;
     entity: string;
-    buHead?: string;
-    assistantHead?: string;
+    buHeadUserId?: string | null;
+    assistantHeadUserId?: string | null;
   }) {
     const code = data.code.toUpperCase().trim();
     const name = data.name.trim();
     const entity = data.entity.trim();
+
+    const buHeadUser = data.buHeadUserId
+      ? await this.resolveAssignedUser(data.buHeadUserId, "BU Head")
+      : null;
+    const assistantHeadUser = data.assistantHeadUserId
+      ? await this.resolveAssignedUser(data.assistantHeadUserId, "Assistant BU Head")
+      : null;
 
     // Check if code already exists
     const existing = await prisma.businessUnit.findUnique({
@@ -67,10 +121,13 @@ export class BusinessUnitService {
         code,
         name,
         entity,
-        buHead: data.buHead?.trim() || null,
-        assistantHead: data.assistantHead?.trim() || null,
+        buHead: buHeadUser?.name || null,
+        buHeadUserId: buHeadUser?.id || null,
+        assistantHead: assistantHeadUser?.name || null,
+        assistantHeadUserId: assistantHeadUser?.id || null,
         isActive: true,
       },
+      select: this.businessUnitWithAssignedUsersSelect,
     });
   }
 
@@ -82,8 +139,8 @@ export class BusinessUnitService {
     data: {
       name?: string;
       entity?: string;
-      buHead?: string | null;
-      assistantHead?: string | null;
+      buHeadUserId?: string | null;
+      assistantHeadUserId?: string | null;
       isActive?: boolean;
     }
   ) {
@@ -95,24 +152,48 @@ export class BusinessUnitService {
       throw new Error("Business Unit not found");
     }
 
+    const updateData: any = {
+      ...(data.name && { name: data.name.trim() }),
+      ...(data.entity && { entity: data.entity.trim() }),
+      ...(data.isActive !== undefined && { isActive: data.isActive }),
+    };
+
+    if (data.buHeadUserId !== undefined) {
+      if (data.buHeadUserId) {
+        const buHeadUser = await this.resolveAssignedUser(data.buHeadUserId, "BU Head");
+        updateData.buHeadUserId = buHeadUser.id;
+        updateData.buHead = buHeadUser.name;
+      } else {
+        updateData.buHeadUserId = null;
+        updateData.buHead = null;
+      }
+    }
+
+    if (data.assistantHeadUserId !== undefined) {
+      if (data.assistantHeadUserId) {
+        const assistantHeadUser = await this.resolveAssignedUser(
+          data.assistantHeadUserId,
+          "Assistant BU Head"
+        );
+        updateData.assistantHeadUserId = assistantHeadUser.id;
+        updateData.assistantHead = assistantHeadUser.name;
+      } else {
+        updateData.assistantHeadUserId = null;
+        updateData.assistantHead = null;
+      }
+    }
+
     return await prisma.businessUnit.update({
       where: { id },
-      data: {
-        ...(data.name && { name: data.name.trim() }),
-        ...(data.entity && { entity: data.entity.trim() }),
-        ...(data.buHead !== undefined && { buHead: data.buHead ? data.buHead.trim() : null }),
-        ...(data.assistantHead !== undefined && {
-          assistantHead: data.assistantHead ? data.assistantHead.trim() : null,
-        }),
-        ...(data.isActive !== undefined && { isActive: data.isActive }),
-      },
+      data: updateData,
+      select: this.businessUnitWithAssignedUsersSelect,
     });
   }
 
   /**
    * Assign BU Head to business unit
    */
-  async assignBUHead(id: string, buHead: string | null) {
+  async assignBUHead(id: string, buHeadUserId: string | null) {
     const businessUnit = await prisma.businessUnit.findUnique({
       where: { id },
     });
@@ -121,18 +202,24 @@ export class BusinessUnitService {
       throw new Error("Business Unit not found");
     }
 
+    const buHeadUser = buHeadUserId
+      ? await this.resolveAssignedUser(buHeadUserId, "BU Head")
+      : null;
+
     return await prisma.businessUnit.update({
       where: { id },
       data: {
-        buHead: buHead ? buHead.trim() : null,
+        buHeadUserId: buHeadUser?.id || null,
+        buHead: buHeadUser?.name || null,
       },
+      select: this.businessUnitWithAssignedUsersSelect,
     });
   }
 
   /**
    * Assign Assistant BU Head to business unit
    */
-  async assignAssistantBUHead(id: string, assistantHead: string | null) {
+  async assignAssistantBUHead(id: string, assistantHeadUserId: string | null) {
     const businessUnit = await prisma.businessUnit.findUnique({
       where: { id },
     });
@@ -141,11 +228,17 @@ export class BusinessUnitService {
       throw new Error("Business Unit not found");
     }
 
+    const assistantHeadUser = assistantHeadUserId
+      ? await this.resolveAssignedUser(assistantHeadUserId, "Assistant BU Head")
+      : null;
+
     return await prisma.businessUnit.update({
       where: { id },
       data: {
-        assistantHead: assistantHead ? assistantHead.trim() : null,
+        assistantHeadUserId: assistantHeadUser?.id || null,
+        assistantHead: assistantHeadUser?.name || null,
       },
+      select: this.businessUnitWithAssignedUsersSelect,
     });
   }
 

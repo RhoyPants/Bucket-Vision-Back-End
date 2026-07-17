@@ -41,6 +41,8 @@ model User {
   assignedTasks      TaskAssignee[]
   role               Role                   @relation(fields: [roleId], references: [id])
   businessUnit       BusinessUnit?          @relation(fields: [businessUnitId], references: [id])
+  headedBusinessUnits BusinessUnit[]         @relation("BusinessUnitHead")
+  assistantHeadedBusinessUnits BusinessUnit[] @relation("BusinessUnitAssistantHead")
   managers           UserHierarchy[]        @relation("UserMembers")
   members            UserHierarchy[]        @relation("UserManagers")
   personalDashboards PersonalDashboard[]
@@ -696,7 +698,11 @@ model BusinessUnit {
   name          String
   entity        String
   buHead        String?
+  buHeadUserId  String?
+  buHeadUser    User?    @relation("BusinessUnitHead", fields: [buHeadUserId], references: [id], onDelete: SetNull)
   assistantHead String?
+  assistantHeadUserId String?
+  assistantHeadUser   User?    @relation("BusinessUnitAssistantHead", fields: [assistantHeadUserId], references: [id], onDelete: SetNull)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -705,6 +711,8 @@ model BusinessUnit {
 
   @@index([code])
   @@index([entity])
+  @@index([buHeadUserId])
+  @@index([assistantHeadUserId])
 }
 
 model SsoRegistration {

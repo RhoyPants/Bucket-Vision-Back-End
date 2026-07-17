@@ -7,10 +7,10 @@
     "asstBUhead": ""
   },
   {
-    "Title": "BT",
-    "BusinessUnit": "BUSINESS TRANSFORMATION",
+    "Title": "NBSP",
+    "BusinessUnit": "NEW BUSINESS AND SPECIAL PROJECT",
     "Entity": "GVI",
-    "BUHead": "Jom M. Titular",
+    "BUHead": "Angela M. Titular",
     "asstBUhead": ""
   },
   {
@@ -101,7 +101,7 @@
     "Title": "SC",
     "BusinessUnit": "SUPPLY CHAIN",
     "Entity": "GVI",
-    "BUHead": "Paolo M. Titular",
+    "BUHead": "Jom M. Titular",
     "asstBUhead": ""
   },
   {
@@ -122,7 +122,7 @@
     "Title": "PROD",
     "BusinessUnit": "PRODUCTION",
     "Entity": "HULMA",
-    "BUHead": "Deo J. Alejo",
+    "BUHead": "Pedelyn C. Espino",
     "asstBUhead": ""
   },
   {
@@ -143,14 +143,14 @@
     "Title": "GPUR",
     "BusinessUnit": "GVE PURCHASING",
     "Entity": "GVE",
-    "BUHead": "Hershi A. Camposano",
+    "BUHead": "Jom M. Titular",
     "asstBUhead": ""
   },
   {
     "Title": "HPUR",
     "BusinessUnit": "HULMA PURCHASING",
     "Entity": "HULMA",
-    "BUHead": "Legie A. Reyes",
+    "BUHead": "Jom M. Titular",
     "asstBUhead": ""
   },
   {
@@ -164,7 +164,7 @@
     "Title": "SA",
     "BusinessUnit": "SALES AND ACCOUNTS",
     "Entity": "HULMA",
-    "BUHead": "Deo J. Alejo",
+    "BUHead": "Jurish Co",
     "asstBUhead": ""
   },
   {
@@ -178,7 +178,7 @@
     "Title": "FO",
     "BusinessUnit": "FIELD OPERATIONS",
     "Entity": "HULMA",
-    "BUHead": "Deo J. Alejo",
+    "BUHead": "Pedelyn C. Espino",
     "asstBUhead": ""
   }
 ]
