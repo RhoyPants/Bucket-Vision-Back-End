@@ -1295,7 +1295,7 @@ export async function assignProjectMember(req: any, res: any) {
 
       if (invalid) {
         return res.status(403).json({
-          message: `User ${invalid.name} is not LEADER`,
+          message: `User ${invalid.name} is not BU_HEAD`,
         });
       }
     }
