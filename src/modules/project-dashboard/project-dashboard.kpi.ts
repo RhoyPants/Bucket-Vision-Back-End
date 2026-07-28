@@ -3,7 +3,7 @@ import {
   KpiStatus,
   KpiThresholdDTO,
   KpiValueOperator,
-} from "./personal-dashboard.dto";
+} from "./project-dashboard.dto";
 
 export const REQUIRED_THRESHOLD_STATUSES: Array<Exclude<KpiStatus, "UNCLASSIFIED">> = [
   "CRITICAL",
@@ -62,7 +62,9 @@ export function evaluateProgressStatus(
   progress: number,
   thresholds: KpiThresholdDTO[]
 ): KpiStatus {
-  const orderedStatuses: KpiStatus[] = ["CRITICAL", "ONFLOW", "HEALTHY"];
+  // HEALTHY is evaluated before ONFLOW because an automatically generated
+  // BETWEEN rule shares its upper boundary with the HEALTHY GTE rule.
+  const orderedStatuses: KpiStatus[] = ["CRITICAL", "HEALTHY", "ONFLOW"];
 
   for (const status of orderedStatuses) {
     const rule = thresholds.find((item) => item.status === status);

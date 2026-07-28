@@ -531,7 +531,11 @@ export class ApprovalService {
   /**
    * Approve project at current level
    */
-  async approveProject(projectId: string, approverId: string): Promise<any> {
+  async approveProject(
+    projectId: string,
+    approverId: string,
+    remarks?: string
+  ): Promise<any> {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: { owner: true },
@@ -592,6 +596,7 @@ export class ApprovalService {
       where: { id: approval.id },
       data: {
         status: "APPROVED",
+        remarks: remarks || null,
         actedAt: new Date(),
       },
     });
@@ -649,7 +654,8 @@ export class ApprovalService {
       "APPROVED",
       project.status,
       newProjectStatus as ProjectStatus,
-      approval.level
+      approval.level,
+      remarks
     );
 
     return {

@@ -1,0 +1,2 @@
+-- No-op migration placeholder.
+-- This migration directory existed without SQL and blocked the Prisma migration chain.

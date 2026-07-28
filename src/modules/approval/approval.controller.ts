@@ -37,6 +37,7 @@ export class ApprovalController {
   async approveProject(req: Request, res: Response): Promise<void> {
     try {
       const { projectId } = req.params;
+      const { remarks } = req.body;
       const approverId = req.user?.id;
 
       if (!projectId || !approverId || typeof projectId !== "string") {
@@ -44,7 +45,16 @@ export class ApprovalController {
         return;
       }
 
-      const result = await approvalService.approveProject(projectId, approverId);
+      if (remarks !== undefined && typeof remarks !== "string") {
+        res.status(400).json({ error: "Approval remarks must be a string" });
+        return;
+      }
+
+      const result = await approvalService.approveProject(
+        projectId,
+        approverId,
+        remarks?.trim() || undefined
+      );
 
       res.status(200).json({
         success: true,

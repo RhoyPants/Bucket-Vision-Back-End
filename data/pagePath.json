@@ -1,8 +1,13 @@
 [
   {
-    "name": "Personal Dashboard",
-    "key": "personal_dashboard",
-    "path": "/personalDashboard"
+    "name": "Dashboard",
+    "key": "dashboard",
+    "path": "/dashboard"
+  },
+  {
+    "name": "Project Dashboard",
+    "key": "project_dashboard",
+    "path": "/projects/:projectId/dashboard"
   },
   {
     "name": "Projects",
@@ -58,6 +63,11 @@
     "name": "Reports",
     "key": "reports",
     "path": "/reports"
+  },
+  {
+    "name": "Incident Reports",
+    "key": "incident_reports",
+    "path": "/incidentReports"
   },
   {
     "name": "Daily Reports",

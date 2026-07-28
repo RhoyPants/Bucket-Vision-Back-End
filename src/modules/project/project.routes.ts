@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ProjectController, assignProjectMember, getProjectMembers, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole, uploadProjectAttachment, getProjectAttachments, deleteProjectAttachment, streamProjectAttachment } from "./project.controller";
+import { ProjectController, assignProjectMember, getProjectMembers, getProjectTeamOrgChart, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole, uploadProjectAttachment, getProjectAttachments, deleteProjectAttachment, streamProjectAttachment } from "./project.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 import upload from "../../middleware/upload.middleware";
@@ -110,6 +110,14 @@ router.get(
   authenticate,
   authorize("team_management", "READ"),
   getProjectMembers
+);
+
+// Get the project team as a render-ready organization chart
+router.get(
+  "/:projectId/team-org-chart",
+  authenticate,
+  authorize("team_management", "READ"),
+  getProjectTeamOrgChart
 );
 
 // Get all engaged users in project (for subtask assignment dropdown)

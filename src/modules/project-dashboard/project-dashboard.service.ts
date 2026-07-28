@@ -1,137 +1,41 @@
 import prisma from "../../config/prisma";
 import { getSCurve } from "../progress/scurve.service";
 import {
-  ChartConfigDTO,
   CreateDashboardKpiDTO,
   CreateDashboardNoteDTO,
-  CreatePersonalDashboardDTO,
   KpiThresholdDTO,
   SourcePreviewQueryDTO,
   UpdateDashboardNoteDTO,
   UpdateDashboardNoteItemDTO,
   UpdateDashboardKpiDTO,
-  UpdatePersonalDashboardDTO,
-} from "./personal-dashboard.dto";
+} from "./project-dashboard.dto";
 import {
   buildProgressPreview,
   detectSourceType,
   evaluateProgressStatus,
   validateProgressThresholds,
-} from "./personal-dashboard.kpi";
+} from "./project-dashboard.kpi";
 
-const MAX_PERSONAL_DASHBOARDS = 5;
-const DEFAULT_CHARTS = [
-  "KPI_SUMMARY",
-  "SCURVE",
-  "PROGRESS_TREND",
-  "KPI_STATUS_DISTRIBUTION",
-  "TASK_COMPLETION",
-];
+export class ProjectDashboardService {
+  async get(projectId: string, userId: string) {
+    const project = await this.ensureProjectAccess(projectId, userId);
+    const [kpis, defaultSubtaskKpi] = await Promise.all([
+      (prisma as any).dashboardKpi.findMany({
+        where: { projectId },
+        include: { thresholds: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.getSubtaskKpi(projectId, userId),
+    ]);
 
-export class PersonalDashboardService {
-  async list(userId: string) {
-    const dashboards = await (prisma as any).personalDashboard.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      include: {
-        project: { select: { id: true, name: true, progress: true, status: true } },
-        kpis: { include: { thresholds: true } },
-        charts: { orderBy: { sortOrder: "asc" } },
-        notes: {
-          include: { items: { orderBy: { sortOrder: "asc" } } },
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-    });
-
-    return Promise.all(dashboards.map((dashboard: any) => this.enrichDashboard(dashboard)));
+    return this.enrichDashboard({ project, kpis, defaultSubtaskKpi });
   }
 
-  async getById(id: string, userId: string) {
-    const dashboard = await this.findOwnedDashboard(id, userId);
-    return this.enrichDashboard(dashboard);
-  }
-
-  async create(userId: string, dto: CreatePersonalDashboardDTO) {
-    this.validateDashboardInput(dto);
-    await this.ensureProjectAccess(dto.projectId, userId);
-
-    return (prisma as any).$transaction(async (tx: any) => {
-      const count = await tx.personalDashboard.count({ where: { userId } });
-
-      if (count >= MAX_PERSONAL_DASHBOARDS) {
-        throw new Error("User cannot exceed 5 personal dashboards");
-      }
-
-      const dashboard = await tx.personalDashboard.create({
-        data: {
-          userId,
-          projectId: dto.projectId,
-          name: dto.name.trim(),
-          description: dto.description?.trim() || null,
-          charts: {
-            create: DEFAULT_CHARTS.map((chartType, index) => ({
-              chartType,
-              sortOrder: index,
-              isEnabled: true,
-            })),
-          },
-        },
-        include: {
-          project: { select: { id: true, name: true, progress: true, status: true } },
-          kpis: { include: { thresholds: true } },
-          charts: { orderBy: { sortOrder: "asc" } },
-          notes: {
-            include: { items: { orderBy: { sortOrder: "asc" } } },
-            orderBy: { sortOrder: "asc" },
-          },
-        },
-      });
-
-      return this.enrichDashboard(dashboard);
-    });
-  }
-
-  async update(id: string, userId: string, dto: UpdatePersonalDashboardDTO) {
-    await this.findOwnedDashboard(id, userId);
-
-    if (dto.name !== undefined && dto.name.trim().length < 2) {
-      throw new Error("Dashboard name must be at least 2 characters");
-    }
-
-    const dashboard = await (prisma as any).personalDashboard.update({
-      where: { id },
-      data: {
-        name: dto.name === undefined ? undefined : dto.name.trim(),
-        description:
-          dto.description === undefined ? undefined : dto.description?.trim() || null,
-      },
-      include: {
-        project: { select: { id: true, name: true, progress: true, status: true } },
-        kpis: { include: { thresholds: true } },
-        charts: { orderBy: { sortOrder: "asc" } },
-        notes: {
-          include: { items: { orderBy: { sortOrder: "asc" } } },
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-    });
-
-    return this.enrichDashboard(dashboard);
-  }
-
-  async delete(id: string, userId: string) {
-    await this.findOwnedDashboard(id, userId);
-    await (prisma as any).personalDashboard.delete({ where: { id } });
-
-    return { id };
-  }
-
-  async getSourceOptions(id: string, userId: string) {
-    const dashboard = await this.findOwnedDashboard(id, userId);
+  async getSourceOptions(projectId: string, userId: string) {
+    await this.ensureProjectAccess(projectId, userId);
 
     const project = await prisma.project.findUnique({
-      where: { id: dashboard.projectId },
+      where: { id: projectId },
       include: {
         scopes: {
           orderBy: { order: "asc" },
@@ -195,17 +99,17 @@ export class PersonalDashboardService {
     };
   }
 
-  async previewSource(id: string, userId: string, query: SourcePreviewQueryDTO) {
-    const dashboard = await this.findOwnedDashboard(id, userId);
+  async previewSource(projectId: string, userId: string, query: SourcePreviewQueryDTO) {
+    await this.ensureProjectAccess(projectId, userId);
     const sourceInput = {
-      projectId: query.projectId || dashboard.projectId,
+      projectId,
       scopeId: query.scopeId,
       taskId: query.taskId,
       subtaskId: query.subtaskId,
     };
 
-    if (sourceInput.projectId !== dashboard.projectId) {
-      throw new Error("KPI project must match dashboard project");
+    if (query.projectId && query.projectId !== projectId) {
+      throw new Error("KPI project must match route project");
     }
 
     await this.validateSourceHierarchy(sourceInput.projectId, sourceInput);
@@ -218,15 +122,10 @@ export class PersonalDashboardService {
     return buildProgressPreview(sourceType, progress, dates.expectedStartDate, dates.expectedEndDate);
   }
 
-  async createKpi(dashboardId: string, userId: string, dto: CreateDashboardKpiDTO) {
-    const dashboard = await this.findOwnedDashboard(dashboardId, userId);
-
+  async createKpi(projectId: string, userId: string, dto: CreateDashboardKpiDTO) {
+    await this.ensureProjectAccess(projectId, userId);
     this.validateKpiInput(dto);
-    const projectId = dto.projectId || dashboard.projectId;
-
-    if (projectId !== dashboard.projectId) {
-      throw new Error("KPI project must match dashboard project");
-    }
+    const thresholdRules = this.resolveThresholdRules(dto, true)!;
 
     const sourceInput = {
       projectId,
@@ -240,7 +139,6 @@ export class PersonalDashboardService {
 
     const kpi = await (prisma as any).dashboardKpi.create({
       data: {
-        dashboardId,
         name: dto.name.trim(),
         description: dto.description?.trim() || null,
         unit: "%",
@@ -251,7 +149,7 @@ export class PersonalDashboardService {
         taskId: dto.taskId || null,
         subtaskId: dto.subtaskId || null,
         thresholds: {
-          create: dto.thresholds.map((rule) => ({
+          create: thresholdRules.map((rule) => ({
             status: rule.status,
             operator: rule.operator,
             value1: rule.value1,
@@ -271,34 +169,32 @@ export class PersonalDashboardService {
   }
 
   async updateKpi(
-    dashboardId: string,
+    projectId: string,
     kpiId: string,
     userId: string,
     dto: UpdateDashboardKpiDTO
   ) {
-    const dashboard = await this.findOwnedDashboard(dashboardId, userId);
-    const existing = await this.findKpi(dashboardId, kpiId);
+    await this.ensureProjectAccess(projectId, userId);
+    const existing = await this.findKpi(projectId, kpiId);
 
     if (dto.name !== undefined && dto.name.trim().length < 2) {
       throw new Error("KPI name must be at least 2 characters");
     }
 
-    if (dto.thresholds) {
-      validateProgressThresholds(dto.thresholds);
-    }
+    const thresholdRules = this.resolveThresholdRules(dto, false);
 
     const sourceInput = {
-      projectId: dashboard.projectId,
+      projectId,
       scopeId: dto.scopeId === undefined ? existing.scopeId : dto.scopeId || undefined,
       taskId: dto.taskId === undefined ? existing.taskId : dto.taskId || undefined,
       subtaskId: dto.subtaskId === undefined ? existing.subtaskId : dto.subtaskId || undefined,
     };
 
-    await this.validateSourceHierarchy(dashboard.projectId, sourceInput);
+    await this.validateSourceHierarchy(projectId, sourceInput);
     const sourceType = detectSourceType(sourceInput);
 
     const kpi = await (prisma as any).$transaction(async (tx: any) => {
-      if (dto.thresholds) {
+      if (thresholdRules) {
         await tx.kpiThresholdRule.deleteMany({ where: { kpiId } });
       }
 
@@ -312,9 +208,9 @@ export class PersonalDashboardService {
           scopeId: sourceInput.scopeId || null,
           taskId: sourceInput.taskId || null,
           subtaskId: sourceInput.subtaskId || null,
-          thresholds: dto.thresholds
+          thresholds: thresholdRules
             ? {
-                create: dto.thresholds.map((rule) => ({
+                create: thresholdRules.map((rule) => ({
                   status: rule.status,
                   operator: rule.operator,
                   value1: rule.value1,
@@ -335,63 +231,216 @@ export class PersonalDashboardService {
     return this.enrichKpi(kpi);
   }
 
-  async deleteKpi(dashboardId: string, kpiId: string, userId: string) {
-    await this.findOwnedDashboard(dashboardId, userId);
-    await this.findKpi(dashboardId, kpiId);
+  async deleteKpi(projectId: string, kpiId: string, userId: string) {
+    await this.ensureProjectAccess(projectId, userId);
+    await this.findKpi(projectId, kpiId);
     await (prisma as any).dashboardKpi.delete({ where: { id: kpiId } });
 
     return { id: kpiId };
   }
 
-  async updateCharts(dashboardId: string, userId: string, charts: ChartConfigDTO[]) {
-    await this.findOwnedDashboard(dashboardId, userId);
+  async getSubtaskKpiConfig(projectId: string, userId: string) {
+    await this.ensureProjectAccess(projectId, userId);
+    const config = await (prisma as any).projectSubtaskKpiConfig.findUnique({
+      where: { projectId },
+      include: {
+        updatedBy: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
 
-    if (!Array.isArray(charts)) {
-      throw new Error("charts must be an array");
-    }
-
-    await (prisma as any).$transaction(
-      charts.map((chart, index) =>
-        (prisma as any).dashboardChartConfig.upsert({
-          where: {
-            dashboardId_chartType: {
-              dashboardId,
-              chartType: chart.chartType,
-            },
-          },
-          update: {
-            isEnabled: chart.isEnabled ?? true,
-            sortOrder: chart.sortOrder ?? index,
-          },
-          create: {
-            dashboardId,
-            chartType: chart.chartType,
-            isEnabled: chart.isEnabled ?? true,
-            sortOrder: chart.sortOrder ?? index,
-          },
-        })
-      )
-    );
-
-    return this.getById(dashboardId, userId);
+    return config
+      ? {
+          projectId,
+          criticalBelow: config.criticalBelow,
+          healthyAtOrAbove: config.healthyAtOrAbove,
+          isCustom: true,
+          updatedAt: config.updatedAt,
+          updatedBy: config.updatedBy,
+        }
+      : {
+          projectId,
+          criticalBelow: -15,
+          healthyAtOrAbove: -5,
+          isCustom: false,
+          updatedAt: null,
+          updatedBy: null,
+        };
   }
 
-  async listNotes(dashboardId: string, userId: string) {
-    await this.findOwnedDashboard(dashboardId, userId);
+  async updateSubtaskKpiConfig(
+    projectId: string,
+    userId: string,
+    dto: { criticalBelow: number; healthyAtOrAbove: number }
+  ) {
+    await this.ensureSubtaskKpiConfigAccess(projectId, userId);
+    const criticalBelow = Number(dto.criticalBelow);
+    const healthyAtOrAbove = Number(dto.healthyAtOrAbove);
 
+    if (!Number.isFinite(criticalBelow) || !Number.isFinite(healthyAtOrAbove)) {
+      throw new Error("criticalBelow and healthyAtOrAbove must be valid numbers");
+    }
+    if (criticalBelow < -100 || criticalBelow > 100) {
+      throw new Error("criticalBelow must be between -100 and 100");
+    }
+    if (healthyAtOrAbove < -100 || healthyAtOrAbove > 100) {
+      throw new Error("healthyAtOrAbove must be between -100 and 100");
+    }
+    if (criticalBelow >= healthyAtOrAbove) {
+      throw new Error("criticalBelow must be less than healthyAtOrAbove");
+    }
+
+    await (prisma as any).projectSubtaskKpiConfig.upsert({
+      where: { projectId },
+      update: { criticalBelow, healthyAtOrAbove, updatedById: userId },
+      create: {
+        projectId,
+        criticalBelow,
+        healthyAtOrAbove,
+        updatedById: userId,
+      },
+    });
+
+    return this.getSubtaskKpiConfig(projectId, userId);
+  }
+
+  async resetSubtaskKpiConfig(projectId: string, userId: string) {
+    await this.ensureSubtaskKpiConfigAccess(projectId, userId);
+    await (prisma as any).projectSubtaskKpiConfig.deleteMany({
+      where: { projectId },
+    });
+    return this.getSubtaskKpiConfig(projectId, userId);
+  }
+
+  async getSubtaskKpi(projectId: string, userId: string) {
+    const project = await this.ensureProjectAccess(projectId, userId);
+    const config = await this.getSubtaskKpiConfig(projectId, userId);
+    const [subtasks, configuredKpiRecords] = await Promise.all([
+      prisma.subtask.findMany({
+        where: {
+          deletedAt: null,
+          task: {
+            deletedAt: null,
+            scope: {
+              projectId,
+              deletedAt: null,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          progress: true,
+          projectedStartDate: true,
+          projectedEndDate: true,
+          task: {
+            select: {
+              id: true,
+              title: true,
+              scope: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: [{ task: { order: "asc" } }, { order: "asc" }],
+      }),
+      (prisma as any).dashboardKpi.findMany({
+        where: { projectId },
+        include: { thresholds: true },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
+
+    const now = new Date();
+    const configuredKpis = await Promise.all(
+      configuredKpiRecords.map((kpi: any) => this.enrichKpi(kpi))
+    );
+    const configuredKpiSummary = {
+      total: configuredKpis.length,
+      critical: configuredKpis.filter((kpi) => kpi.status === "CRITICAL").length,
+      onflow: configuredKpis.filter((kpi) => kpi.status === "ONFLOW").length,
+      healthy: configuredKpis.filter((kpi) => kpi.status === "HEALTHY").length,
+      unclassified: configuredKpis.filter((kpi) => kpi.status === "UNCLASSIFIED").length,
+    };
+    const evaluated = subtasks.map((subtask) => {
+      const actualProgress = this.roundNumber(subtask.progress || 0, 2);
+      const expectedProgress = this.getExpectedSubtaskProgress(
+        now,
+        subtask.projectedStartDate,
+        subtask.projectedEndDate
+      );
+      const variance =
+        expectedProgress === null
+          ? null
+          : this.roundNumber(actualProgress - expectedProgress, 2);
+
+      let status: "CRITICAL" | "ONFLOW" | "HEALTHY" | "UNCLASSIFIED";
+      if (actualProgress >= 100) {
+        status = "HEALTHY";
+      } else if (variance === null) {
+        status = "UNCLASSIFIED";
+      } else if (variance < config.criticalBelow) {
+        status = "CRITICAL";
+      } else if (variance >= config.healthyAtOrAbove) {
+        status = "HEALTHY";
+      } else {
+        status = "ONFLOW";
+      }
+
+      return {
+        id: subtask.id,
+        title: subtask.title,
+        scope: subtask.task.scope,
+        task: {
+          id: subtask.task.id,
+          title: subtask.task.title,
+        },
+        actualProgress,
+        expectedProgress,
+        variance,
+        projectedStartDate: subtask.projectedStartDate,
+        projectedEndDate: subtask.projectedEndDate,
+        status,
+      };
+    });
+    const subtaskSummary = {
+      total: evaluated.length,
+      critical: evaluated.filter((item) => item.status === "CRITICAL").length,
+      onflow: evaluated.filter((item) => item.status === "ONFLOW").length,
+      healthy: evaluated.filter((item) => item.status === "HEALTHY").length,
+      unclassified: evaluated.filter((item) => item.status === "UNCLASSIFIED").length,
+    };
+
+    return {
+      project: { id: project.id, name: project.name },
+      config,
+      summary: {
+        total: subtaskSummary.total + configuredKpiSummary.total,
+        critical: subtaskSummary.critical + configuredKpiSummary.critical,
+        onflow: subtaskSummary.onflow + configuredKpiSummary.onflow,
+        healthy: subtaskSummary.healthy + configuredKpiSummary.healthy,
+        unclassified:
+          subtaskSummary.unclassified + configuredKpiSummary.unclassified,
+        subtasks: subtaskSummary,
+        configuredKpis: configuredKpiSummary,
+      },
+      subtasks: evaluated,
+      generatedAt: now.toISOString(),
+    };
+  }
+
+  async listNotes(userId: string) {
     return await (prisma as any).dashboardNote.findMany({
-      where: { dashboardId },
+      where: { userId },
       include: { items: { orderBy: { sortOrder: "asc" } } },
       orderBy: { sortOrder: "asc" },
     });
   }
 
-  async createNote(dashboardId: string, userId: string, dto: CreateDashboardNoteDTO) {
-    await this.findOwnedDashboard(dashboardId, userId);
-
+  async createNote(userId: string, dto: CreateDashboardNoteDTO) {
     const note = await (prisma as any).dashboardNote.create({
       data: {
-        dashboardId,
+        userId,
         title: dto.title?.trim() || null,
         content: dto.content?.trim() || null,
         sortOrder: dto.sortOrder ?? 0,
@@ -412,13 +461,11 @@ export class PersonalDashboardService {
   }
 
   async updateNote(
-    dashboardId: string,
     noteId: string,
     userId: string,
     dto: UpdateDashboardNoteDTO
   ) {
-    await this.findOwnedDashboard(dashboardId, userId);
-    await this.findNote(dashboardId, noteId);
+    await this.findNote(userId, noteId);
 
     const note = await (prisma as any).dashboardNote.update({
       where: { id: noteId },
@@ -433,22 +480,19 @@ export class PersonalDashboardService {
     return note;
   }
 
-  async deleteNote(dashboardId: string, noteId: string, userId: string) {
-    await this.findOwnedDashboard(dashboardId, userId);
-    await this.findNote(dashboardId, noteId);
+  async deleteNote(noteId: string, userId: string) {
+    await this.findNote(userId, noteId);
 
     await (prisma as any).dashboardNote.delete({ where: { id: noteId } });
     return { id: noteId };
   }
 
   async addNoteItem(
-    dashboardId: string,
     noteId: string,
     userId: string,
     dto: { text: string; isDone?: boolean; sortOrder?: number }
   ) {
-    await this.findOwnedDashboard(dashboardId, userId);
-    await this.findNote(dashboardId, noteId);
+    await this.findNote(userId, noteId);
 
     if (!dto.text || dto.text.trim().length === 0) {
       throw new Error("Checklist item text is required");
@@ -467,14 +511,12 @@ export class PersonalDashboardService {
   }
 
   async updateNoteItem(
-    dashboardId: string,
     noteId: string,
     itemId: string,
     userId: string,
     dto: UpdateDashboardNoteItemDTO
   ) {
-    await this.findOwnedDashboard(dashboardId, userId);
-    await this.findNote(dashboardId, noteId);
+    await this.findNote(userId, noteId);
     await this.findNoteItem(noteId, itemId);
 
     const item = await (prisma as any).dashboardNoteItem.update({
@@ -489,20 +531,18 @@ export class PersonalDashboardService {
     return item;
   }
 
-  async deleteNoteItem(dashboardId: string, noteId: string, itemId: string, userId: string) {
-    await this.findOwnedDashboard(dashboardId, userId);
-    await this.findNote(dashboardId, noteId);
+  async deleteNoteItem(noteId: string, itemId: string, userId: string) {
+    await this.findNote(userId, noteId);
     await this.findNoteItem(noteId, itemId);
 
     await (prisma as any).dashboardNoteItem.delete({ where: { id: itemId } });
     return { id: itemId };
   }
 
-  async getChartData(dashboardId: string, userId: string) {
-    const dashboard = await this.findOwnedDashboard(dashboardId, userId);
-    const enriched = await this.enrichDashboard(dashboard);
-    const scurve = await getSCurve(dashboard.projectId).catch(() => null);
-    const reportTable = scurve ? await this.buildReportTable(dashboard.projectId, scurve.data) : null;
+  async getChartData(projectId: string, userId: string) {
+    const enriched = await this.get(projectId, userId);
+    const scurve = await getSCurve(projectId).catch(() => null);
+    const reportTable = scurve ? await this.buildReportTable(projectId, scurve.data) : null;
 
     return {
       summary: enriched.summary,
@@ -510,25 +550,34 @@ export class PersonalDashboardService {
       progressTrend: scurve?.data || [],
       reportTable,
       kpiStatusDistribution: enriched.summary,
-      taskCompletion: await this.getTaskCompletion(dashboard.projectId),
+      taskCompletion: await this.getTaskCompletion(projectId),
+      defaultSubtaskKpi: enriched.defaultSubtaskKpi,
     };
   }
 
-  async getReportTable(dashboardId: string, userId: string) {
-    const dashboard = await this.findOwnedDashboard(dashboardId, userId);
-    const scurve = await getSCurve(dashboard.projectId);
+  async getReportTable(projectId: string, userId: string) {
+    await this.ensureProjectAccess(projectId, userId);
+    const scurve = await getSCurve(projectId);
 
-    return this.buildReportTable(dashboard.projectId, scurve.data);
+    return this.buildReportTable(projectId, scurve.data);
   }
 
   private async enrichDashboard(dashboard: any) {
     const kpis = await Promise.all((dashboard.kpis || []).map((kpi: any) => this.enrichKpi(kpi)));
+    const configuredKpis = {
+      total: kpis.length,
+      critical: kpis.filter((kpi) => kpi.status === "CRITICAL").length,
+      onflow: kpis.filter((kpi) => kpi.status === "ONFLOW").length,
+      healthy: kpis.filter((kpi) => kpi.status === "HEALTHY").length,
+      unclassified: kpis.filter((kpi) => kpi.status === "UNCLASSIFIED").length,
+    };
     const summary = {
-      totalKpis: kpis.length,
-      criticalKpis: kpis.filter((kpi) => kpi.status === "CRITICAL").length,
-      onflowKpis: kpis.filter((kpi) => kpi.status === "ONFLOW").length,
-      healthyKpis: kpis.filter((kpi) => kpi.status === "HEALTHY").length,
-      unclassifiedKpis: kpis.filter((kpi) => kpi.status === "UNCLASSIFIED").length,
+      totalKpis: configuredKpis.total,
+      criticalKpis: configuredKpis.critical,
+      onflowKpis: configuredKpis.onflow,
+      healthyKpis: configuredKpis.healthy,
+      unclassifiedKpis: configuredKpis.unclassified,
+      configuredKpis,
     };
 
     return {
@@ -557,6 +606,7 @@ export class PersonalDashboardService {
     return {
       ...kpi,
       thresholds,
+      thresholdConfig: this.getSimplifiedThresholdConfig(thresholds),
       currentValue: Number(progress.toFixed(2)),
       preview: buildProgressPreview(kpi.sourceType, progress),
       status,
@@ -652,30 +702,9 @@ export class PersonalDashboardService {
       : null;
   }
 
-  private async findOwnedDashboard(id: string, userId: string) {
-    const dashboard = await (prisma as any).personalDashboard.findFirst({
-      where: { id, userId },
-      include: {
-        project: { select: { id: true, name: true, progress: true, status: true } },
-        kpis: { include: { thresholds: true } },
-        charts: { orderBy: { sortOrder: "asc" } },
-        notes: {
-          include: { items: { orderBy: { sortOrder: "asc" } } },
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-    });
-
-    if (!dashboard) {
-      throw new Error("Dashboard not found");
-    }
-
-    return dashboard;
-  }
-
-  private async findKpi(dashboardId: string, kpiId: string) {
+  private async findKpi(projectId: string, kpiId: string) {
     const kpi = await (prisma as any).dashboardKpi.findFirst({
-      where: { id: kpiId, dashboardId },
+      where: { id: kpiId, projectId },
       include: { thresholds: true },
     });
 
@@ -686,9 +715,9 @@ export class PersonalDashboardService {
     return kpi;
   }
 
-  private async findNote(dashboardId: string, noteId: string) {
+  private async findNote(userId: string, noteId: string) {
     const note = await (prisma as any).dashboardNote.findFirst({
-      where: { id: noteId, dashboardId },
+      where: { id: noteId, userId },
       include: { items: { orderBy: { sortOrder: "asc" } } },
     });
 
@@ -711,16 +740,6 @@ export class PersonalDashboardService {
     return item;
   }
 
-  private validateDashboardInput(dto: CreatePersonalDashboardDTO) {
-    if (!dto.name || dto.name.trim().length < 2) {
-      throw new Error("Dashboard name must be at least 2 characters");
-    }
-
-    if (!dto.projectId) {
-      throw new Error("Project is required");
-    }
-  }
-
   private validateKpiInput(dto: CreateDashboardKpiDTO) {
     if (!dto.name || dto.name.trim().length < 2) {
       throw new Error("KPI name must be at least 2 characters");
@@ -730,7 +749,91 @@ export class PersonalDashboardService {
       throw new Error("Only progress KPIs are supported for now");
     }
 
-    validateProgressThresholds(dto.thresholds);
+  }
+
+  private resolveThresholdRules(
+    dto: {
+      criticalBelow?: number;
+      healthyAtOrAbove?: number;
+      thresholds?: KpiThresholdDTO[];
+    },
+    required: boolean
+  ): KpiThresholdDTO[] | undefined {
+    const usesSimplifiedThresholds =
+      dto.criticalBelow !== undefined || dto.healthyAtOrAbove !== undefined;
+
+    if (usesSimplifiedThresholds && dto.thresholds !== undefined) {
+      throw new Error(
+        "Use criticalBelow and healthyAtOrAbove or thresholds, not both"
+      );
+    }
+
+    if (usesSimplifiedThresholds) {
+      const criticalBelow = Number(dto.criticalBelow);
+      const healthyAtOrAbove = Number(dto.healthyAtOrAbove);
+
+      if (!Number.isFinite(criticalBelow) || !Number.isFinite(healthyAtOrAbove)) {
+        throw new Error("criticalBelow and healthyAtOrAbove are required");
+      }
+      if (
+        criticalBelow < 0 ||
+        criticalBelow > 100 ||
+        healthyAtOrAbove < 0 ||
+        healthyAtOrAbove > 100
+      ) {
+        throw new Error("KPI thresholds must be between 0 and 100");
+      }
+      if (criticalBelow >= healthyAtOrAbove) {
+        throw new Error("criticalBelow must be less than healthyAtOrAbove");
+      }
+
+      return [
+        {
+          status: "CRITICAL",
+          operator: "LT",
+          value1: criticalBelow,
+        },
+        {
+          status: "ONFLOW",
+          operator: "BETWEEN",
+          value1: criticalBelow,
+          value2: healthyAtOrAbove,
+        },
+        {
+          status: "HEALTHY",
+          operator: "GTE",
+          value1: healthyAtOrAbove,
+        },
+      ];
+    }
+
+    if (dto.thresholds !== undefined) {
+      validateProgressThresholds(dto.thresholds);
+      return dto.thresholds;
+    }
+
+    if (required) {
+      throw new Error("criticalBelow and healthyAtOrAbove are required");
+    }
+    return undefined;
+  }
+
+  private getSimplifiedThresholdConfig(thresholds: KpiThresholdDTO[]) {
+    const critical = thresholds.find(
+      (rule) => rule.status === "CRITICAL" && rule.operator === "LT"
+    );
+    const healthy = thresholds.find(
+      (rule) => rule.status === "HEALTHY" && rule.operator === "GTE"
+    );
+    if (!critical || !healthy) return null;
+    return {
+      criticalBelow: critical.value1,
+      healthyAtOrAbove: healthy.value1,
+      onflow: {
+        minimumInclusive: critical.value1,
+        maximumExclusive: healthy.value1,
+      },
+    };
   }
 
   private async ensureProjectAccess(projectId: string, userId: string) {
@@ -739,9 +842,12 @@ export class PersonalDashboardService {
       include: { role: true },
     });
 
+    const hasGlobalProjectAccess =
+      user?.role?.name === "SUPERADMIN" || user?.role?.name === "OP";
+
     const project = await prisma.project.findFirst({
       where:
-        user?.role?.name === "SUPERADMIN"
+        hasGlobalProjectAccess
           ? { id: projectId }
           : {
               id: projectId,
@@ -755,6 +861,42 @@ export class PersonalDashboardService {
     if (!project) {
       throw new Error("Project not found or access denied");
     }
+
+    return project;
+  }
+
+  private async ensureSubtaskKpiConfigAccess(projectId: string, userId: string) {
+    const project = await this.ensureProjectAccess(projectId, userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+    if (user?.role?.name === "SUPERADMIN" || project.ownerId === userId) return;
+
+    const membership = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId, userId } },
+      select: { role: true },
+    });
+    if (membership?.role !== "SUB_OWNER") {
+      throw new Error(
+        "Only the project owner, sub-owner, or superadmin can update Subtask KPI thresholds"
+      );
+    }
+  }
+
+  private getExpectedSubtaskProgress(
+    now: Date,
+    startDate: Date | null,
+    endDate: Date | null
+  ) {
+    if (!startDate || !endDate) return null;
+    const start = startDate.getTime();
+    const end = endDate.getTime();
+    const current = now.getTime();
+    if (current <= start) return 0;
+    if (current >= end) return 100;
+    if (end <= start) return current >= end ? 100 : 0;
+    return this.roundNumber(((current - start) / (end - start)) * 100, 2);
   }
 
   private async validateSourceHierarchy(
@@ -1192,4 +1334,4 @@ export class PersonalDashboardService {
   }
 }
 
-export const personalDashboardService = new PersonalDashboardService();
+export const projectDashboardService = new ProjectDashboardService();

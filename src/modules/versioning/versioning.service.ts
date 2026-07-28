@@ -101,7 +101,7 @@ export class VersioningService {
 
         // VERSIONING
         versionNumber: source.versionNumber + 1,
-        versionLabel: `v${source.versionNumber + 1}`,
+        versionLabel: `Version ${source.versionNumber + 1}`,
         parentProjectId: source.id, // Link to previous version
         rootProjectId: source.rootProjectId ?? source.id, // Link to root
 

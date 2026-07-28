@@ -45,7 +45,12 @@ model User {
   assistantHeadedBusinessUnits BusinessUnit[] @relation("BusinessUnitAssistantHead")
   managers           UserHierarchy[]        @relation("UserMembers")
   members            UserHierarchy[]        @relation("UserManagers")
-  personalDashboards PersonalDashboard[]
+  dashboardNotes     DashboardNote[]
+  incidentReports    IncidentReport[]         @relation("IncidentReporter")
+  resolvedIncidents  IncidentReport[]         @relation("IncidentResolver")
+  cancelledIncidents IncidentReport[]         @relation("IncidentCanceller")
+  incidentAttachments IncidentAttachment[]
+  updatedSubtaskKpiConfigs ProjectSubtaskKpiConfig[]
   weeklyReports      WeeklyReport[]
   weeklyReports_recv WeeklyReportReceiver[]
   reviewedSsoRegistrations SsoRegistration[] @relation("SsoRegistrationReviewedBy")
@@ -164,7 +169,10 @@ model Project {
   versions          Project[]          @relation("RootProject")
   approvals         ProjectApproval[]
   projectMembers    ProjectMember[]
-  personalDashboards PersonalDashboard[]
+  dashboardKpis      DashboardKpi[]
+  incidentReports    IncidentReport[]
+  subtaskKpiConfig   ProjectSubtaskKpiConfig?
+  dashboardSnapshots ProjectDashboardSnapshot[]
   timelines         ProjectTimeline[]
   scopes            Scope[]
   weeklyReports     WeeklyReport[]
@@ -191,6 +199,7 @@ model Scope {
   deletedAt       DateTime?
   project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks           Task[]
+  incidentReports IncidentReport[]
 
   @@index([projectId])
 }
@@ -219,6 +228,7 @@ model Task {
   subtasks        Subtask[]
   scope           Scope          @relation(fields: [scopeId], references: [id], onDelete: Cascade)
   assignees       TaskAssignee[]
+  incidentReports IncidentReport[]
 
   @@index([scopeId])
 }
@@ -251,6 +261,7 @@ model Subtask {
   creator            User              @relation("SubtaskCreator", fields: [createdBy], references: [id])
   task               Task              @relation(fields: [taskId], references: [id])
   assignees          SubtaskAssignee[]
+  incidentReports    IncidentReport[]
 
   @@index([taskId])
 }
@@ -382,6 +393,62 @@ model Attachment {
   dailyReport    DailyReport?  @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
   weeklyReport   WeeklyReport? @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
   user           User          @relation(fields: [uploadedBy], references: [id])
+}
+
+model IncidentReport {
+  id                 String             @id @default(uuid())
+  incidentNumber     String             @unique
+  projectId          String
+  reportedById       String
+  title              String
+  description        String
+  status             IncidentStatus     @default(PENDING)
+  severity           IncidentSeverity   @default(MEDIUM)
+  dateRaised         DateTime           @default(now())
+  dateAddressed      DateTime?
+  remarks            String?
+  scopeId            String?
+  taskId             String?
+  subtaskId          String?
+  resolvedById       String?
+  cancelledAt        DateTime?
+  cancelledById      String?
+  cancellationReason String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reportedBy         User               @relation("IncidentReporter", fields: [reportedById], references: [id])
+  resolvedBy         User?              @relation("IncidentResolver", fields: [resolvedById], references: [id])
+  cancelledBy        User?              @relation("IncidentCanceller", fields: [cancelledById], references: [id])
+  scope              Scope?             @relation(fields: [scopeId], references: [id], onDelete: SetNull)
+  task               Task?              @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  subtask            Subtask?           @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
+  attachments        IncidentAttachment[]
+
+  @@index([projectId])
+  @@index([reportedById])
+  @@index([status])
+  @@index([severity])
+  @@index([dateRaised])
+  @@index([scopeId])
+  @@index([taskId])
+  @@index([subtaskId])
+}
+
+model IncidentAttachment {
+  id         String         @id @default(uuid())
+  incidentId String
+  uploadedBy String
+  fileUrl    String
+  fileName   String
+  mimeType   String?
+  size       Int?
+  createdAt  DateTime       @default(now())
+  incident   IncidentReport @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [uploadedBy], references: [id])
+
+  @@index([incidentId])
+  @@index([uploadedBy])
 }
 
 model ActivityLog {
@@ -524,36 +591,18 @@ model ProjectTimeline {
   project   Project  @relation(fields: [projectId], references: [id])
 }
 
-model PersonalDashboard {
-  id          String                 @id @default(uuid())
-  userId      String
-  projectId   String
-  name        String
-  description String?
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  kpis        DashboardKpi[]
-  charts      DashboardChartConfig[]
-  notes       DashboardNote[]
-
-  @@index([userId])
-  @@index([projectId])
-}
-
 model DashboardNote {
   id          String               @id @default(uuid())
-  dashboardId String
+  userId      String
   title       String?
   content     String?
   sortOrder   Int                  @default(0)
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
-  dashboard   PersonalDashboard    @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   items       DashboardNoteItem[]
 
-  @@index([dashboardId])
+  @@index([userId])
 }
 
 model DashboardNoteItem {
@@ -571,7 +620,6 @@ model DashboardNoteItem {
 
 model DashboardKpi {
   id            String                 @id @default(uuid())
-  dashboardId   String
   name          String
   description   String?
   unit          String                 @default("%")
@@ -583,10 +631,9 @@ model DashboardKpi {
   subtaskId     String?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
-  dashboard     PersonalDashboard      @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  project       Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   thresholds    KpiThresholdRule[]
 
-  @@index([dashboardId])
   @@index([projectId])
   @@index([scopeId])
   @@index([taskId])
@@ -609,20 +656,6 @@ model KpiThresholdRule {
 
   @@unique([kpiId, status])
   @@index([kpiId])
-}
-
-model DashboardChartConfig {
-  id          String            @id @default(uuid())
-  dashboardId String
-  chartType   DashboardChartType
-  isEnabled   Boolean           @default(true)
-  sortOrder   Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  dashboard   PersonalDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-
-  @@unique([dashboardId, chartType])
-  @@index([dashboardId])
 }
 
 model Holiday {
@@ -812,12 +845,52 @@ enum KpiValueOperator {
   BETWEEN
 }
 
-enum DashboardChartType {
-  KPI_SUMMARY
-  SCURVE
-  PROGRESS_TREND
-  KPI_STATUS_DISTRIBUTION
-  TASK_COMPLETION
+model ProjectSubtaskKpiConfig {
+  id                 String   @id @default(uuid())
+  projectId          String   @unique
+  criticalBelow      Float    @default(-15)
+  healthyAtOrAbove   Float    @default(-5)
+  updatedById        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedBy          User     @relation(fields: [updatedById], references: [id])
+
+  @@index([updatedById])
+}
+
+model ProjectDashboardSnapshot {
+  id              String        @id @default(uuid())
+  projectId       String
+  snapshotDate    DateTime      @db.Date
+  critical        Int           @default(0)
+  onflow          Int           @default(0)
+  healthy         Int           @default(0)
+  unclassified    Int           @default(0)
+  totalKpis       Int           @default(0)
+  incidentReports Int           @default(0)
+  projectProgress Float         @default(0)
+  projectStatus   ProjectStatus
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, snapshotDate])
+  @@index([snapshotDate])
+  @@index([projectStatus])
+}
+
+enum IncidentStatus {
+  PENDING
+  RESOLVED
+  CANCELLED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 enum SsoRegistrationStatus {

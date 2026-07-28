@@ -178,6 +178,9 @@ export class ProjectController {
       businessUnitDetails: p.businessUnit
         ? (buMap[p.businessUnit] ?? null)
         : null,
+      businessUnitName: p.businessUnit
+        ? (buMap[p.businessUnit]?.name ?? null)
+        : null,
     }));
   }
 
@@ -376,7 +379,7 @@ export class ProjectController {
         },
       });
 
-      // 🔥 AUTO-ASSIGN CURRENT USER AS OWNER
+      //  AUTO-ASSIGN CURRENT USER AS OWNER
       await prisma.projectMember.create({
         data: {
           projectId: project.id,
@@ -385,7 +388,7 @@ export class ProjectController {
         },
       });
 
-      // 🔥 AUTO-GENERATE TIMELINE if dates are provided
+      //  AUTO-GENERATE TIMELINE if dates are provided
       if (project.startDate && project.expectedEndDate) {
         try {
           await generateProjectTimeline(project.id, "daily");
@@ -427,7 +430,11 @@ export class ProjectController {
         },
       });
 
-      res.json(projectWithAttachments);
+      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails(
+        projectWithAttachments ? [projectWithAttachments] : [],
+      );
+
+      res.json(enrichedProject ?? projectWithAttachments);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -446,7 +453,7 @@ export class ProjectController {
 
       let projects;
 
-      if (userRole?.name === "SUPERADMIN") {
+      if (userRole?.name === "SUPERADMIN" || userRole?.name === "OP") {
         // SUPER_ADMIN sees all projects
         projects = await prisma.project.findMany({
           orderBy: { createdAt: "desc" },
@@ -487,7 +494,7 @@ export class ProjectController {
                     email: true,
                   },
                 },
-              }, 
+              },
             },
           },
         });
@@ -616,12 +623,14 @@ export class ProjectController {
 
       const where: Prisma.ProjectWhereInput = {
         ownerId: userId,
-        status: { not: "DRAFT" },
-        ...ProjectController.buildProjectWhereFilters({
-          search,
-          status,
-          businessUnitId,
-        }),
+        AND: [
+          { status: { notIn: ["DRAFT", "ARCHIVED"] } },
+          ProjectController.buildProjectWhereFilters({
+            search,
+            status,
+            businessUnitId,
+          }),
+        ],
       };
 
       const [projects, total] = await Promise.all([
@@ -842,7 +851,11 @@ export class ProjectController {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      res.json(project);
+      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
+        project,
+      ]);
+
+      res.json(enrichedProject);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -862,7 +875,11 @@ export class ProjectController {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      res.json(project);
+      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
+        project,
+      ]);
+
+      res.json(enrichedProject);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -909,9 +926,13 @@ export class ProjectController {
         }
       }
 
+      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
+        project,
+      ]);
+
       res.json({
         success: true,
-        data: project,
+        data: enrichedProject,
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -997,7 +1018,11 @@ export class ProjectController {
         }
       }
 
-      res.json(updated);
+      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
+        updated,
+      ]);
+
+      res.json(enrichedProject);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -1008,111 +1033,191 @@ export class ProjectController {
     try {
       const { id } = req.params;
 
-      // 🔥 1. GET FULL TREE (ids only is enough)
-      const project = await prisma.project.findUnique({
-        where: { id },
-        include: {
-          scopes: {
-            include: {
-              tasks: {
-                include: {
-                  subtasks: true,
+      await prisma.$transaction(async (tx) => {
+        // 1. Load project tree
+        const project = await tx.project.findUnique({
+          where: { id },
+          include: {
+            scopes: {
+              include: {
+                tasks: {
+                  include: {
+                    subtasks: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
+        if (!project) {
+          throw new Error("Project not found");
+        }
 
-      // 🔥 2. DELETE EVERYTHING BOTTOM → TOP
-      for (const scope of project.scopes) {
-        for (const task of scope.tasks) {
-          for (const subtask of task.subtasks) {
-            // --- CHILD TABLES (SUBTASK RELATED) ---
-            await prisma.progressLog.deleteMany({
-              where: { subtaskId: subtask.id },
-            });
+        // ============================
+        // Collect IDs
+        // ============================
+        const scopeIds = project.scopes.map((s) => s.id);
 
-            await prisma.checklist.deleteMany({
-              where: { subtaskId: subtask.id },
-            });
+        const taskIds = project.scopes.flatMap((scope) =>
+          scope.tasks.map((task) => task.id),
+        );
 
-            await prisma.subtaskAssignee.deleteMany({
-              where: { subtaskId: subtask.id },
-            });
+        const subtaskIds = project.scopes.flatMap((scope) =>
+          scope.tasks.flatMap((task) =>
+            task.subtasks.map((subtask) => subtask.id),
+          ),
+        );
 
-            await prisma.comment.deleteMany({
-              where: { subtaskId: subtask.id },
-            });
+        // ============================
+        // Delete Subtask Child Tables
+        // ============================
 
-            await prisma.attachment.deleteMany({
-              where: { subtaskId: subtask.id },
-            });
-
-            await prisma.activityLog.deleteMany({
-              where: { subtaskId: subtask.id },
-            });
-
-            // --- SUBTASK ---
-            await prisma.subtask.delete({
-              where: { id: subtask.id },
-            });
-          }
-
-          // --- TASK ASSIGNEES ---
-          await prisma.taskAssignee.deleteMany({
-            where: { taskId: task.id },
+        if (subtaskIds.length > 0) {
+          await tx.progressLog.deleteMany({
+            where: {
+              subtaskId: {
+                in: subtaskIds,
+              },
+            },
           });
 
-          // --- TASK ---
-          await prisma.task.delete({
-            where: { id: task.id },
+          await tx.checklist.deleteMany({
+            where: {
+              subtaskId: {
+                in: subtaskIds,
+              },
+            },
+          });
+
+          await tx.subtaskAssignee.deleteMany({
+            where: {
+              subtaskId: {
+                in: subtaskIds,
+              },
+            },
+          });
+
+          await tx.comment.deleteMany({
+            where: {
+              subtaskId: {
+                in: subtaskIds,
+              },
+            },
+          });
+
+          await tx.attachment.deleteMany({
+            where: {
+              subtaskId: {
+                in: subtaskIds,
+              },
+            },
+          });
+
+          await tx.activityLog.deleteMany({
+            where: {
+              subtaskId: {
+                in: subtaskIds,
+              },
+            },
+          });
+
+          await tx.subtask.deleteMany({
+            where: {
+              id: {
+                in: subtaskIds,
+              },
+            },
           });
         }
 
-        // --- scope ---
-        await prisma.scope.delete({
-          where: { id: scope.id },
+        // ============================
+        // Delete Task Child Tables
+        // ============================
+
+        if (taskIds.length > 0) {
+          await tx.taskAssignee.deleteMany({
+            where: {
+              taskId: {
+                in: taskIds,
+              },
+            },
+          });
+
+          await tx.task.deleteMany({
+            where: {
+              id: {
+                in: taskIds,
+              },
+            },
+          });
+        }
+
+        // ============================
+        // Delete Scopes
+        // ============================
+
+        if (scopeIds.length > 0) {
+          await tx.scope.deleteMany({
+            where: {
+              id: {
+                in: scopeIds,
+              },
+            },
+          });
+        }
+
+        // ============================
+        // Delete Project-Level Records
+        // ============================
+
+        await tx.projectMember.deleteMany({
+          where: {
+            projectId: id,
+          },
         });
-      }
 
-      // 🔥 3. DELETE PROJECT-LEVEL DATA
-      // Delete project members (important!)
-      await prisma.projectMember.deleteMany({
-        where: { projectId: id },
+        await tx.projectTimeline.deleteMany({
+          where: {
+            projectId: id,
+          },
+        });
+
+        await tx.attachment.deleteMany({
+          where: {
+            projectId: id,
+          },
+        });
+
+        await tx.dailyReport.deleteMany({
+          where: {
+            projectId: id,
+          },
+        });
+
+        // ============================
+        // Delete Project
+        // ============================
+
+        await tx.project.delete({
+          where: {
+            id,
+          },
+        });
       });
 
-      // Delete timeline snapshots
-      await prisma.projectTimeline.deleteMany({
-        where: { projectId: id },
-      });
-
-      // Delete project attachments
-      await prisma.attachment.deleteMany({
-        where: { projectId: id },
-      });
-
-      // Delete daily reports
-      await prisma.dailyReport.deleteMany({
-        where: { projectId: id },
-      });
-
-      // 🔥 4. FINALLY DELETE PROJECT
-      await prisma.project.delete({
-        where: { id },
-      });
-
-      res.json({
+      return res.json({
         success: true,
         message: "Project deleted successfully (full cascade cleanup)",
       });
     } catch (error: any) {
       console.error("❌ Project delete error:", error);
-      res.status(400).json({ message: error.message });
+
+      return res
+        .status(error.message === "Project not found" ? 404 : 400)
+        .json({
+          message: error.message,
+        });
     }
   }
 }
@@ -1389,6 +1494,169 @@ export async function getProjectMembers(req: any, res: any) {
   } catch (err: any) {
     res.status(500).json({
       message: err.message,
+    });
+  }
+}
+
+export async function getProjectTeamOrgChart(req: any, res: any) {
+  try {
+    const { projectId } = req.params;
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            position: true,
+            departmentId: true,
+            businessUnitId: true,
+            role: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const projectMembers = await prisma.projectMember.findMany({
+      where: {
+        projectId,
+        userId: { not: project.ownerId },
+        role: { in: ["SUB_OWNER", "MEMBER"] },
+      },
+      select: {
+        id: true,
+        userId: true,
+        role: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            position: true,
+            departmentId: true,
+            businessUnitId: true,
+            role: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const ownerMembership = await prisma.projectMember.findFirst({
+      where: { projectId, userId: project.ownerId },
+      select: { id: true },
+    });
+    const subOwners = projectMembers.filter((item) => item.role === "SUB_OWNER");
+    const members = projectMembers.filter((item) => item.role === "MEMBER");
+
+    const relations =
+      subOwners.length > 0 && members.length > 0
+        ? await prisma.userHierarchy.findMany({
+            where: {
+              managerId: { in: subOwners.map((item) => item.userId) },
+              memberId: { in: members.map((item) => item.userId) },
+            },
+            select: { managerId: true, memberId: true },
+          })
+        : [];
+
+    const managerIdsByMember = new Map<string, Set<string>>();
+    relations.forEach((relation) => {
+      const managerIds = managerIdsByMember.get(relation.memberId) || new Set<string>();
+      managerIds.add(relation.managerId);
+      managerIdsByMember.set(relation.memberId, managerIds);
+    });
+
+    const toNode = (
+      user: typeof project.owner,
+      projectRole: "OWNER" | "SUB_OWNER" | "MEMBER",
+      projectMemberId: string | null,
+      children: any[] = []
+    ) => ({
+      id: user.id,
+      userId: user.id,
+      projectMemberId,
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      position: user.position,
+      departmentId: user.departmentId,
+      businessUnitId: user.businessUnitId,
+      systemRole: user.role?.name || null,
+      projectRole,
+      children,
+    });
+
+    const assignedMemberIds = new Set<string>();
+    const subOwnerNodes = subOwners.map((subOwner) => {
+      const children = members
+        .filter((member) => managerIdsByMember.get(member.userId)?.has(subOwner.userId))
+        .map((member) => {
+          assignedMemberIds.add(member.userId);
+          return toNode(member.user, "MEMBER", member.id);
+        });
+
+      return toNode(subOwner.user, "SUB_OWNER", subOwner.id, children);
+    });
+
+    const directMemberNodes = members
+      .filter((member) => !assignedMemberIds.has(member.userId))
+      .map((member) => toNode(member.user, "MEMBER", member.id));
+
+    return res.json({
+      success: true,
+      data: {
+        project: {
+          id: project.id,
+          name: project.name,
+        },
+        tree: toNode(
+          project.owner,
+          "OWNER",
+          ownerMembership?.id || null,
+          [...subOwnerNodes, ...directMemberNodes]
+        ),
+        levels: {
+          owner: [toNode(project.owner, "OWNER", ownerMembership?.id || null)],
+          subOwners: subOwners.map((item) =>
+            toNode(item.user, "SUB_OWNER", item.id)
+          ),
+          members: members.map((item) =>
+            toNode(item.user, "MEMBER", item.id)
+          ),
+        },
+        summary: {
+          owners: 1,
+          subOwners: subOwners.length,
+          members: members.length,
+          total: 1 + subOwners.length + members.length,
+          membersReportingToSubOwners: assignedMemberIds.size,
+          membersReportingDirectlyToOwner: directMemberNodes.length,
+        },
+      },
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to build project team organization chart",
     });
   }
 }
