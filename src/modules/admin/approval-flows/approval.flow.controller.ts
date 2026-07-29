@@ -8,7 +8,7 @@ export class ApprovalFlowController {
    */
   static async createFlow(req: Request, res: Response) {
     try {
-      const { name, description, isDefault, steps } = req.body;
+      const { name, description, isDefault, selfApprovalMode, steps } = req.body;
 
       // Validate input
       if (!name || !steps || steps.length === 0) {
@@ -23,14 +23,26 @@ export class ApprovalFlowController {
 
       // Validate steps
       const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
+      const validSources = ["PROJECT_BU_HEAD", "REQUESTER_BU_HEAD", "ROLE", "SPECIFIC_USERS"];
       for (let i = 0; i < sortedSteps.length; i++) {
-        if (!sortedSteps[i].role) {
+        const source = sortedSteps[i].approverSource || "ROLE";
+        if (source === "ROLE" && !sortedSteps[i].role) {
           return res.status(400).json({
             success: false,
             error: {
               code: "INVALID_STEPS",
-              message: `Step ${i + 1}: role is required`
+              message: `Step ${i + 1}: role is required when approverSource is ROLE`
             }
+          });
+        }
+
+        if (!validSources.includes(source)) {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: "INVALID_STEPS",
+              message: `Step ${i + 1}: invalid approverSource`,
+            },
           });
         }
 
@@ -46,10 +58,25 @@ export class ApprovalFlowController {
         }
       }
 
+      if (
+        selfApprovalMode &&
+        selfApprovalMode !== "OWN_STEP" &&
+        selfApprovalMode !== "THROUGH_HIGHEST_STEP"
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_SELF_APPROVAL_MODE",
+            message: "selfApprovalMode must be OWN_STEP or THROUGH_HIGHEST_STEP",
+          },
+        });
+      }
+
       const flow = await ApprovalFlowService.createFlow({
         name,
         description,
         isDefault: isDefault || false,
+        selfApprovalMode,
         steps: sortedSteps
       });
 
@@ -126,13 +153,28 @@ export class ApprovalFlowController {
   static async updateFlow(req: Request, res: Response) {
     try {
       const flowId = Array.isArray(req.params.flowId) ? req.params.flowId[0] : req.params.flowId;
-      const { name, description, isDefault, isActive, steps } = req.body;
+      const { name, description, isDefault, isActive, selfApprovalMode, steps } = req.body;
+
+      if (
+        selfApprovalMode &&
+        selfApprovalMode !== "OWN_STEP" &&
+        selfApprovalMode !== "THROUGH_HIGHEST_STEP"
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_SELF_APPROVAL_MODE",
+            message: "selfApprovalMode must be OWN_STEP or THROUGH_HIGHEST_STEP",
+          },
+        });
+      }
 
       const flow = await ApprovalFlowService.updateFlow(flowId, {
         name,
         description,
         isDefault,
         isActive,
+        selfApprovalMode,
         steps
       });
 

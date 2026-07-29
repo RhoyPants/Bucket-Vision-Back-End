@@ -79,6 +79,29 @@ router.put(
   ProjectController.update,
 );
 
+// TAG PROJECT AS COMPLETED (progress must already be 100%)
+router.post(
+  "/:id/complete",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  ProjectController.complete,
+);
+
+// TEMPORARILY CANCEL / RESUME A PROJECT REQUEST
+router.post(
+  "/:id/cancel",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  ProjectController.cancel,
+);
+
+router.post(
+  "/:id/resume",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  ProjectController.resume,
+);
+
 // DELETE
 router.delete(
   "/:id",

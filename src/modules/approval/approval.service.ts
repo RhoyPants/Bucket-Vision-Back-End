@@ -1,13 +1,93 @@
 import prisma from "../../config/prisma";
-import { ProjectStatus, ApprovalLevel } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 
 export class ApprovalService {
   private normalizeStepMode(mode: string | null | undefined): "SEQUENTIAL" | "PARALLEL" {
     return mode === "SEQUENTIAL" ? "SEQUENTIAL" : "PARALLEL";
   }
 
-  private async resolveStepApproverIds(step: any): Promise<string[]> {
-    if (step.useSpecificUsers) {
+  private async resolveStepApproverIds(step: any, project: any): Promise<string[]> {
+    const source =
+      step.approverSource || (step.useSpecificUsers ? "SPECIFIC_USERS" : "ROLE");
+
+    if (source === "PROJECT_BU_HEAD") {
+      const projectBusinessUnit = String(project.businessUnit || "").trim();
+      const ownerBusinessUnitId = project.owner?.businessUnitId || null;
+
+      if (!projectBusinessUnit && !ownerBusinessUnitId) {
+        throw new Error(
+          `Step ${step.order} requires a project Business Unit, but none is configured`
+        );
+      }
+
+      const businessUnit = await prisma.businessUnit.findFirst({
+        where: {
+          isActive: true,
+          OR: [
+            ...(projectBusinessUnit
+              ? [
+                  { id: projectBusinessUnit },
+                  { code: { equals: projectBusinessUnit, mode: "insensitive" as const } },
+                  { name: { equals: projectBusinessUnit, mode: "insensitive" as const } },
+                ]
+              : []),
+            ...(!projectBusinessUnit && ownerBusinessUnitId ? [{ id: ownerBusinessUnitId }] : []),
+          ],
+        },
+        select: {
+          buHeadUser: {
+            select: { id: true, isActive: true },
+          },
+        },
+      });
+
+      if (!businessUnit) {
+        throw new Error(
+          `No active Business Unit matches project value "${projectBusinessUnit}"`
+        );
+      }
+
+      if (!businessUnit.buHeadUser?.isActive) {
+        throw new Error(
+          `The project's Business Unit has no active BU Head assigned`
+        );
+      }
+
+      return [businessUnit.buHeadUser.id];
+    }
+
+    if (source === "REQUESTER_BU_HEAD") {
+      const requesterBusinessUnitId = project.owner?.businessUnitId;
+      if (!requesterBusinessUnitId) {
+        throw new Error(
+          `Step ${step.order} requires the requester to have an assigned Business Unit`
+        );
+      }
+
+      const requesterBusinessUnit = await prisma.businessUnit.findFirst({
+        where: {
+          id: requesterBusinessUnitId,
+          isActive: true,
+        },
+        select: {
+          buHeadUser: {
+            select: { id: true, isActive: true },
+          },
+        },
+      });
+
+      if (!requesterBusinessUnit) {
+        throw new Error(`The requester's assigned Business Unit is inactive or missing`);
+      }
+
+      if (!requesterBusinessUnit.buHeadUser?.isActive) {
+        throw new Error(`The requester's Business Unit has no active BU Head assigned`);
+      }
+
+      return [requesterBusinessUnit.buHeadUser.id];
+    }
+
+    if (source === "SPECIFIC_USERS") {
       const specificIds = (step.assignedUsers || [])
         .map((assignment: any) => assignment.userId)
         .filter(Boolean);
@@ -31,6 +111,14 @@ export class ApprovalService {
       }
 
       return users.map((user) => user.id);
+    }
+
+    if (source !== "ROLE") {
+      throw new Error(`Unsupported approver source "${source}" on step ${step.order}`);
+    }
+
+    if (!step.role) {
+      throw new Error(`Step ${step.order} requires a selected role`);
     }
 
     const roleApprovers = await this.getUsersByRoleInFlow(step.role);
@@ -432,20 +520,27 @@ export class ApprovalService {
 
     // Create approvals based on flow steps
     const createdApprovals: any[] = [];
+    const resolvedSteps: Array<{ step: any; approverIds: string[] }> = [];
 
     for (const step of flow.steps) {
-      const approverIds = await this.resolveStepApproverIds(step);
+      const approverIds = await this.resolveStepApproverIds(step, project);
 
       if (approverIds.length === 0) {
         throw new Error(`No approvers configured for step ${step.order}`);
       }
 
+      resolvedSteps.push({ step, approverIds });
+    }
+
+    // Resolve the complete flow before writing anything, so a misconfigured
+    // later step cannot leave a partially-created approval chain.
+    for (const { step, approverIds } of resolvedSteps) {
       for (const approverId of approverIds) {
         const approval = await prisma.projectApproval.create({
           data: {
             projectId,
             approverId,
-            level: step.role as ApprovalLevel,  // Cast to ApprovalLevel enum
+            level: step.role || step.approverSource,
             order: step.order,
             status: "PENDING",
             isFinal: step.order === flow.steps.length
@@ -455,23 +550,71 @@ export class ApprovalService {
 
         createdApprovals.push(approval);
 
-        // Notify approver
-        await this.notifyApprover(
-          approverId,
-          projectId,
-          `Project "${project.name}" (v${project.versionNumber}) is pending your approval (Step ${step.order}: ${step.role})`
-        );
       }
     }
 
-    // Update project status to FOR_REVIEW (first step) or FOR_APPROVAL (if skipping)
-    const firstStep = flow.steps[0];
-    const nextStatus = firstStep.role === "OP" ? "FOR_APPROVAL" : "FOR_REVIEW";
+    // Automatically approve the creator's own step. In THROUGH_HIGHEST_STEP mode,
+    // a requester who is also a later/final approver bypasses every earlier step.
+    const creatorApprovalOrders = createdApprovals
+      .filter((approval) => approval.approverId === project.ownerId)
+      .map((approval) => approval.order);
+    const highestCreatorOrder =
+      creatorApprovalOrders.length > 0 ? Math.max(...creatorApprovalOrders) : null;
+
+    const autoApproved = createdApprovals.filter((approval) => {
+      if (highestCreatorOrder === null) return false;
+      if (flow.selfApprovalMode === "OWN_STEP") {
+        return approval.approverId === project.ownerId;
+      }
+      return approval.order <= highestCreatorOrder;
+    });
+
+    if (autoApproved.length > 0) {
+      await prisma.projectApproval.updateMany({
+        where: { id: { in: autoApproved.map((approval) => approval.id) } },
+        data: {
+          status: "APPROVED",
+          actedAt: new Date(),
+          remarks: "Auto-approved: requester is an approver in this flow",
+        },
+      });
+
+      const autoApprovedIds = new Set(autoApproved.map((approval) => approval.id));
+      for (const approval of createdApprovals) {
+        if (autoApprovedIds.has(approval.id)) {
+          approval.status = "APPROVED";
+          approval.actedAt = new Date();
+          approval.remarks = "Auto-approved: requester is an approver in this flow";
+        }
+      }
+    }
+
+    const nextStatus = (await this.applyPostApprovalTransition(projectId)) || "ACTIVE";
+
+    if (nextStatus === "ACTIVE") {
+      const rootId = project.rootProjectId ?? project.id;
+      await prisma.project.updateMany({
+        where: {
+          AND: [
+            { OR: [{ id: rootId }, { rootProjectId: rootId }] },
+            { NOT: { id: projectId } },
+          ],
+        },
+        data: {
+          status: "ARCHIVED",
+          isActive: false,
+          isLatestVersion: false,
+          isLocked: true,
+        },
+      });
+    }
 
     const updated = await prisma.project.update({
       where: { id: projectId },
       data: {
-        status: nextStatus as ProjectStatus
+        status: nextStatus as ProjectStatus,
+        isActive: nextStatus === "ACTIVE",
+        isLatestVersion: nextStatus === "ACTIVE" ? true : project.isLatestVersion,
       }
     });
 
@@ -486,6 +629,28 @@ export class ApprovalService {
       `Submitted using flow: ${flow.name}`
     );
 
+    for (const approval of autoApproved) {
+      await this.logApprovalAction(
+        projectId,
+        project.ownerId,
+        "AUTO_APPROVED",
+        project.status,
+        nextStatus as ProjectStatus,
+        approval.level,
+        approval.approverId === project.ownerId
+          ? "Auto-approved: requester is the approver for this step"
+          : "Auto-approved: requester is an approver at a later step"
+      );
+    }
+
+    if (nextStatus === "ACTIVE") {
+      await this.notifyProjectOwner(
+        projectId,
+        `Project "${project.name}" (v${project.versionNumber}) was automatically approved and activated`,
+        "APPROVED"
+      );
+    }
+
     return {
       project: updated,
       approvals: createdApprovals,
@@ -496,6 +661,7 @@ export class ApprovalService {
           order: s.order,
           role: s.role,
           stepExecutionMode: this.normalizeStepMode(s.stepExecutionMode),
+          approverSource: s.approverSource || (s.useSpecificUsers ? "SPECIFIC_USERS" : "ROLE"),
           useSpecificUsers: !!s.useSpecificUsers,
         }))
       }
@@ -802,11 +968,11 @@ export class ApprovalService {
     action: string,
     previousStatus: ProjectStatus,
     newStatus: ProjectStatus,
-    level: ApprovalLevel | null,
+    level: string | null,
     remarks?: string
   ): Promise<void> {
     try {
-      await prisma.approvalAuditLog.create({
+      await (prisma.approvalAuditLog.create as any)({
         data: {
           projectId,
           approverId,

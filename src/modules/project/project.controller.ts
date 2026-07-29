@@ -25,6 +25,466 @@ export class ProjectController {
     "priority",
   ]);
 
+  /**
+   * Mark a fully-progressed active project as completed.
+   * Email delivery is handled by the frontend's separate API; this response
+   * includes the deduplicated recipients it needs.
+   */
+  static async complete(req: Request<{ id: string }>, res: Response) {
+    try {
+      const projectId = String(req.params.id || "");
+      const completedById = (req as any).user?.id;
+      const { actualEndDate, remarks } = req.body || {};
+
+      if (!completedById) {
+        return res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication is required" },
+        });
+      }
+
+      const completionDate = actualEndDate ? new Date(actualEndDate) : new Date();
+      if (Number.isNaN(completionDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: "INVALID_COMPLETION_DATE", message: "A valid completion date is required" },
+        });
+      }
+
+      if (completionDate.getTime() > Date.now()) {
+        return res.status(400).json({
+          success: false,
+          error: { code: "FUTURE_COMPLETION_DATE", message: "Completion date cannot be in the future" },
+        });
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          projectMembers: {
+            include: {
+              user: { select: { id: true, name: true, email: true, isActive: true } },
+            },
+          },
+          approvals: {
+            where: { status: "PENDING" },
+            include: {
+              approver: { select: { id: true, name: true, email: true, isActive: true } },
+            },
+          },
+        },
+      });
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: { code: "PROJECT_NOT_FOUND", message: "Project not found" },
+        });
+      }
+
+      if (project.status === "COMPLETED") {
+        return res.status(409).json({
+          success: false,
+          error: { code: "ALREADY_COMPLETED", message: "Project is already completed" },
+        });
+      }
+
+      if (project.status !== "ACTIVE") {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: "INVALID_PROJECT_STATUS",
+            message: "Only an active project can be tagged as completed",
+          },
+        });
+      }
+
+      if (project.progress < 100) {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: "PROJECT_NOT_FULLY_PROGRESSED",
+            message: `Project progress must reach 100% before completion (current: ${project.progress}%)`,
+          },
+        });
+      }
+
+      const projectBusinessUnit = String(project.businessUnit || "").trim();
+      const [businessUnit, opUsers, completedBy] = await Promise.all([
+        projectBusinessUnit
+          ? prisma.businessUnit.findFirst({
+              where: {
+                isActive: true,
+                OR: [
+                  { id: projectBusinessUnit },
+                  { code: { equals: projectBusinessUnit, mode: "insensitive" } },
+                  { name: { equals: projectBusinessUnit, mode: "insensitive" } },
+                ],
+              },
+              select: {
+                buHeadUser: {
+                  select: { id: true, name: true, email: true, isActive: true },
+                },
+              },
+            })
+          : null,
+        prisma.user.findMany({
+          where: { isActive: true, role: { name: "OP" } },
+          select: { id: true, name: true, email: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: completedById },
+          select: { id: true, name: true, email: true },
+        }),
+      ]);
+
+      const updatedProject = await prisma.$transaction(async (tx) => {
+        const updated = await tx.project.update({
+          where: { id: projectId },
+          data: {
+            status: "COMPLETED",
+            actualEndDate: completionDate,
+            isActive: false,
+            isLocked: true,
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            action: "PROJECT_COMPLETED",
+            entityType: "PROJECT",
+            entityId: projectId,
+            userId: completedById,
+            metadata: {
+              previousStatus: project.status,
+              newStatus: "COMPLETED",
+              actualEndDate: completionDate.toISOString(),
+              remarks: typeof remarks === "string" ? remarks.trim() || null : null,
+            },
+          },
+        });
+
+        return updated;
+      });
+
+      const recipientsById = new Map<string, { id: string; name: string; email: string }>();
+      const addRecipient = (user: any) => {
+        if (user?.id && user?.email && user?.isActive !== false) {
+          recipientsById.set(user.id, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          });
+        }
+      };
+
+      addRecipient(project.owner);
+      project.projectMembers.forEach((member) => addRecipient(member.user));
+      project.approvals.forEach((approval) => addRecipient(approval.approver));
+      addRecipient(businessUnit?.buHeadUser);
+      opUsers.forEach(addRecipient);
+
+      return res.status(200).json({
+        success: true,
+        message: "Project tagged as completed successfully",
+        data: {
+          project: updatedProject,
+          completion: {
+            completedBy,
+            completedAt: updatedProject.updatedAt,
+            actualEndDate: updatedProject.actualEndDate,
+            remarks: typeof remarks === "string" ? remarks.trim() || null : null,
+          },
+          notificationRecipients: Array.from(recipientsById.values()),
+        },
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: "COMPLETE_PROJECT_ERROR",
+          message: error.message || "Failed to complete project",
+        },
+      });
+    }
+  }
+
+  /**
+   * Temporarily cancel a project request. The project content is retained and
+   * can later be resumed to DRAFT by its owner.
+   */
+  static async cancel(req: Request<{ id: string }>, res: Response) {
+    try {
+      const projectId = String(req.params.id || "");
+      const cancelledById = (req as any).user?.id;
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+
+      if (!cancelledById) {
+        return res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication is required" },
+        });
+      }
+
+      if (!reason) {
+        return res.status(400).json({
+          success: false,
+          error: { code: "CANCELLATION_REASON_REQUIRED", message: "Cancellation reason is required" },
+        });
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          projectMembers: {
+            include: {
+              user: { select: { id: true, name: true, email: true, isActive: true } },
+            },
+          },
+          approvals: {
+            where: { status: "PENDING" },
+            include: {
+              approver: { select: { id: true, name: true, email: true, isActive: true } },
+            },
+          },
+        },
+      });
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: { code: "PROJECT_NOT_FOUND", message: "Project not found" },
+        });
+      }
+
+      if (project.ownerId !== cancelledById) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: "ONLY_OWNER_CAN_CANCEL",
+            message: "Only the project owner can cancel this request",
+          },
+        });
+      }
+
+      const cancellableStatuses: ProjectStatus[] = [
+        "DRAFT",
+        "FOR_REVIEW",
+        "FOR_APPROVAL",
+        "NEEDS_REVISION",
+        "REJECTED",
+      ];
+
+      if (!cancellableStatuses.includes(project.status)) {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: "PROJECT_NOT_CANCELLABLE",
+            message: `A project with status ${project.status} cannot be cancelled`,
+          },
+        });
+      }
+
+      const cancelledAt = new Date();
+      const updatedProject = await prisma.$transaction(async (tx) => {
+        await tx.projectApproval.updateMany({
+          where: { projectId, status: "PENDING" },
+          data: {
+            status: "CANCELLED",
+            actedAt: cancelledAt,
+            remarks: `Cancelled by project owner: ${reason}`,
+          },
+        });
+
+        const updated = await tx.project.update({
+          where: { id: projectId },
+          data: {
+            status: "CANCELLED",
+            isActive: false,
+            isLocked: true,
+            cancelledAt,
+            cancelledById,
+            cancellationReason: reason,
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            action: "PROJECT_CANCELLED",
+            entityType: "PROJECT",
+            entityId: projectId,
+            userId: cancelledById,
+            metadata: {
+              previousStatus: project.status,
+              newStatus: "CANCELLED",
+              reason,
+              cancelledAt: cancelledAt.toISOString(),
+            },
+          },
+        });
+
+        return updated;
+      });
+
+      const recipients = new Map<string, { id: string; name: string; email: string }>();
+      const addRecipient = (user: any) => {
+        if (user?.id && user?.email && user?.isActive !== false) {
+          recipients.set(user.id, { id: user.id, name: user.name, email: user.email });
+        }
+      };
+      addRecipient(project.owner);
+      project.projectMembers.forEach((member) => addRecipient(member.user));
+      project.approvals.forEach((approval) => addRecipient(approval.approver));
+
+      return res.status(200).json({
+        success: true,
+        message: "Project request cancelled successfully",
+        data: {
+          project: updatedProject,
+          cancellation: { cancelledAt, cancelledById, reason },
+          notificationRecipients: Array.from(recipients.values()),
+        },
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: "CANCEL_PROJECT_ERROR",
+          message: error.message || "Failed to cancel project request",
+        },
+      });
+    }
+  }
+
+  /**
+   * Resume a cancelled project request as an editable draft. Old approval
+   * records are cleared so resubmission uses the current approval flow.
+   */
+  static async resume(req: Request<{ id: string }>, res: Response) {
+    try {
+      const projectId = String(req.params.id || "");
+      const resumedById = (req as any).user?.id;
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+
+      if (!resumedById) {
+        return res.status(401).json({
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication is required" },
+        });
+      }
+
+      if (!reason) {
+        return res.status(400).json({
+          success: false,
+          error: { code: "RESUME_REASON_REQUIRED", message: "Resume reason is required" },
+        });
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          projectMembers: {
+            include: {
+              user: { select: { id: true, name: true, email: true, isActive: true } },
+            },
+          },
+        },
+      });
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: { code: "PROJECT_NOT_FOUND", message: "Project not found" },
+        });
+      }
+
+      if (project.ownerId !== resumedById) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: "ONLY_OWNER_CAN_RESUME",
+            message: "Only the project owner can resume this request",
+          },
+        });
+      }
+
+      if (project.status !== "CANCELLED") {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: "PROJECT_NOT_CANCELLED",
+            message: "Only a cancelled project request can be resumed",
+          },
+        });
+      }
+
+      const resumedAt = new Date();
+      const updatedProject = await prisma.$transaction(async (tx) => {
+        await tx.projectApproval.deleteMany({ where: { projectId } });
+
+        const updated = await tx.project.update({
+          where: { id: projectId },
+          data: {
+            status: "DRAFT",
+            isActive: false,
+            isLocked: false,
+            cancelledAt: null,
+            cancelledById: null,
+            cancellationReason: null,
+          },
+        });
+
+        await tx.activityLog.create({
+          data: {
+            action: "PROJECT_RESUMED",
+            entityType: "PROJECT",
+            entityId: projectId,
+            userId: resumedById,
+            metadata: {
+              previousStatus: "CANCELLED",
+              newStatus: "DRAFT",
+              previousCancellationReason: project.cancellationReason,
+              reason,
+              resumedAt: resumedAt.toISOString(),
+            },
+          },
+        });
+
+        return updated;
+      });
+
+      const recipients = new Map<string, { id: string; name: string; email: string }>();
+      const addRecipient = (user: any) => {
+        if (user?.id && user?.email && user?.isActive !== false) {
+          recipients.set(user.id, { id: user.id, name: user.name, email: user.email });
+        }
+      };
+      addRecipient(project.owner);
+      project.projectMembers.forEach((member) => addRecipient(member.user));
+
+      return res.status(200).json({
+        success: true,
+        message: "Project request resumed as draft",
+        data: {
+          project: updatedProject,
+          resume: { resumedAt, resumedById, reason },
+          notificationRecipients: Array.from(recipients.values()),
+        },
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: "RESUME_PROJECT_ERROR",
+          message: error.message || "Failed to resume project request",
+        },
+      });
+    }
+  }
+
   private static parseListQuery(req: Request) {
     const pageRaw = Array.isArray(req.query.page)
       ? req.query.page[0]

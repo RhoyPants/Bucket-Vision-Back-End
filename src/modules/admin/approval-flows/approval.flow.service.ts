@@ -2,7 +2,8 @@ import prisma from "../../../config/prisma";
 
 interface ApprovalStepInput {
   order: number;
-  role: string;
+  role?: string;
+  approverSource?: "PROJECT_BU_HEAD" | "REQUESTER_BU_HEAD" | "ROLE" | "SPECIFIC_USERS";
   stepExecutionMode?: string;
   requiresAll?: number;
   canReject?: boolean;
@@ -14,6 +15,7 @@ interface CreateApprovalFlowInput {
   name: string;
   description?: string;
   isDefault?: boolean;
+  selfApprovalMode?: "OWN_STEP" | "THROUGH_HIGHEST_STEP";
   steps: ApprovalStepInput[];
 }
 
@@ -22,6 +24,7 @@ interface UpdateApprovalFlowInput {
   description?: string;
   isDefault?: boolean;
   isActive?: boolean;
+  selfApprovalMode?: "OWN_STEP" | "THROUGH_HIGHEST_STEP";
   steps?: ApprovalStepInput[];
 }
 
@@ -44,6 +47,26 @@ export class ApprovalFlowService {
   private static buildStepCreateInput(step: ApprovalStepInput) {
     const assignedUserIds = this.normalizeAssignedUserIds(step);
     const useSpecificUsers = step.useSpecificUsers === true || assignedUserIds.length > 0;
+    const approverSource =
+      step.approverSource || (useSpecificUsers ? "SPECIFIC_USERS" : "ROLE");
+    const validSources = [
+      "PROJECT_BU_HEAD",
+      "REQUESTER_BU_HEAD",
+      "ROLE",
+      "SPECIFIC_USERS",
+    ];
+
+    if (!validSources.includes(approverSource)) {
+      throw new Error(`Invalid approverSource "${approverSource}" on step ${step.order}`);
+    }
+
+    if (approverSource === "SPECIFIC_USERS" && assignedUserIds.length === 0) {
+      throw new Error(`Step ${step.order} requires at least one assigned user`);
+    }
+
+    if (approverSource === "ROLE" && !step.role) {
+      throw new Error(`Step ${step.order} requires a role when approverSource is ROLE`);
+    }
 
     return {
       order: step.order,
@@ -51,7 +74,8 @@ export class ApprovalFlowService {
       stepExecutionMode: step.stepExecutionMode || "PARALLEL",
       requiresAll: step.requiresAll ?? 1,
       canReject: step.canReject ?? true,
-      useSpecificUsers,
+      useSpecificUsers: approverSource === "SPECIFIC_USERS",
+      approverSource,
       assignedUsers:
         assignedUserIds.length > 0
           ? {
@@ -102,6 +126,7 @@ export class ApprovalFlowService {
           name: data.name,
           description: data.description,
           isDefault: data.isDefault || false,
+          selfApprovalMode: data.selfApprovalMode || "THROUGH_HIGHEST_STEP",
           steps: {
             create: data.steps.map((step) => this.buildStepCreateInput(step))
           }
@@ -203,6 +228,7 @@ export class ApprovalFlowService {
           description: data.description,
           isDefault: data.isDefault,
           isActive: data.isActive,
+          selfApprovalMode: data.selfApprovalMode,
           steps: data.steps
             ? {
                 create: data.steps.map((step) => this.buildStepCreateInput(step))

@@ -190,7 +190,6 @@ async function main() {
       password: hashedPassword,
       roleId: roles.find((r) => r.name === "LEADER")!.id,
       isActive: true,
-      approverId: buHead.id,
     },
   });
 
@@ -203,7 +202,6 @@ async function main() {
       password: hashedPassword,
       roleId: roles.find((r) => r.name === "MEMBER")!.id,
       isActive: true,
-      approverId: leader.id,
     },
   });
 
@@ -1443,6 +1441,7 @@ console.log("✅ Real construction project created");
           {
             order: 1,
             role: "BU_HEAD",
+            approverSource: "PROJECT_BU_HEAD",
             requiresAll: 1, // All BU_HEAD users must approve
             canReject: true,
             useSpecificUsers: false,  // 🔥 New: Will use role-based
@@ -1450,6 +1449,7 @@ console.log("✅ Real construction project created");
           {
             order: 2,
             role: "OP",
+            approverSource: "ROLE",
             requiresAll: 0, // Any one OP user can approve
             canReject: true,
             useSpecificUsers: false,  // 🔥 New: Will use role-based
