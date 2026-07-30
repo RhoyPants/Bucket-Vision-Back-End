@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { generateProjectTimeline } from "../timeline/timeline.service";
+import { resolveScopeSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 
 import {
   CreateScopeDTO,
@@ -25,6 +26,11 @@ export class ScopeController {
         budgetPercent,
         order
       } = req.body;
+      const selection = await resolveScopeSelection({
+        sourceType: req.body.sourceType,
+        maintenanceId: req.body.scopeMaintenanceId,
+        customName: name,
+      });
 
       // Calculate next order if not provided
       let nextOrder = order ?? 0;
@@ -39,7 +45,9 @@ export class ScopeController {
 
       const scope = await prisma.scope.create({
         data: {
-          name,
+          name: selection.name,
+          sourceType: selection.sourceType,
+          scopeMaintenanceId: selection.maintenanceId,
           description,
           projectId,
           order: nextOrder,
@@ -132,11 +140,33 @@ export class ScopeController {
         budgetPercent,
         order
       } = req.body;
+      const existing = await (prisma.scope.findUnique as any)({ where: { id } });
+      if (!existing) return res.status(404).json({ message: "Scope not found" });
+      const selectionChanged =
+        req.body.sourceType !== undefined ||
+        req.body.scopeMaintenanceId !== undefined ||
+        name !== undefined;
+      const selection = selectionChanged
+        ? await resolveScopeSelection({
+            sourceType: req.body.sourceType ?? existing.sourceType,
+            maintenanceId:
+              req.body.scopeMaintenanceId !== undefined
+                ? req.body.scopeMaintenanceId
+                : existing.scopeMaintenanceId,
+            customName: name ?? existing.name,
+          })
+        : null;
 
       const updated = await prisma.scope.update({
         where: { id },
         data: {
-          ...(name && { name }),
+          ...(selection
+            ? {
+                name: selection.name,
+                sourceType: selection.sourceType,
+                scopeMaintenanceId: selection.maintenanceId,
+              }
+            : {}),
           ...(description !== undefined && { description }),
           ...(order !== undefined && { order }),
           ...(budgetAllocated !== undefined && { budgetAllocated }),

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { SubtaskService } from "./subtask.service";
 import { generateProjectTimeline } from "../timeline/timeline.service";
+import { resolveSubtaskSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 
 import {
   CreateSubtaskDTO,
@@ -62,10 +63,22 @@ export class SubtaskController {
       } = req.body as any;
 
       const userId = (req as any).user.id;
+      const parentTask = await (prisma.task.findUnique as any)({ where: { id: taskId } });
+      if (!parentTask) return res.status(404).json({ message: "Task not found" });
+      const selection = await resolveSubtaskSelection({
+        sourceType: req.body.sourceType,
+        maintenanceId: req.body.subtaskMaintenanceId,
+        customTitle: title,
+        parentTaskMaintenanceId: parentTask.taskMaintenanceId,
+      });
 
       const subtask = await prisma.subtask.create({
         data: {
-          title,
+          title: selection.title,
+          sourceType: selection.sourceType,
+          subtaskMaintenance: selection.maintenanceId
+            ? { connect: { id: selection.maintenanceId } }
+            : undefined,
           description,
           priority,
           remarks,
@@ -204,12 +217,40 @@ export class SubtaskController {
         remarks,
         userIds,
       } = req.body;
+      const existing = await (prisma.subtask.findUnique as any)({
+        where: { id },
+        include: { task: true },
+      });
+      if (!existing) return res.status(404).json({ message: "Subtask not found" });
+      const selectionChanged =
+        req.body.sourceType !== undefined ||
+        req.body.subtaskMaintenanceId !== undefined ||
+        title !== undefined;
+      const selection = selectionChanged
+        ? await resolveSubtaskSelection({
+            sourceType: req.body.sourceType ?? existing.sourceType,
+            maintenanceId:
+              req.body.subtaskMaintenanceId !== undefined
+                ? req.body.subtaskMaintenanceId
+                : existing.subtaskMaintenanceId,
+            customTitle: title ?? existing.title,
+            parentTaskMaintenanceId: existing.task.taskMaintenanceId,
+          })
+        : null;
 
       // 🔥 UPDATE SUBTASK FIELDS
       const updated = await prisma.subtask.update({
         where: { id },
         data: {
-          title,
+          ...(selection
+            ? {
+                title: selection.title,
+                sourceType: selection.sourceType,
+                subtaskMaintenance: selection.maintenanceId
+                  ? { connect: { id: selection.maintenanceId } }
+                  : { disconnect: true },
+              }
+            : {}),
           description,
           priority,
           remarks,

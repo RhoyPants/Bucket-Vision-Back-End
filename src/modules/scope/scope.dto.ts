@@ -3,6 +3,8 @@
 // =========================
 export interface CreateScopeDTO {
   name: string;
+  sourceType?: "CUSTOM" | "MAINTENANCE" | null;
+  scopeMaintenanceId?: string | null;
   description?: string;
   order?: number;
 
@@ -31,6 +33,8 @@ export interface GetScopesByProjectParamsDTO {
 // =========================
 export interface UpdateScopeDTO {
   name?: string;
+  sourceType?: "CUSTOM" | "MAINTENANCE" | null;
+  scopeMaintenanceId?: string | null;
   description?: string;
   order?: number;
 

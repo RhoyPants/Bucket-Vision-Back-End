@@ -1,0 +1,769 @@
+[
+  {
+    "code": "GR",
+    "name": "General Requirements",
+    "description": "General project requirements covering mobilization, supervision, safety, insurance, temporary facilities, and access support.",
+    "tasks": [
+      {
+        "code": "GR-MOB-DEMOB",
+        "name": "Mob/Demob",
+        "description": "Mobilization and demobilization activities required to establish and clear the project site.",
+        "subtasks": [
+          {
+            "code": "GR-MOB-DEMOB-ACT",
+            "name": "Mob/Demob",
+            "description": "Perform project mobilization and demobilization activities."
+          }
+        ]
+      },
+      {
+        "code": "GR-MGMT-SUP",
+        "name": "Management and Supervision",
+        "description": "Project management, coordination, administration, and site supervision requirements.",
+        "subtasks": [
+          {
+            "code": "GR-MGMT-SUP-ACT",
+            "name": "Management & Supervision",
+            "description": "Provide project management and site supervision services."
+          },
+          { "code": "GR-MGMT-SUP-FULL", "name": "Management and Supervision", "description": "Provide project management and site supervision services." }
+        ]
+      },
+      {
+        "code": "GR-HSE",
+        "name": "HSE Requirement",
+        "description": "Health, safety, and environmental requirements for project execution.",
+        "subtasks": [
+          {
+            "code": "GR-HSE-ACT",
+            "name": "HSE",
+            "description": "Implement required health, safety, and environmental measures."
+          },
+          { "code": "GR-HSE-REQUIREMENT", "name": "HSE Requirement", "description": "Implement the required health, safety, and environmental measures." }
+        ]
+      },
+      {
+        "code": "GR-BONDS-INS",
+        "name": "Bonds and Insurances",
+        "description": "Required project bonds, insurance policies, and related documentation.",
+        "subtasks": [
+          {
+            "code": "GR-BONDS-INS-ACT",
+            "name": "Bonds & Insurances",
+            "description": "Secure and maintain the required project bonds and insurance coverage."
+          },
+          { "code": "GR-BONDS-INS-FULL", "name": "Bonds and Insurances", "description": "Secure and maintain required project bonds and insurance coverage." }
+        ]
+      },
+      {
+        "code": "GR-BARRACKS",
+        "name": "Barracks",
+        "description": "Temporary barracks or site facilities required for project personnel.",
+        "subtasks": [
+          {
+            "code": "GR-BARRACKS-ACT",
+            "name": "Barracks",
+            "description": "Provide and maintain temporary project barracks or site facilities."
+          }
+        ]
+      },
+      {
+        "code": "GR-SCAFF-RENT",
+        "name": "Scaffolding Rentals",
+        "description": "Rental and provision of scaffolding required for safe access to work areas.",
+        "subtasks": [
+          {
+            "code": "GR-SCAFF-RENT-ACT",
+            "name": "Scaffold",
+            "description": "Provide rental scaffolding and related access support."
+          },
+          { "code": "GR-SCAFF-RENT-FULL", "name": "Scaffolding Rentals", "description": "Provide scaffolding rentals and related access support." }
+        ]
+      },
+      {
+        "code": "GR-GENERAL-PROJECT-REQ",
+        "name": "General Project Requirements",
+        "description": "Combined general requirements for site establishment, management, safety, permits, licenses, and project close-out documentation.",
+        "subtasks": [
+          {
+            "code": "GR-GENERAL-PROJECT-REQ-SITE",
+            "name": "Mobilization/Demobilization, Site Management, Safety Requirements",
+            "description": "Perform mobilization and demobilization, manage the project site, and comply with required safety measures."
+          },
+          {
+            "code": "GR-GENERAL-PROJECT-REQ-DOCS",
+            "name": "Permits & Licenses, As-built Plans",
+            "description": "Secure required permits and licenses and prepare the final as-built plans."
+          }
+        ]
+      },
+      {
+        "code": "GR-MOBILIZATION-DEMOB",
+        "name": "Mobilization/Demobilization",
+        "description": "Mobilization and demobilization activities for project establishment and close-out.",
+        "subtasks": [
+          { "code": "GR-MOBILIZATION-DEMOB-ACT", "name": "Mobilization/Demobilization", "description": "Perform project mobilization and demobilization." }
+        ]
+      },
+      {
+        "code": "GR-GENERAL-REQ",
+        "name": "General Requirements",
+        "description": "Comprehensive general project requirements covering mobilization, management, facilities, safety, insurance, documentation, and permits.",
+        "subtasks": [
+          { "code": "GR-GENERAL-REQ-MOB", "name": "Mobilization/Demobilization", "description": "Perform project mobilization and demobilization." },
+          { "code": "GR-GENERAL-REQ-SITE-MGMT", "name": "Site Management", "description": "Provide site management and coordination throughout project execution." },
+          { "code": "GR-GENERAL-REQ-SITE-OFFICE", "name": "Site Office and Equipment", "description": "Provide and maintain the required site office and project equipment." },
+          { "code": "GR-GENERAL-REQ-SAFETY", "name": "Safety Requirements", "description": "Implement and maintain all required project safety measures." },
+          { "code": "GR-GENERAL-REQ-BONDS", "name": "Bonds and Insurances", "description": "Secure and maintain required bonds and insurance coverage." },
+          { "code": "GR-GENERAL-REQ-CARI", "name": "CARI", "description": "Provide the required Contractors All Risk Insurance coverage." },
+          { "code": "GR-GENERAL-REQ-DOCS", "name": "Tech. Drawings, As-Built, Handover Docs", "description": "Prepare technical drawings, as-built plans, and handover documentation." },
+          { "code": "GR-GENERAL-REQ-PERMITS", "name": "Permits", "description": "Secure and maintain all required project permits." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "AW",
+    "name": "Architectural Works",
+    "description": "Architectural preparation, finishes, furniture, built-ins, and miscellaneous improvement works.",
+    "tasks": [
+      {
+        "code": "AW-AREA-PREP",
+        "name": "Area Preparation",
+        "description": "Removal, dismantling, demolition, hauling, and preparation of existing areas before new work.",
+        "subtasks": [
+          {
+            "code": "AW-AREA-PREP-DISMANTLE",
+            "name": "Dismantling and Hauling Existing Shelves/Cabinet/Storage Items/Concrete Sink",
+            "description": "Dismantle and haul existing shelves, cabinets, storage items, and concrete sink."
+          },
+          {
+            "code": "AW-AREA-PREP-FLOOR-DEMO",
+            "name": "Demolition of Existing Vinyl/ Floor Finish, ready to install tiles",
+            "description": "Remove the existing vinyl or floor finish and prepare the surface for tile installation."
+          },
+          { "code": "AW-AREA-PREP-FLOOR-CLEAN", "name": "Cleaning of Existing Floor Tiles", "description": "Clean and prepare the existing floor tiles." }
+        ]
+      },
+      {
+        "code": "AW-FLOOR-FIN",
+        "name": "Floor Finishes",
+        "description": "Supply and installation of specified architectural floor finishes.",
+        "subtasks": [
+          {
+            "code": "AW-FLOOR-FIN-VINYL",
+            "name": "Supply and Installation of Vinyl Tiles, 30x30 Cocktail finish",
+            "description": "Supply and install 30x30 vinyl tiles with cocktail finish."
+          },
+          { "code": "AW-FLOOR-FIN-TOPPING", "name": "Concrete Topping (Supply and Installation)", "description": "Supply and install the specified concrete floor topping." },
+          { "code": "AW-FLOOR-FIN-WATERPROOF", "name": "Waterproofing (Supply and Application)", "description": "Supply and apply the specified floor waterproofing system." },
+          { "code": "AW-FLOOR-FIN-CARPET-TILE", "name": "FF01 & FF02-Carpet Tile 60x60cm (Supply and Installation)", "description": "Supply and install FF01 and FF02 60x60cm carpet tiles." },
+          { "code": "AW-FLOOR-FIN-WP-TEST", "name": "Testing and Commissioning of Waterproofing", "description": "Test and commission the completed waterproofing installation." }
+          ,{ "code": "AW-FLOOR-FIN-EXISTING-PAINT", "name": "Painting of Existing Floor (match the existing finish)", "description": "Paint the existing floor to match its current finish." }
+        ]
+      },
+      {
+        "code": "AW-INTERIOR-WALL",
+        "name": "Interior Wall Installation",
+        "description": "Supply and installation of interior concrete zocallo and drywall systems.",
+        "subtasks": [
+          { "code": "AW-INTERIOR-WALL-ZOCALLO", "name": "Concrete Zocallo (Supply and Installation)", "description": "Supply and install the specified concrete zocallo." },
+          { "code": "AW-INTERIOR-WALL-DRYWALL", "name": "Dry Wall 100mm thk (Supply and Installation)", "description": "Supply and install 100mm-thick drywall partitions." }
+        ]
+      },
+      {
+        "code": "AW-PAINTING",
+        "name": "Painting",
+        "description": "Supply and application of paint to zocallo, ceiling, and wall surfaces.",
+        "subtasks": [
+          { "code": "AW-PAINTING-ZOCALO", "name": "Zocalo Painting (Supply and Application)", "description": "Supply and apply paint to zocalo surfaces." },
+          { "code": "AW-PAINTING-CEILING", "name": "Ceiling Painting (Supply and Application)", "description": "Supply and apply paint to ceiling surfaces." },
+          { "code": "AW-PAINTING-WALL", "name": "WF01-Wall Painting (Supply and Application)", "description": "Supply and apply the WF01 wall paint finish." }
+        ]
+      },
+      {
+        "code": "AW-GLASS-WORKS",
+        "name": "Glass Works",
+        "description": "Supply and installation of glass panels, transoms, aluminum frames, and glass doors.",
+        "subtasks": [
+          { "code": "AW-GLASS-WALL-TRANSOM", "name": "Glass Wall Panel and Transom (Supply and Installation)", "description": "Supply and install glass wall panels and transoms." },
+          { "code": "AW-GLASS-ALUM-FRAME", "name": "Aluminum Frame (Supply and Installation)", "description": "Supply and install the specified aluminum framing." },
+          { "code": "AW-GLASS-DOOR", "name": "Glass Door (Supply and Installation)", "description": "Supply and install the specified glass door." }
+        ]
+      },
+      {
+        "code": "AW-MISCELLANEOUS",
+        "name": "Miscellaneous",
+        "description": "Miscellaneous architectural signage, trim, temporary enclosure, access, safety, and finishing work.",
+        "subtasks": [
+          { "code": "AW-MISC-ENTRANCE-LOGO", "name": "LOG02-Entrance Logo Back To Back Frontlit 4500K (Supply and Installation)", "description": "Supply and install the LOG02 back-to-back front-lit entrance logo at 4500K." },
+          { "code": "AW-MISC-SS-TRIM", "name": "Stainless Tile Trim", "description": "Supply and install stainless tile trim." },
+          { "code": "AW-MISC-BOARDUP", "name": "Boardup Tarpaulin (Supply and Installation)", "description": "Supply and install board-up tarpaulin." },
+          { "code": "AW-MISC-MANHOLE", "name": "Manhole (Fabrication)", "description": "Fabricate the specified manhole assembly." },
+          { "code": "AW-MISC-FIRE-PLAN", "name": "Fire Escape Plan (Supply and Install)", "description": "Supply and install the approved fire escape plan." },
+          { "code": "AW-MISC-CARPET", "name": "Carpet", "description": "Supply and install the specified carpet." },
+          { "code": "AW-MISC-BUILDUP-LOGO", "name": "LOG01-Build Up Logo Backlit 4500K (Supply and Installation)", "description": "Supply and install the LOG01 built-up back-lit logo at 4500K." }
+        ]
+      },
+      {
+        "code": "AW-WALL-FIN",
+        "name": "Wall Finishes",
+        "description": "Painting, signage, stickers, panels, and other finishes applied to wall surfaces.",
+        "subtasks": [
+          {
+            "code": "AW-WALL-FIN-PAINT",
+            "name": "Supply and Application of Paint",
+            "description": "Supply and apply the specified paint system to wall surfaces."
+          },
+          {
+            "code": "AW-WALL-FIN-SIGNAGE",
+            "name": "Supply and Installation of Signage (1950mmx600mm), to Backwall",
+            "description": "Supply and install 1950mm by 600mm signage on the backwall."
+          },
+          {
+            "code": "AW-WALL-FIN-FROSTED",
+            "name": "Supply and Installation of Frosted Sticker",
+            "description": "Supply and install frosted sticker at the designated location."
+          },
+          {
+            "code": "AW-WALL-FIN-FLUTED",
+            "name": "Supply and Installation of Fluted Panel",
+            "description": "Supply and install the specified fluted wall panel."
+          },
+          {
+            "code": "AW-WALL-FIN-LOGO",
+            "name": "Supply and Installation of Logo Sticker",
+            "description": "Supply and install the approved logo sticker."
+          },
+          { "code": "AW-WALL-FIN-IFUGAO", "name": "Ifugao Pattern Fabric (Supply and Installation)", "description": "Supply and install the specified Ifugao-pattern fabric wall finish." },
+          { "code": "AW-WALL-FIN-FROSTED-STD", "name": "Frosted Sticker (Supply and Installation)", "description": "Supply and install the specified frosted sticker." },
+          { "code": "AW-WALL-FIN-SOLIHIYA", "name": "WF03/04-Solihiya and Laminated Wall Finish (Supply and Installation)", "description": "Supply and install WF03/04 Solihiya and laminated wall finishes." },
+          { "code": "AW-WALL-FIN-VENETIAN", "name": "WF02-Venetian Plaster Finish (Supply and Installation)", "description": "Supply and install the WF02 Venetian plaster finish." },
+          { "code": "AW-WALL-FIN-WPC", "name": "WF05-WPC Fluted Wall Accent Finishl (Supply and Installation)", "description": "Supply and install the WF05 WPC fluted wall accent finish." },
+          { "code": "AW-WALL-FIN-CURTAIN", "name": "SC01-Sheer Curtain (Supply and Installation)", "description": "Supply and install the SC01 sheer curtain." }
+          ,{ "code": "AW-WALL-FIN-SIGNAGE-1400", "name": "Supply and Installation of Signage (1400mmx600mm), to Backwall", "description": "Supply and install 1400mm by 600mm signage on the backwall." }
+        ]
+      },
+      {
+        "code": "AW-CEILING-FIN",
+        "name": "Ceiling Finishes",
+        "description": "Painting and other specified finishing work for ceiling surfaces.",
+        "subtasks": [
+          {
+            "code": "AW-CEILING-FIN-PAINT",
+            "name": "Supply and Application of Paint",
+            "description": "Supply and apply the specified paint system to ceiling surfaces."
+          },
+          { "code": "AW-CEILING-FIN-BAFFLE", "name": "CF02-Aluminum Baffle Ceiling Finish (Supply and Installation)", "description": "Supply and install the CF02 aluminum baffle ceiling finish." },
+          { "code": "AW-CEILING-FIN-GYPSUM", "name": "CF01-Gypsum Board 9mm Thk (Supply and Installation)", "description": "Supply and install the CF01 9mm-thick gypsum board ceiling finish." }
+        ]
+      },
+      {
+        "code": "AW-FURNITURE",
+        "name": "Supply and Positioning of Furniture",
+        "description": "Supply, delivery, placement, and positioning of specified furniture.",
+        "subtasks": [
+          {
+            "code": "AW-FURN-NURSE-DESK",
+            "name": "Nurse Station Desk, laminated top",
+            "description": "Supply and position a nurse station desk with laminated top."
+          },
+          {
+            "code": "AW-FURN-WAIT-SOFA",
+            "name": "Waiting Area Sofa",
+            "description": "Supply and position the waiting area sofa."
+          },
+          {
+            "code": "AW-FURN-ADMIN-CHAIR",
+            "name": "Admin Chair/Reception Chair",
+            "description": "Supply and position the admin or reception chair."
+          },
+          {
+            "code": "AW-FURN-PATIENT-CHAIR",
+            "name": "Patient Chair",
+            "description": "Supply and position the patient chair."
+          },
+          {
+            "code": "AW-FURN-VACC-CHAIR",
+            "name": "Vaccination Chair",
+            "description": "Supply and position the vaccination chair."
+          },
+          {
+            "code": "AW-FURN-PEDESTAL",
+            "name": "Pedestal Drawer",
+            "description": "Supply and position the pedestal drawer."
+          },
+          { "code": "AW-FURN-VACC-NURSE-STOOL", "name": "Vaccination Chair / Nurse Stool", "description": "Supply and position the vaccination chair or nurse stool." }
+        ]
+      },
+      {
+        "code": "AW-BUILT-INS",
+        "name": "Built-ins",
+        "description": "Refurbishment and improvement of existing built-in cabinets, shelves, and related fixtures.",
+        "subtasks": [
+          {
+            "code": "AW-BUILT-INS-CABINET",
+            "name": "Refurbishment of Existing Cabinet and Shelves",
+            "description": "Refurbish the existing cabinets and shelves."
+          },
+          { "code": "AW-BUILT-INS-SINK-CABINET", "name": "Refurbishment of Existing Door Cabinet of Sink Counter", "description": "Refurbish the existing door cabinet of the sink counter." },
+          { "code": "AW-BUILT-INS-STORAGE", "name": "Supply and Installation of Storage Cabinet including Shelf Unit", "description": "Supply and install a storage cabinet including its shelf unit." }
+        ]
+      },
+      {
+        "code": "AW-OTHERS",
+        "name": "Others",
+        "description": "Other architectural accessories, signage, hardware, and refurbishment activities.",
+        "subtasks": [
+          {
+            "code": "AW-OTHERS-BLINDS",
+            "name": "Supply and Installation of Curtain Blinds",
+            "description": "Supply and install curtain blinds at the designated locations."
+          },
+          {
+            "code": "AW-OTHERS-DOORKNOB",
+            "name": "Supply and Installation of Door Knob, to Storage Room",
+            "description": "Supply and install a door knob for the storage room."
+          },
+          {
+            "code": "AW-OTHERS-EXT-SIGN",
+            "name": "Supply and Installation of Exterior Signage",
+            "description": "Supply and install the approved exterior signage."
+          },
+          {
+            "code": "AW-OTHERS-VACC-DOOR",
+            "name": "Refurbishment of Existing Vaccination Door with new lockset",
+            "description": "Refurbish the existing vaccination door and install a new lockset."
+          },
+          { "code": "AW-OTHERS-WINDOW-BLINDS", "name": "Supply and Installation of Window Blinds", "description": "Supply and install window blinds." },
+          { "code": "AW-OTHERS-MED-CURTAIN", "name": "Supply and Installation of Medical Curtain with Rod (Option B)", "description": "Supply and install the Option B medical curtain with rod." }
+        ]
+      },
+      {
+        "code": "AW-PREPARATION",
+        "name": "PREPARATION WORKS",
+        "description": "Initial dismantling, clearing, layout, and other preparation activities before architectural installation.",
+        "subtasks": [
+          {
+            "code": "AW-PREPARATION-GENERAL",
+            "name": "DISMANTLING,CLEARING,LAYOUT,ETC.",
+            "description": "Carry out dismantling, clearing, layout, and related preparatory works."
+          }
+        ]
+      },
+      {
+        "code": "AW-DRYWALL-INSTALL",
+        "name": "DRYWALL INSTALLATION WORKS",
+        "description": "Installation and finishing of gypsum and laminated drywall partitions.",
+        "subtasks": [
+          {
+            "code": "AW-DRYWALL-INSTALL-GYPSUM",
+            "name": "Installation of Gypsum Drywall",
+            "description": "Install the specified gypsum drywall system."
+          },
+          {
+            "code": "AW-DRYWALL-INSTALL-LAMINATED",
+            "name": "Drywall Partition (Laminated Finish)",
+            "description": "Install drywall partitions with the specified laminated finish."
+          }
+        ]
+      },
+      {
+        "code": "AW-ARCH-FINISHING",
+        "name": "ARCHITECTURAL FINISHING WORKS",
+        "description": "Architectural finishing work covering backwalls, doors, glazing, floors, walls, paint, and decorative slats.",
+        "subtasks": [
+          {
+            "code": "AW-ARCH-FINISHING-BACKWALL",
+            "name": "Backwall with Logo Installation",
+            "description": "Construct or finish the backwall and install the approved logo."
+          },
+          {
+            "code": "AW-ARCH-FINISHING-DOORS",
+            "name": "Installation of existing doors and new metal doors",
+            "description": "Reinstall existing doors and install the specified new metal doors."
+          },
+          {
+            "code": "AW-ARCH-FINISHING-GLASS",
+            "name": "Glass Window & Door Installation",
+            "description": "Supply or install the specified glass windows and doors."
+          },
+          {
+            "code": "AW-ARCH-FINISHING-FLOOR",
+            "name": "Floor Finishes",
+            "description": "Complete the specified architectural floor finishing works."
+          },
+          {
+            "code": "AW-ARCH-FINISHING-WALL",
+            "name": "Wall Finishing Works (Painting Works & Aluminum Tubular Slats)",
+            "description": "Complete wall painting works and install aluminum tubular slats."
+          }
+        ]
+      },
+      {
+        "code": "AW-CABINETRY",
+        "name": "CABINETRY WORKS",
+        "description": "Fabrication, delivery, and installation of cabinetry and related built-in components.",
+        "subtasks": [
+          {
+            "code": "AW-CABINETRY-FAB-INSTALL",
+            "name": "Fabrication, Delivery & Installation",
+            "description": "Fabricate, deliver, and install the specified cabinetry."
+          }
+        ]
+      },
+      {
+        "code": "AW-SIGNAGES",
+        "name": "Signages",
+        "description": "Supply and installation of interior and exterior architectural signage.",
+        "subtasks": [
+          { "code": "AW-SIGNAGES-EXT-ACRYLIC", "name": "Supply and Installation of Exterior Signage, acrylic, aluminum framed non lighted", "description": "Supply and install non-lighted acrylic exterior signage with aluminum framing." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "EW",
+    "name": "Electrical Works",
+    "description": "Electrical lighting, devices, wiring, conduits, accessories, testing, and commissioning works.",
+    "tasks": [
+      {
+        "code": "EW-LIGHTING",
+        "name": "Lighting Luminaires",
+        "description": "Supply and installation of specified lamps, bulbs, and lighting luminaires.",
+        "subtasks": [
+          {
+            "code": "EW-LIGHT-FLOOR-LAMP",
+            "name": "Supply and Installation of Floor lamp",
+            "description": "Supply and install the specified floor lamp."
+          },
+          {
+            "code": "EW-LIGHT-FLUOR-18W",
+            "name": "Supply and Installation of Flourescent Bulb, 18w each",
+            "description": "Supply and install 18-watt fluorescent bulbs."
+          },
+          {
+            "code": "EW-LIGHT-UFO-15W",
+            "name": "Supply and Installation of UFO Bulb, Daylight, 15w",
+            "description": "Supply and install 15-watt daylight UFO bulbs."
+          },
+          {
+            "code": "EW-LIGHT-CAPSULE-50W",
+            "name": "Supply and Installation of Capsule Bulb, Daylight, 50w",
+            "description": "Supply and install 50-watt daylight capsule bulbs."
+          },
+          { "code": "EW-LIGHT-REPLACE-BULB", "name": "Replacement of Light Bulb", "description": "Replace the specified existing light bulb." }
+        ]
+      },
+      {
+        "code": "EW-DEVICES",
+        "name": "Electrical Devices",
+        "description": "Supply and installation of electrical outlets and other wiring devices.",
+        "subtasks": [
+          {
+            "code": "EW-DEV-DUPLEX-CO",
+            "name": "Duplex CO, universal, wall-mounted",
+            "description": "Supply and install universal wall-mounted duplex convenience outlets."
+          },
+          { "code": "EW-DEV-SWITCH-OUTLET-CB", "name": "Supply & Installation of Electrical Devices, Switches, Outlets, & Circuit Breaker", "description": "Supply and install electrical devices, switches, outlets, and circuit breakers." },
+          { "code": "EW-DEV-CCTV-INSTALL", "name": "Installation of CCTV Devices", "description": "Install the specified CCTV devices." }
+        ]
+      },
+      {
+        "code": "EW-WIRES-CABLES",
+        "name": "Wires and Cables",
+        "description": "Supply and installation of wires and cables for new electrical loads and equipment.",
+        "subtasks": [
+          {
+            "code": "EW-WIRE-THHN-3P5",
+            "name": "THHN Wire, 3.5mm2 , to New Outlets (cctv), ACU and Chiller",
+            "description": "Supply and install 3.5mm² THHN wire for new CCTV outlets, ACU, and chiller connections."
+          },
+          { "code": "EW-WIRES-SUPPLY-INSTALL", "name": "Supply & Installation of Wires", "description": "Supply and install the specified electrical wires." }
+        ]
+      },
+      {
+        "code": "EW-CONDUIT-BOX",
+        "name": "Conduit and Boxes",
+        "description": "Supply and installation of electrical conduits, boxes, hangers, and supports.",
+        "subtasks": [
+          {
+            "code": "EW-CONDUIT-EMT-15",
+            "name": "EMT Pipe, 15mm",
+            "description": "Supply and install 15mm EMT pipe."
+          },
+          {
+            "code": "EW-CONDUIT-BOX-SUPPORT",
+            "name": "Boxes, Hangers & Supports",
+            "description": "Supply and install electrical boxes, hangers, and supports."
+          }
+        ]
+      },
+      {
+        "code": "EW-MISC-TC",
+        "name": "Miscellaneous and Consumables, Accessories, Testing & Commissioning",
+        "description": "Electrical consumables, accessories, miscellaneous materials, testing, and commissioning.",
+        "subtasks": [
+          {
+            "code": "EW-MISC-TC-ACT",
+            "name": "Miscellaneous and Consumables, Accessories, Testing & Commissioning",
+            "description": "Provide electrical miscellaneous materials, consumables, accessories, testing, and commissioning."
+          }
+        ]
+      },
+      {
+        "code": "EW-GENERAL-REQ",
+        "name": "General Electrical Requirements",
+        "description": "General electrical rough-in, wiring, final-fix, testing, and commissioning requirements.",
+        "subtasks": [
+          {
+            "code": "EW-GENERAL-REQ-INSTALL-TC",
+            "name": "Roughing ins / First Fix Installation, Wiring Works, Final Fix, Testing & Commisioning",
+            "description": "Complete electrical rough-ins, first-fix installation, wiring, final-fix work, testing, and commissioning."
+          }
+        ]
+      },
+      {
+        "code": "EW-ELECTRICAL-WORKS",
+        "name": "Electrical Works",
+        "description": "Complete electrical installation covering luminaires, devices, wiring, raceways, supports, accessories, consumables, testing, and commissioning.",
+        "subtasks": [
+          { "code": "EW-ELECTRICAL-WORKS-LIGHTING", "name": "Lighting Luminaires", "description": "Supply and install the specified lighting luminaires." },
+          { "code": "EW-ELECTRICAL-WORKS-DEVICES", "name": "Electrical Devices", "description": "Supply and install the specified electrical devices." },
+          { "code": "EW-ELECTRICAL-WORKS-WIRES", "name": "Wires and Cales", "description": "Supply and install the specified electrical wires and cables." },
+          { "code": "EW-ELECTRICAL-WORKS-RACEWAYS", "name": "Raceways and Boxes", "description": "Supply and install electrical raceways and boxes." },
+          { "code": "EW-ELECTRICAL-WORKS-SUPPORTS", "name": "Hangers and Supports", "description": "Supply and install electrical hangers and supports." },
+          { "code": "EW-ELECTRICAL-WORKS-CONSUMABLES", "name": "Miscellaneous and Consumables", "description": "Provide required electrical miscellaneous materials and consumables." },
+          { "code": "EW-ELECTRICAL-WORKS-ACCESSORIES", "name": "Accessories", "description": "Provide and install required electrical accessories." },
+          { "code": "EW-ELECTRICAL-WORKS-TESTING", "name": "Testing and Commissioning", "description": "Test and commission the completed electrical installation." }
+        ]
+      },
+      {
+        "code": "EW-CONDUITS-BOXES",
+        "name": "Conduits and Boxes",
+        "description": "Supply and installation of conduits, boxes, mouldings, pipes, accessories, consumables, testing, and commissioning.",
+        "subtasks": [
+          { "code": "EW-CONDUITS-BOXES-MOULDINGS", "name": "Supply & Installation of Mouldings, Pipes, Consumables, Accessories, and Testing & Commissioning", "description": "Supply and install mouldings, pipes, consumables, and accessories, then complete testing and commissioning." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "MW",
+    "name": "Mechanical Works",
+    "description": "Mechanical equipment supply, installation, wiring, piping, and ventilation works.",
+    "tasks": [
+      {
+        "code": "MW-ACU-3HP",
+        "name": "Supply and Installation of 3.0 HP Cassette-type ACU (TCL), including wirings and piping",
+        "description": "Supply and install a 3.0 HP TCL cassette-type air-conditioning unit including required wiring and piping.",
+        "subtasks": [
+          {
+            "code": "MW-ACU-3HP-ACT",
+            "name": "Supply and Installation of 3.0 HP Cassette-type ACU (TCL), including wirings and piping",
+            "description": "Complete the supply and installation of the 3.0 HP TCL cassette-type ACU, wiring, and piping."
+          }
+        ]
+      },
+      {
+        "code": "MW-TRANSFER-FAN",
+        "name": "Supply and Installation of Transfer Fan",
+        "description": "Supply and installation of the specified transfer fan and required accessories.",
+        "subtasks": [
+          {
+            "code": "MW-TRANSFER-FAN-ACT",
+            "name": "Supply and Installation of Transfer Fan",
+            "description": "Supply and install the specified transfer fan."
+          }
+        ]
+      },
+      {
+        "code": "MW-AIRCON-2P5HP",
+        "name": "Supply and Installation of 2.5 HP Aircon (TCL)",
+        "description": "Supply and installation of a 2.5 HP TCL air-conditioning unit and required accessories.",
+        "subtasks": [
+          { "code": "MW-AIRCON-2P5HP-ACT", "name": "Supply and Installation of 2.5 HP Aircon (TCL)", "description": "Supply and install the specified 2.5 HP TCL air-conditioning unit." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "MPW",
+    "name": "MECHANICAL & PLUMBING WORKS",
+    "description": "Mechanical and plumbing fixture, equipment, air-conditioning, and ventilation installation works.",
+    "tasks": [
+      {
+        "code": "MPW-FIXTURE-EQUIP-INSTALL",
+        "name": "INSTALLATION OF FIXTURES,EQUIPMENT, ETC.",
+        "description": "Installation of plumbing fixtures, mechanical equipment, air-conditioning units, transfer fans, and related accessories.",
+        "subtasks": [
+          {
+            "code": "MPW-FIXTURE-EQUIP-PLUMBING",
+            "name": "Installation of Shower Head, Faucet, & Steel Hand Bidet",
+            "description": "Install the specified shower head, faucet, and steel hand bidet."
+          },
+          {
+            "code": "MPW-FIXTURE-EQUIP-ACU-FAN",
+            "name": "Installation of Floor Mounted ACU & transfer fans",
+            "description": "Install the specified floor-mounted air-conditioning unit and transfer fans."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "HTO",
+    "name": "HANDOVER / TURNOVER OF AREAS",
+    "description": "Final testing, punch-list close-out, commissioning, handover, turnover, and acceptance activities.",
+    "tasks": [
+      {
+        "code": "HTO-TEST-PUNCHLIST",
+        "name": "TESTING & PUNCHLISTING WORKS",
+        "description": "Final punch-list resolution, testing, commissioning, handover, and acceptance work.",
+        "subtasks": [
+          {
+            "code": "HTO-TEST-PUNCHLIST-CLOSEOUT",
+            "name": "Punchlist Close-out, Testing & Commissinoning, Handover & Acceptance",
+            "description": "Close all punch-list items, complete testing and commissioning, and secure handover and acceptance."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "CCTV",
+    "name": "CCTV Installation",
+    "description": "Installation and positioning of CCTV devices and associated installation work.",
+    "tasks": [
+      {
+        "code": "CCTV-DEVICE-INSTALL",
+        "name": "CCTV Device installation only",
+        "description": "Installation-only work for owner-supplied CCTV devices.",
+        "subtasks": [
+          {
+            "code": "CCTV-DEVICE-INSTALL-OSM",
+            "name": "Installation of CCTV device (OSM)",
+            "description": "Install the owner-supplied CCTV device."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "PW",
+    "name": "Plumbing Works",
+    "description": "Plumbing fixture replacement, installation, and related connection works.",
+    "tasks": [
+      {
+        "code": "PW-FAUCET-REPLACEMENT",
+        "name": "Replacement of Faucet to Sink",
+        "description": "Replacement of the existing sink faucet.",
+        "subtasks": [
+          { "code": "PW-FAUCET-REPLACEMENT-ACT", "name": "Replacement of Faucet to Sink", "description": "Remove the existing sink faucet and install its replacement." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "CAB",
+    "name": "Cabinetries",
+    "description": "Fabrication, delivery, and installation of custom cabinetry, counters, partitions, pods, encasements, and display furniture.",
+    "tasks": [
+      {
+        "code": "CAB-CABINETRIES",
+        "name": "Cabinetries",
+        "description": "Custom cabinetry and built-in furniture works.",
+        "subtasks": [
+          { "code": "CAB-FUR01-CONCIERGE", "name": "FUR01-Concierge Counter", "description": "Fabricate, deliver, and install the FUR01 concierge counter." },
+          { "code": "CAB-FUR07-PARTITION", "name": "FUR07-Massage Area Partition", "description": "Fabricate, deliver, and install the FUR07 massage area partition." },
+          { "code": "CAB-FUR09-POD", "name": "FUR09-Sleeping Pod", "description": "Fabricate, deliver, and install the FUR09 sleeping pod." },
+          { "code": "CAB-FUR10-ENCASEMENT", "name": "FUR10-Freezer and Chiller Encasement", "description": "Fabricate, deliver, and install the FUR10 freezer and chiller encasement." },
+          { "code": "CAB-FUR11-DISPLAY", "name": "FUR11-Food Display Table", "description": "Fabricate, deliver, and install the FUR11 food display table." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "FFE",
+    "name": "Furnitures, Fixtures, and Equipment (FF&E)",
+    "description": "Supply, delivery, and positioning of loose furniture, decorative pieces, visual elements, and plants.",
+    "tasks": [
+      {
+        "code": "FFE-FURNITURES",
+        "name": "Furnitures",
+        "description": "Supply and positioning of specified furniture, visual elements, and potted plants.",
+        "subtasks": [
+          { "code": "FFE-FUR02-SOFA", "name": "FUR02-Lounge Sofa (2-Seater)", "description": "Supply and position the FUR02 two-seater lounge sofa." },
+          { "code": "FFE-FUR03-CHAIR", "name": "FUR03-Lounge Chair 1/Solihiya", "description": "Supply and position the FUR03 Solihiya lounge chair." },
+          { "code": "FFE-FUR04-TABLE", "name": "FUR04-Center Table", "description": "Supply and position the FUR04 center table." },
+          { "code": "FFE-FUR05-CHAIR", "name": "FUR05-Lounge Chair 2", "description": "Supply and position the FUR05 lounge chair." },
+          { "code": "FFE-FUR06-SIDE-TABLE", "name": "FUR06-Side Table/Coffee Table", "description": "Supply and position the FUR06 side or coffee table." },
+          { "code": "FFE-VIS01-WALL-PAINT", "name": "VIS01-Wall Painting", "description": "Supply and position the VIS01 wall painting." },
+          { "code": "FFE-PP01-MONSTERA", "name": "PP01-Potted Plant 1 (Monstera Plant)", "description": "Supply and position the PP01 Monstera potted plant." },
+          { "code": "FFE-PP02-ARECA", "name": "PP02-Potted Plant 2 (Areca Palm)", "description": "Supply and position the PP02 Areca Palm potted plant." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "CCTV-SYS",
+    "name": "CCTV System",
+    "description": "CCTV equipment, devices, wiring, containment, supports, accessories, and consumables.",
+    "tasks": [
+      {
+        "code": "CCTV-SYS-SYSTEM",
+        "name": "CCTV System",
+        "description": "Complete CCTV system installation requirements.",
+        "subtasks": [
+          { "code": "CCTV-SYS-EQUIPMENT", "name": "Equipment/Devices", "description": "Provide and install CCTV equipment and devices." },
+          { "code": "CCTV-SYS-WIRES", "name": "Wires and Cables", "description": "Provide and install CCTV wires and cables." },
+          { "code": "CCTV-SYS-RACEWAYS", "name": "Raceways and Boxes", "description": "Provide and install CCTV raceways and boxes." },
+          { "code": "CCTV-SYS-SUPPORTS", "name": "Hangers and Supports", "description": "Provide and install CCTV hangers and supports." },
+          { "code": "CCTV-SYS-ACCESSORIES", "name": "Accessories", "description": "Provide and install required CCTV accessories." },
+          { "code": "CCTV-SYS-CONSUMABLES", "name": "Consumables", "description": "Provide required CCTV consumable materials." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "FDAS-FS",
+    "name": "FDAS & Fire Suppression",
+    "description": "Fire detection, alarm, sprinkler, suppression, testing, and commissioning works.",
+    "tasks": [
+      {
+        "code": "FDAS-FS-SUPPRESSION",
+        "name": "Fire Suppression",
+        "description": "Fire suppression device installation and commissioning.",
+        "subtasks": [
+          { "code": "FDAS-FS-SPRINKLER", "name": "Pendant Sprinkler (Supply and Installation)", "description": "Supply and install the specified pendant sprinkler." },
+          { "code": "FDAS-FS-SUPPRESSION-TC", "name": "Testing and Commissioning", "description": "Test and commission the completed fire suppression installation." }
+        ]
+      },
+      {
+        "code": "FDAS-FS-FDAS",
+        "name": "FDAS",
+        "description": "Fire detection and alarm system device installation and commissioning.",
+        "subtasks": [
+          { "code": "FDAS-FS-SMOKE-DETECTOR", "name": "Smoke Detector (Supply and Installation)", "description": "Supply and install the specified smoke detector." },
+          { "code": "FDAS-FS-FDAS-TC", "name": "Testing and Commissioning", "description": "Test and commission the completed fire detection and alarm system." }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "TURNOVER",
+    "name": "Turnover",
+    "description": "Final punch-list, checklist, completion documentation, and turnover activities.",
+    "tasks": [
+      {
+        "code": "TURNOVER-TURNOVER",
+        "name": "Turnover",
+        "description": "Project punch-list closure, checklist completion, and turnover documentation.",
+        "subtasks": [
+          { "code": "TURNOVER-PUNCHLIST", "name": "Punchlisting", "description": "Conduct and close out the final project punch list." },
+          { "code": "TURNOVER-CHECKLIST-COCA", "name": "Checklist and COCA", "description": "Complete the required turnover checklist and COCA documentation." }
+        ]
+      }
+    ]
+  }
+]

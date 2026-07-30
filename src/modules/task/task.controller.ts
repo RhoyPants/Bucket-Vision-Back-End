@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { generateProjectTimeline } from "../timeline/timeline.service";
+import { resolveTaskSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 
 import {
   CreateTaskDTO,
@@ -64,6 +65,14 @@ export class TaskController {
     try {
       const { title, description, scopeId, budgetAllocated, budgetPercent, order } =
         req.body;
+      const parentScope = await (prisma.scope.findUnique as any)({ where: { id: scopeId } });
+      if (!parentScope) return res.status(404).json({ message: "Scope not found" });
+      const selection = await resolveTaskSelection({
+        sourceType: req.body.sourceType,
+        maintenanceId: req.body.taskMaintenanceId,
+        customTitle: title,
+        parentScopeMaintenanceId: parentScope.scopeMaintenanceId,
+      });
 
       // Calculate next order if not provided
       let nextOrder = order ?? 0;
@@ -78,7 +87,9 @@ export class TaskController {
 
       const task = await prisma.task.create({
         data: {
-          title,
+          title: selection.title,
+          sourceType: selection.sourceType,
+          taskMaintenanceId: selection.maintenanceId,
           description,
           scopeId,
           order: nextOrder,
@@ -167,11 +178,37 @@ export class TaskController {
       const { id } = req.params;
 
       const { title, description, budgetAllocated, budgetPercent, order } = req.body;
+      const existing = await (prisma.task.findUnique as any)({
+        where: { id },
+        include: { scope: true },
+      });
+      if (!existing) return res.status(404).json({ message: "Task not found" });
+      const selectionChanged =
+        req.body.sourceType !== undefined ||
+        req.body.taskMaintenanceId !== undefined ||
+        title !== undefined;
+      const selection = selectionChanged
+        ? await resolveTaskSelection({
+            sourceType: req.body.sourceType ?? existing.sourceType,
+            maintenanceId:
+              req.body.taskMaintenanceId !== undefined
+                ? req.body.taskMaintenanceId
+                : existing.taskMaintenanceId,
+            customTitle: title ?? existing.title,
+            parentScopeMaintenanceId: existing.scope.scopeMaintenanceId,
+          })
+        : null;
 
       const updated = await prisma.task.update({
         where: { id },
         data: {
-          ...(title && { title }),
+          ...(selection
+            ? {
+                title: selection.title,
+                sourceType: selection.sourceType,
+                taskMaintenanceId: selection.maintenanceId,
+              }
+            : {}),
           ...(description !== undefined && { description }),
           ...(order !== undefined && { order }),
           ...(budgetAllocated !== undefined && { budgetAllocated }),

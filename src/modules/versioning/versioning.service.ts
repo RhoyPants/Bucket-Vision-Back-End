@@ -121,6 +121,8 @@ export class VersioningService {
       const newScope = await prisma.scope.create({
         data: {
           name: scope.name,
+          sourceType: (scope as any).sourceType,
+          scopeMaintenanceId: (scope as any).scopeMaintenanceId,
           description: scope.description,
           progress: scope.progress, // CARRY OVER current progress
           budgetAllocated: scope.budgetAllocated,
@@ -133,6 +135,8 @@ export class VersioningService {
         const newTask = await prisma.task.create({
           data: {
             title: task.title,
+            sourceType: (task as any).sourceType,
+            taskMaintenanceId: (task as any).taskMaintenanceId,
             description: task.description,
             order: task.order,
             progress: task.progress, // CARRY OVER progress
@@ -147,6 +151,8 @@ export class VersioningService {
           const newSubtask = await prisma.subtask.create({
             data: {
               title: subtask.title,
+              sourceType: (subtask as any).sourceType,
+              subtaskMaintenanceId: (subtask as any).subtaskMaintenanceId,
               description: subtask.description,
               order: subtask.order,
               progress: subtask.progress, // CARRY OVER progress

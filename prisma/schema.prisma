@@ -199,11 +199,15 @@ model Scope {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
+  sourceType      String?
+  scopeMaintenanceId String?
   project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scopeMaintenance ScopeMaintenance? @relation(fields: [scopeMaintenanceId], references: [id], onDelete: SetNull)
   tasks           Task[]
   incidentReports IncidentReport[]
 
   @@index([projectId])
+  @@index([scopeMaintenanceId])
 }
 
 model TaskAssignee {
@@ -227,12 +231,16 @@ model Task {
   updatedAt       DateTime         @updatedAt
   order           Int              @default(0)
   scopeId         String
+  sourceType      String?
+  taskMaintenanceId String?
   subtasks        Subtask[]
   scope           Scope            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  taskMaintenance TaskMaintenance? @relation(fields: [taskMaintenanceId], references: [id], onDelete: SetNull)
   assignees       TaskAssignee[]
   incidentReports IncidentReport[]
 
   @@index([scopeId])
+  @@index([taskMaintenanceId])
 }
 
 model Subtask {
@@ -255,6 +263,8 @@ model Subtask {
   remarks            String?
   updatedAt          DateTime          @updatedAt
   status             Int               @default(0)
+  sourceType         String?
+  subtaskMaintenanceId String?
   activities         ActivityLog[]     @relation("SubtaskActivity")
   attachments        Attachment[]
   checklists         Checklist[]
@@ -262,10 +272,83 @@ model Subtask {
   progressLogs       ProgressLog[]
   creator            User              @relation("SubtaskCreator", fields: [createdBy], references: [id])
   task               Task              @relation(fields: [taskId], references: [id])
+  subtaskMaintenance SubtaskMaintenance? @relation(fields: [subtaskMaintenanceId], references: [id], onDelete: SetNull)
   assignees          SubtaskAssignee[]
   incidentReports    IncidentReport[]
 
   @@index([taskId])
+  @@index([subtaskMaintenanceId])
+}
+
+model ScopeMaintenance {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  taskLinks   ScopeMaintenanceTask[]
+  scopes      Scope[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
+model TaskMaintenance {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  scopeLinks  ScopeMaintenanceTask[]
+  subtaskLinks TaskMaintenanceSubtask[]
+  tasks       Task[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
+model SubtaskMaintenance {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  taskLinks   TaskMaintenanceSubtask[]
+  subtasks    Subtask[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
+model ScopeMaintenanceTask {
+  scopeMaintenanceId String
+  taskMaintenanceId  String
+  order              Int              @default(0)
+  scopeMaintenance   ScopeMaintenance @relation(fields: [scopeMaintenanceId], references: [id], onDelete: Cascade)
+  taskMaintenance    TaskMaintenance  @relation(fields: [taskMaintenanceId], references: [id], onDelete: Cascade)
+
+  @@id([scopeMaintenanceId, taskMaintenanceId])
+  @@index([taskMaintenanceId])
+}
+
+model TaskMaintenanceSubtask {
+  taskMaintenanceId    String
+  subtaskMaintenanceId String
+  order                Int                @default(0)
+  taskMaintenance      TaskMaintenance    @relation(fields: [taskMaintenanceId], references: [id], onDelete: Cascade)
+  subtaskMaintenance   SubtaskMaintenance @relation(fields: [subtaskMaintenanceId], references: [id], onDelete: Cascade)
+
+  @@id([taskMaintenanceId, subtaskMaintenanceId])
+  @@index([subtaskMaintenanceId])
 }
 
 model ApprovalFlow {

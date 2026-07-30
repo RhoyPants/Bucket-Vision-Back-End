@@ -3,6 +3,8 @@
 // =========================
 export interface CreateTaskDTO {
   title: string;
+  sourceType?: "CUSTOM" | "MAINTENANCE" | null;
+  taskMaintenanceId?: string | null;
   description?: string;
   order?: number;
 
@@ -31,6 +33,8 @@ export interface GetTasksByScopeParamsDTO {
 // =========================
 export interface UpdateTaskDTO {
   title?: string;
+  sourceType?: "CUSTOM" | "MAINTENANCE" | null;
+  taskMaintenanceId?: string | null;
   description?: string;
   order?: number;
 

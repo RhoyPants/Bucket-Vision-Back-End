@@ -4,6 +4,8 @@
 export interface CreateSubtaskDTO {
   taskId: string;
   title: string;
+  sourceType?: "CUSTOM" | "MAINTENANCE" | null;
+  subtaskMaintenanceId?: string | null;
 
   // OPTIONAL
   description?: string;
@@ -38,6 +40,8 @@ export interface UpdateSubtaskParamsDTO {
 // =========================
 export interface UpdateSubtaskDTO {
   title?: string;
+  sourceType?: "CUSTOM" | "MAINTENANCE" | null;
+  subtaskMaintenanceId?: string | null;
   description?: string;
 
   // ❌ REMOVE statusId
