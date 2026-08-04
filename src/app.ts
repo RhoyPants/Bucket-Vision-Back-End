@@ -26,6 +26,7 @@ import projectDashboardRoutes from "./modules/project-dashboard/project-dashboar
 import incidentReportRoutes from "./modules/incident-report/incident-report.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import workBreakdownMaintenanceRoutes from "./modules/admin/work-breakdown-maintenance/work-breakdown-maintenance.routes";
+import reportRoutes from "./reports/routes/report.routes";
 
 const app = express();
 app.use(cors({
@@ -68,6 +69,7 @@ app.use("/api/project-dashboards", projectDashboardRoutes);
 app.use("/api/incidents", incidentReportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin/work-breakdown-maintenance", workBreakdownMaintenanceRoutes);
+app.use("/api/reports", reportRoutes);
     
 
 app.get("/test-auth", authenticate, (req: any, res) => {

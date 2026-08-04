@@ -7,8 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed": "ts-node prisma/seed.ts",
+    "seed:completed-surevax-local": "ts-node prisma/seed-completed-surevax-sample.ts",
     "seed:work-breakdown": "ts-node prisma/seed-work-breakdown-maintenance.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test:reports": "ts-node src/reports/tests/report-foundation.test.ts",
+    "test:reports:integration": "ts-node src/reports/tests/report-integration.test.ts",
+    "test:reports:pdf": "ts-node src/reports/tests/report-pdf.integration.test.ts",
+    "test:reports:excel": "ts-node src/reports/tests/report-excel.integration.test.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -25,9 +30,12 @@
     "dotenv": "^17.3.1",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "handlebars": "^4.7.9",
     "jsonwebtoken": "^9.0.3",
+    "jszip": "^3.10.1",
     "multer": "^2.1.1",
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "puppeteer": "^25.4.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

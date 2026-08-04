@@ -61,4 +61,7 @@ export interface UpdateProjectDTO {
   saturday?: boolean;
   sunday?: boolean;
   includeHolidays?: boolean;
+  /** General project editing may only use this field to save an editable project as DRAFT. */
+  status?: ProjectStatus;
 }
+import { ProjectStatus } from "@prisma/client";

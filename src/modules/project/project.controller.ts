@@ -1427,7 +1427,43 @@ export class ProjectController {
         saturday,
         sunday,
         includeHolidays,
+        status,
       } = req.body;
+
+      if (status !== undefined) {
+        if (!Object.values(ProjectStatus).includes(status)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid project status",
+            allowedStatuses: Object.values(ProjectStatus),
+          });
+        }
+
+        // Approval and lifecycle states are controlled by their dedicated endpoints.
+        if (status !== "DRAFT") {
+          return res.status(400).json({
+            success: false,
+            message: "Only DRAFT can be set through the project update endpoint",
+          });
+        }
+
+        const currentProject = await prisma.project.findUnique({
+          where: { id },
+          select: { status: true },
+        });
+        if (!currentProject) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+        if (!["DRAFT", "NEEDS_REVISION"].includes(currentProject.status)) {
+          return res.status(409).json({
+            success: false,
+            message: `Project cannot be moved from ${currentProject.status} to DRAFT`,
+          });
+        }
+      }
 
       const updated = await prisma.project.update({
         where: { id },
@@ -1458,6 +1494,7 @@ export class ProjectController {
           saturday: saturday ?? undefined,
           sunday: sunday ?? undefined,
           includeHolidays: includeHolidays ?? undefined,
+          status: status ?? undefined,
         },
       });
 
