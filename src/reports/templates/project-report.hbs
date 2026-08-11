@@ -8,8 +8,8 @@
     body { margin: 0; color: #14213d; font: 10px Arial, Helvetica, sans-serif; }
     h1, h2, h3, p { margin: 0; }
     .header { display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; padding-bottom: 12px; border-bottom: 3px solid #1574c4; }
-    .brand { color: #10205d; font-size: 15px; font-weight: 800; line-height: 1.05; }
-    .brand small { display: block; color: #64748b; font-size: 7px; letter-spacing: 2px; margin-top: 5px; }
+    .brand { display: flex; align-items: center; }
+    .brand img { display: block; width: 115px; height: auto; object-fit: contain; }
     .title { text-align: center; }
     .title h1 { color: #123f78; font-size: 20px; }
     .title h2 { color: #1478c9; font-size: 13px; margin-top: 5px; }
@@ -36,10 +36,11 @@
     .empty { padding: 12px; border-radius: 6px; background: #eff6ff; color: #1e5f91; }
     .incident { padding: 9px; border: 1px solid #fecaca; margin-bottom: 6px; }
     .incident strong { font-size: 10px; }
-    .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-    .photo { border: 1px solid #dbe5f1; padding: 5px; break-inside: avoid; }
-    .photo img { display: block; width: 100%; height: 90px; object-fit: cover; background: #eef2f7; }
-    .photo p { margin-top: 5px; }
+    .photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+    .photo { min-width: 0; border: 1px solid #dbe5f1; padding: 5px; break-inside: avoid; overflow: hidden; }
+    .photo img { display: block; width: 100%; height: 130px; object-fit: cover; background: #eef2f7; }
+    .photo-placeholder { display: flex; width: 100%; height: 130px; align-items: center; justify-content: center; background: #eef2f7; color: #64748b; font-size: 8px; }
+    .photo p { margin-top: 5px; overflow-wrap: anywhere; word-break: break-word; }
     table { width: 100%; border-collapse: collapse; }
     thead { display: table-header-group; }
     th { background: #eaf3fc; color: #123f78; font-size: 7px; text-align: left; padding: 7px 6px; }
@@ -55,7 +56,7 @@
 </head>
 <body>
   <header class="header">
-    <div class="brand">◉ Global<br>Visions<small>HOLDINGS INC.</small></div>
+    <div class="brand"><img src="{{logoDataUri}}" alt="Global Visions Holdings"></div>
     <div class="title">
       <h1>PROJECT PROGRESS REPORT</h1>
       <h2>{{project.name}}</h2>
@@ -84,18 +85,17 @@
     <div><h3 class="section-title">WORK HEALTH DISTRIBUTION</h3><div class="chart">{{safe healthSvg}}</div></div>
   </section>
 
-  <section class="section two-column">
-    <div>
-      <h3 class="section-title">INCIDENT REPORT</h3>
-      {{#if incidents.length}}
-        {{#each incidents}}<div class="incident"><strong>{{incidentNumber}} · {{title}}</strong><p>{{description}}</p><p>{{date dateRaised}} · {{severity}} · {{status}}</p></div>{{/each}}
-      {{else}}<div class="empty">No incidents were reported during this reporting period.</div>{{/if}}
-    </div>
-    <div>
-      <h3 class="section-title">PROGRESS PHOTOS</h3>
-      {{#if photos.length}}<div class="photos">{{#each photos}}<div class="photo"><img src="{{url}}" alt=""><p><strong>{{caption}}</strong><br>{{date date}} · {{uploadedBy.name}}</p></div>{{/each}}</div>
-      {{else}}<div class="empty">No progress photos were uploaded during this period.</div>{{/if}}
-    </div>
+  <section class="section">
+    <h3 class="section-title">INCIDENT REPORT</h3>
+    {{#if incidents.length}}
+      {{#each incidents}}<div class="incident"><strong>{{incidentNumber}} · {{title}}</strong><p>{{description}}</p><p>{{date dateRaised}} · {{severity}} · {{status}}</p></div>{{/each}}
+    {{else}}<div class="empty">No incidents were reported during this reporting period.</div>{{/if}}
+  </section>
+
+  <section class="section">
+    <h3 class="section-title">PROGRESS PHOTOS</h3>
+    {{#if photos.length}}<div class="photos">{{#each photos}}<div class="photo">{{#if embeddedUrl}}<img src="{{embeddedUrl}}" alt="{{caption}}">{{else}}<div class="photo-placeholder">Image unavailable</div>{{/if}}<p><strong>{{caption}}</strong><br>{{date date}} · {{uploadedBy.name}}</p></div>{{/each}}</div>
+    {{else}}<div class="empty">No progress photos were uploaded during this period.</div>{{/if}}
   </section>
 
   <section class="section page-break">

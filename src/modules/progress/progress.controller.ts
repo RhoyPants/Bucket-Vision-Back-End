@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { addProgressLog, recomputeSubtaskProgress } from "./progress.service";
+import { addProgressLog, deleteProgressLog, ProgressRuleError, updateProgressLog } from "./progress.service";
+import { parseDailyPercent, roundProgress } from "./progress-precision";
 import { getSCurve as getSCurveData } from "./scurve.service";
 import {
   fetchSharePointFile,
@@ -21,6 +22,21 @@ import {
 
 const prisma = new PrismaClient();
 const MAX_PROGRESS_UPDATE_ATTEMPTS = 2;
+
+function sendProgressError(res: Response, error: any) {
+  const status = error instanceof ProgressRuleError ? error.httpStatus : 400;
+  return res.status(status).json({
+    success: false,
+    ...(error?.code ? { error: error.code } : {}),
+    message: error?.message || "Invalid progress request",
+    ...(error?.data ? { data: error.data } : {}),
+  });
+}
+
+function serializeProgressLog<T extends Record<string, any> | null>(log: T): T {
+  if (!log) return log;
+  return { ...log, dailyPercent: roundProgress(log.dailyPercent), cumulativePercent: roundProgress(log.cumulativePercent) };
+}
 
 function getProgressDayRange(date: any) {
   const progressDate = new Date(date);
@@ -157,15 +173,18 @@ export async function getBySubtask(req: Request, res: Response) {
         ? authHeader.split(" ")[1]
         : "";
 
-    const logsWithProxy = logs.map((log) => ({
-      ...log,
-      attachments: log.attachments.map((attachment) => ({
-        ...attachment,
-        proxyUrl: `/api/progress/attachments/${attachment.id}/file${
-          bearerToken ? `?token=${encodeURIComponent(bearerToken)}` : ""
-        }`,
-      })),
-    }));
+    const logsWithProxy = logs.map((rawLog) => {
+      const log = serializeProgressLog(rawLog);
+      return {
+        ...log,
+        attachments: log.attachments.map((attachment) => ({
+          ...attachment,
+          proxyUrl: `/api/progress/attachments/${attachment.id}/file${
+            bearerToken ? `?token=${encodeURIComponent(bearerToken)}` : ""
+          }`,
+        })),
+      };
+    });
 
     res.json({
       success: true,
@@ -246,19 +265,11 @@ export async function addProgress(req: Request, res: Response) {
     }
 
     // 🔥 FIX: parse everything properly
-    const parsedDaily = Number(dailyPercent);
+    const parsedDaily = parseDailyPercent(dailyPercent);
     const parsedLat = req.body.lat ? Number(req.body.lat) : null;
     const parsedLng = req.body.lng ? Number(req.body.lng) : null;
 
     // 🔥 VALIDATION (IMPORTANT)
-    if (isNaN(parsedDaily)) {
-      throw new Error("dailyPercent must be a number");
-    }
-
-    if (parsedDaily < 0 || parsedDaily > 100) {
-      throw new Error("dailyPercent must be between 0 and 100");
-    }
-
     const eligibility = await checkProgressAddEligibility({ subtaskId, date, userId });
 
     if (!eligibility.canAdd) {
@@ -300,13 +311,10 @@ export async function addProgress(req: Request, res: Response) {
     res.json({
       success: true,
       message: "Progress updated successfully",
-      data: createdLog,
+      data: serializeProgressLog(createdLog),
     } as ProgressResponseDTO);
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendProgressError(res, error);
   }
 }
 
@@ -346,14 +354,7 @@ export async function updateProgress(req: Request, res: Response) {
     const updateData: UpdateProgressDTO = {};
 
     if (body.dailyPercent !== undefined && body.dailyPercent !== "") {
-      const parsedDaily = Number(body.dailyPercent);
-      if (isNaN(parsedDaily)) {
-        throw new Error("dailyPercent must be a number");
-      }
-      if (parsedDaily < 0 || parsedDaily > 100) {
-        throw new Error("dailyPercent must be between 0 and 100");
-      }
-      updateData.dailyPercent = parsedDaily;
+      updateData.dailyPercent = parseDailyPercent(body.dailyPercent);
     }
 
     if (body.remarks !== undefined) {
@@ -388,22 +389,9 @@ export async function updateProgress(req: Request, res: Response) {
           ...((rawFiles?.photo as Express.Multer.File[]) ?? []),
         ];
 
-    const log = await prisma.progressLog.update({
-      where: { id },
-      data: {
+    const log = await updateProgressLog(id, {
         ...updateData,
         dayNumber: currentUpdateAttempts + 1,
-      },
-      include: {
-        attachments: { orderBy: { sortOrder: "asc" } },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          }
-        }
-      }
     });
 
     // Optional metadata updates for existing attachments.
@@ -531,8 +519,6 @@ export async function updateProgress(req: Request, res: Response) {
       });
     }
 
-    await recomputeSubtaskProgress(log.subtaskId);
-
     const updatedLog = await prisma.progressLog.findUnique({
       where: { id },
       include: {
@@ -550,13 +536,10 @@ export async function updateProgress(req: Request, res: Response) {
     res.json({
       success: true,
       message: "Progress updated",
-      data: updatedLog,
+      data: serializeProgressLog(updatedLog),
     } as ProgressResponseDTO);
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendProgressError(res, error);
   }
 }
 
@@ -575,21 +558,14 @@ export async function deleteProgress(req: Request, res: Response) {
       throw new Error("Invalid id parameter");
     }
 
-    const log = await prisma.progressLog.delete({
-      where: { id },
-    });
-
-    await recomputeSubtaskProgress(log.subtaskId);
+    await deleteProgressLog(id);
 
     res.json({
       success: true,
       message: "Progress deleted",
     } as ProgressResponseDTO);
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendProgressError(res, error);
   }
 }
 

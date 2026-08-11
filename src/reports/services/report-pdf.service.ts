@@ -2,38 +2,69 @@ import fs from "fs";
 import path from "path";
 import Handlebars from "handlebars";
 import puppeteer, { Browser } from "puppeteer";
+import { fetchSharePointFile } from "../../services/sharepoint-upload.service";
 import { reportChartService } from "./report-chart.service";
 
 let browserPromise: Promise<Browser> | null = null;
 
-function getBrowser() {
-  if (!browserPromise) {
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim();
-    const noSandbox = process.env.PUPPETEER_NO_SANDBOX === "true";
-    browserPromise = puppeteer
-      .launch({
-        headless: true,
-        ...(executablePath ? { executablePath } : {}),
-        args: noSandbox ? ["--no-sandbox", "--disable-setuid-sandbox"] : [],
-      })
-      .catch((error) => {
-        browserPromise = null;
-        throw error;
-      });
+async function getBrowser() {
+  if (browserPromise) {
+    const cached = await browserPromise.catch(() => null);
+    if (cached?.connected) return cached;
+    browserPromise = null;
   }
-  return browserPromise;
+
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim();
+  const noSandbox = process.env.PUPPETEER_NO_SANDBOX === "true";
+  const launching = puppeteer.launch({
+    headless: true,
+    ...(executablePath ? { executablePath } : {}),
+    args: noSandbox ? ["--no-sandbox", "--disable-setuid-sandbox"] : [],
+  });
+  browserPromise = launching;
+
+  try {
+    const browser = await launching;
+    browser.once("disconnected", () => {
+      if (browserPromise === launching) browserPromise = null;
+    });
+    return browser;
+  } catch (error) {
+    if (browserPromise === launching) browserPromise = null;
+    throw error;
+  }
 }
+
+const isBrowserConnectionError = (error: unknown) => {
+  const candidate = error as { name?: string; message?: string };
+  return (
+    candidate?.name === "ConnectionClosedError" ||
+    candidate?.name === "TargetCloseError" ||
+    /connection closed|target closed|session closed/i.test(candidate?.message || "")
+  );
+};
 
 export class ReportPdfService {
   private template: Handlebars.TemplateDelegate | null = null;
 
   async generate(reportData: any): Promise<Buffer> {
-    const browser = await getBrowser();
-    const page = await browser.newPage();
     try {
+      return await this.generateWithBrowser(reportData);
+    } catch (error) {
+      if (!isBrowserConnectionError(error)) throw error;
+      browserPromise = null;
+      return this.generateWithBrowser(reportData);
+    }
+  }
+
+  private async generateWithBrowser(reportData: any): Promise<Buffer> {
+    const browser = await getBrowser();
+    let page: Awaited<ReturnType<Browser["newPage"]>> | null = null;
+    try {
+      page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
       await this.restrictNetwork(page);
-      const html = this.render(reportData);
+      const html = await this.render(reportData);
       await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 30_000 });
       await page.waitForNetworkIdle({ idleTime: 500, timeout: 15_000 }).catch(() => undefined);
       await page.emulateMediaType("print");
@@ -50,7 +81,7 @@ export class ReportPdfService {
       });
       return Buffer.from(bytes);
     } finally {
-      await page.close().catch(() => undefined);
+      await page?.close().catch(() => undefined);
     }
   }
 
@@ -63,7 +94,7 @@ export class ReportPdfService {
     }
   }
 
-  private render(data: any) {
+  private async render(data: any) {
     if (!this.template) {
       const templatePath = path.join(
         process.cwd(),
@@ -100,14 +131,48 @@ export class ReportPdfService {
     Handlebars.registerHelper("eq", (left, right) => left === right);
     Handlebars.registerHelper("safe", (value) => new Handlebars.SafeString(String(value || "")));
 
+    const logoPath = path.join(process.cwd(), "uploads", "GVI_LOGO_DARK.png");
+    const logoDataUri = `data:image/png;base64,${fs.readFileSync(logoPath).toString("base64")}`;
+    const photos = await Promise.all(
+      (data.photos || []).map(async (photo: any) => {
+        if (!photo.url) return { ...photo, embeddedUrl: null };
+        if (String(photo.url).startsWith("data:image/")) {
+          return { ...photo, embeddedUrl: photo.url };
+        }
+        try {
+          const file = await fetchSharePointFile(photo.url);
+          const contentType = file.contentType.split(";", 1)[0].trim().toLowerCase();
+          if (!contentType.startsWith("image/")) {
+            throw new Error(`Unsupported photo content type: ${contentType}`);
+          }
+          return {
+            ...photo,
+            embeddedUrl: `data:${contentType};base64,${file.buffer.toString("base64")}`,
+          };
+        } catch (error) {
+          console.warn(
+            `Unable to embed report photo ${photo.progressLogId || "unknown"}:`,
+            error instanceof Error ? error.message : String(error)
+          );
+          return { ...photo, embeddedUrl: null };
+        }
+      })
+    );
+
     return this.template({
       ...data,
+      photos,
+      logoDataUri,
       reportTitle: data.report.type === "DAILY" ? "DAILY REPORT" : "WEEKLY REPORT",
       periodLabel:
         data.report.type === "DAILY"
           ? formatDate(data.report.periodEnd)
           : `${formatDate(data.report.periodStart)} – ${formatDate(data.report.periodEnd)}`,
-      sCurveSvg: reportChartService.buildSCurveSvg(data.sCurve),
+      sCurveSvg: reportChartService.buildSCurveSvg(
+        data.sCurve,
+        data.report.periodStart,
+        data.report.periodEnd
+      ),
       healthSvg: reportChartService.buildHealthDonutSvg(data.detailedProgress),
     });
   }

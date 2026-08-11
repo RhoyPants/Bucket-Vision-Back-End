@@ -844,6 +844,8 @@ export class ProjectDashboardService {
 
     const hasGlobalProjectAccess =
       user?.role?.name === "SUPERADMIN" || user?.role?.name === "OP";
+    const hasBusinessUnitProjectAccess =
+      user?.role?.name === "BU_HEAD" && !!user.businessUnitId;
 
     const project = await prisma.project.findFirst({
       where:
@@ -854,6 +856,9 @@ export class ProjectDashboardService {
               OR: [
                 { ownerId: userId },
                 { projectMembers: { some: { userId } } },
+                ...(hasBusinessUnitProjectAccess
+                  ? [{ businessUnit: user.businessUnitId }]
+                  : []),
               ],
             },
     });

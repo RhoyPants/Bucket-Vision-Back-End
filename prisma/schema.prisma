@@ -124,7 +124,7 @@ model Project {
   description        String?
   ownerId            String
   createdAt          DateTime                   @default(now())
-  progress           Float                      @default(0)
+  progress           Decimal                    @default(0) @db.Decimal(5, 2)
   actualEndDate      DateTime?
   actualStartDate    DateTime?
   cancelledAt        DateTime?
@@ -188,23 +188,23 @@ model Project {
 }
 
 model Scope {
-  id              String           @id @default(uuid())
-  name            String
-  description     String?
-  order           Int              @default(0)
-  projectId       String
-  budgetAllocated Float?
-  budgetPercent   Float?
-  progress        Float            @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
-  sourceType      String?
+  id                 String            @id @default(uuid())
+  name               String
+  description        String?
+  order              Int               @default(0)
+  projectId          String
+  budgetAllocated    Float?
+  budgetPercent      Float?
+  progress           Decimal           @default(0) @db.Decimal(5, 2)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  deletedAt          DateTime?
+  sourceType         String?
   scopeMaintenanceId String?
-  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  scopeMaintenance ScopeMaintenance? @relation(fields: [scopeMaintenanceId], references: [id], onDelete: SetNull)
-  tasks           Task[]
-  incidentReports IncidentReport[]
+  project            Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scopeMaintenance   ScopeMaintenance? @relation(fields: [scopeMaintenanceId], references: [id], onDelete: SetNull)
+  tasks              Task[]
+  incidentReports    IncidentReport[]
 
   @@index([projectId])
   @@index([scopeMaintenanceId])
@@ -220,75 +220,75 @@ model TaskAssignee {
 }
 
 model Task {
-  id              String           @id @default(uuid())
-  title           String
-  description     String?
-  createdAt       DateTime         @default(now())
-  progress        Float            @default(0)
-  budgetAllocated Float?
-  budgetPercent   Float?
-  deletedAt       DateTime?
-  updatedAt       DateTime         @updatedAt
-  order           Int              @default(0)
-  scopeId         String
-  sourceType      String?
+  id                String           @id @default(uuid())
+  title             String
+  description       String?
+  createdAt         DateTime         @default(now())
+  progress          Decimal          @default(0) @db.Decimal(5, 2)
+  budgetAllocated   Float?
+  budgetPercent     Float?
+  deletedAt         DateTime?
+  updatedAt         DateTime         @updatedAt
+  order             Int              @default(0)
+  scopeId           String
+  sourceType        String?
   taskMaintenanceId String?
-  subtasks        Subtask[]
-  scope           Scope            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
-  taskMaintenance TaskMaintenance? @relation(fields: [taskMaintenanceId], references: [id], onDelete: SetNull)
-  assignees       TaskAssignee[]
-  incidentReports IncidentReport[]
+  subtasks          Subtask[]
+  scope             Scope            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  taskMaintenance   TaskMaintenance? @relation(fields: [taskMaintenanceId], references: [id], onDelete: SetNull)
+  assignees         TaskAssignee[]
+  incidentReports   IncidentReport[]
 
   @@index([scopeId])
   @@index([taskMaintenanceId])
 }
 
 model Subtask {
-  id                 String            @id @default(uuid())
-  title              String
-  description        String?
-  taskId             String
-  order              Int
-  priority           String?
-  createdBy          String
-  createdAt          DateTime          @default(now())
-  progress           Float             @default(0)
-  actualEndDate      DateTime?
-  actualStartDate    DateTime?
-  budgetAllocated    Float?
-  budgetPercent      Float?
-  deletedAt          DateTime?
-  projectedEndDate   DateTime?
-  projectedStartDate DateTime?
-  remarks            String?
-  updatedAt          DateTime          @updatedAt
-  status             Int               @default(0)
-  sourceType         String?
+  id                   String              @id @default(uuid())
+  title                String
+  description          String?
+  taskId               String
+  order                Int
+  priority             String?
+  createdBy            String
+  createdAt            DateTime            @default(now())
+  progress             Decimal             @default(0) @db.Decimal(5, 2)
+  actualEndDate        DateTime?
+  actualStartDate      DateTime?
+  budgetAllocated      Float?
+  budgetPercent        Float?
+  deletedAt            DateTime?
+  projectedEndDate     DateTime?
+  projectedStartDate   DateTime?
+  remarks              String?
+  updatedAt            DateTime            @updatedAt
+  status               Int                 @default(0)
+  sourceType           String?
   subtaskMaintenanceId String?
-  activities         ActivityLog[]     @relation("SubtaskActivity")
-  attachments        Attachment[]
-  checklists         Checklist[]
-  comments           Comment[]
-  progressLogs       ProgressLog[]
-  creator            User              @relation("SubtaskCreator", fields: [createdBy], references: [id])
-  task               Task              @relation(fields: [taskId], references: [id])
-  subtaskMaintenance SubtaskMaintenance? @relation(fields: [subtaskMaintenanceId], references: [id], onDelete: SetNull)
-  assignees          SubtaskAssignee[]
-  incidentReports    IncidentReport[]
+  activities           ActivityLog[]       @relation("SubtaskActivity")
+  attachments          Attachment[]
+  checklists           Checklist[]
+  comments             Comment[]
+  progressLogs         ProgressLog[]
+  creator              User                @relation("SubtaskCreator", fields: [createdBy], references: [id])
+  task                 Task                @relation(fields: [taskId], references: [id])
+  subtaskMaintenance   SubtaskMaintenance? @relation(fields: [subtaskMaintenanceId], references: [id], onDelete: SetNull)
+  assignees            SubtaskAssignee[]
+  incidentReports      IncidentReport[]
 
   @@index([taskId])
   @@index([subtaskMaintenanceId])
 }
 
 model ScopeMaintenance {
-  id          String   @id @default(uuid())
-  code        String   @unique
+  id          String                 @id @default(uuid())
+  code        String                 @unique
   name        String
   description String?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int                    @default(0)
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
   taskLinks   ScopeMaintenanceTask[]
   scopes      Scope[]
 
@@ -297,31 +297,31 @@ model ScopeMaintenance {
 }
 
 model TaskMaintenance {
-  id          String   @id @default(uuid())
-  code        String   @unique
-  name        String
-  description String?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  scopeLinks  ScopeMaintenanceTask[]
+  id           String                   @id @default(uuid())
+  code         String                   @unique
+  name         String
+  description  String?
+  order        Int                      @default(0)
+  isActive     Boolean                  @default(true)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  scopeLinks   ScopeMaintenanceTask[]
   subtaskLinks TaskMaintenanceSubtask[]
-  tasks       Task[]
+  tasks        Task[]
 
   @@index([isActive])
   @@index([order])
 }
 
 model SubtaskMaintenance {
-  id          String   @id @default(uuid())
-  code        String   @unique
+  id          String                   @id @default(uuid())
+  code        String                   @unique
   name        String
   description String?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int                      @default(0)
+  isActive    Boolean                  @default(true)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
   taskLinks   TaskMaintenanceSubtask[]
   subtasks    Subtask[]
 
@@ -404,8 +404,8 @@ model ProgressLog {
   id                String                  @id @default(uuid())
   subtaskId         String
   date              DateTime
-  dailyPercent      Float
-  cumulativePercent Float
+  dailyPercent      Decimal                 @db.Decimal(5, 2)
+  cumulativePercent Decimal                 @db.Decimal(5, 2)
   latitude          Float?
   longitude         Float?
   createdAt         DateTime                @default(now())

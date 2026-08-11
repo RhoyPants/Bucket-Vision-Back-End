@@ -7,7 +7,11 @@ const escapeXml = (value: unknown) =>
     .replace(/'/g, "&apos;");
 
 export class ReportChartService {
-  buildSCurveSvg(points: Array<{ date: string; planned: number; actual: number | null }>) {
+  buildSCurveSvg(
+    points: Array<{ date: string; planned: number; actual: number | null }>,
+    periodStart?: string,
+    periodEnd?: string
+  ) {
     const width = 820;
     const height = 330;
     const margin = { top: 25, right: 24, bottom: 48, left: 55 };
@@ -39,11 +43,29 @@ export class ReportChartService {
     };
     const tickIndexes = Array.from(
       new Set(
-        Array.from({ length: Math.min(7, points.length) }, (_, index) =>
-          Math.round((index / Math.max(1, Math.min(7, points.length) - 1)) * (points.length - 1))
+        Array.from({ length: Math.min(16, points.length) }, (_, index) =>
+          Math.round((index / Math.max(1, Math.min(16, points.length) - 1)) * (points.length - 1))
         )
       )
     );
+    const marker = (date: string | undefined, label: string) => {
+      if (!date) return "";
+      const index = points.findIndex((point) => point.date === date.slice(0, 10));
+      if (index < 0) return "";
+      const markerX = x(index);
+      return `<g>
+        <line x1="${markerX}" y1="${margin.top}" x2="${markerX}" y2="${margin.top + plotHeight}" stroke="#ef4444" stroke-width="2"/>
+        <text x="${markerX - 5}" y="${margin.top + 13}" text-anchor="end" font-size="10" fill="#dc2626">${escapeXml(label)}</text>
+      </g>`;
+    };
+    const dots = (key: "planned" | "actual", color: string) =>
+      points
+        .map((point, index) => {
+          const value = point[key];
+          if (value === null) return "";
+          return `<circle cx="${x(index).toFixed(1)}" cy="${y(value).toFixed(1)}" r="2.2" fill="#fff" stroke="${color}" stroke-width="1.5"/>`;
+        })
+        .join("");
 
     return `
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Planned versus actual S-curve">
@@ -59,12 +81,17 @@ export class ReportChartService {
           .map(
             (index) => `
               <line x1="${x(index)}" y1="${margin.top}" x2="${x(index)}" y2="${margin.top + plotHeight}" stroke="#eef3f8"/>
-              <text x="${x(index)}" y="${height - 20}" text-anchor="middle" font-size="10" fill="#64748b">${escapeXml(points[index].date.slice(5))}</text>`
+              <text x="${x(index)}" y="${height - 20}" text-anchor="middle" font-size="9" fill="#64748b">${escapeXml(points[index].date.slice(5))}</text>`
           )
           .join("")}
         <path d="${path("planned")}" fill="none" stroke="#2563eb" stroke-width="3"/>
         <path d="${path("actual")}" fill="none" stroke="#16a34a" stroke-width="3"/>
-        <g transform="translate(${margin.left},${height - 4})">
+        ${dots("planned", "#2563eb")}
+        ${dots("actual", "#16a34a")}
+        ${periodStart === periodEnd
+          ? marker(periodStart, "Report Date")
+          : `${marker(periodStart, "Week Start")}${marker(periodEnd, "Week End")}`}
+        <g transform="translate(${margin.left + plotWidth / 2 - 145},${height - 4})">
           <line x1="0" y1="0" x2="22" y2="0" stroke="#16a34a" stroke-width="3"/>
           <text x="28" y="4" font-size="11" fill="#334155">Actual Progress</text>
           <line x1="140" y1="0" x2="162" y2="0" stroke="#2563eb" stroke-width="3"/>
@@ -90,13 +117,13 @@ export class ReportChartService {
       DELAYED: "#dc2626",
       UNCLASSIFIED: "#94a3b8",
     };
-    const radius = 58;
+    const radius = 63;
     const circumference = 2 * Math.PI * radius;
     let offset = 0;
     const circles = Object.entries(health)
       .map(([key, value]) => {
         const length = total ? (value / total) * circumference : 0;
-        const circle = `<circle cx="90" cy="90" r="${radius}" fill="none" stroke="${colors[key as keyof typeof colors]}" stroke-width="20" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" transform="rotate(-90 90 90)"/>`;
+        const circle = `<circle cx="200" cy="92" r="${radius}" fill="none" stroke="${colors[key as keyof typeof colors]}" stroke-width="22" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" transform="rotate(-90 200 92)"/>`;
         offset += length;
         return circle;
       })
@@ -111,18 +138,21 @@ export class ReportChartService {
       .map(([key, label], index) => {
         const value = health[key as keyof typeof health];
         const percentage = total ? Math.round((value / total) * 100) : 0;
-        return `<g transform="translate(190,${45 + index * 34})">
+        const barWidth = total ? (value / total) * 135 : 0;
+        return `<g transform="translate(22,${205 + index * 27})">
           <circle cx="6" cy="6" r="6" fill="${colors[key as keyof typeof colors]}"/>
           <text x="20" y="10" font-size="12" fill="#334155">${label}</text>
-          <text x="190" y="10" text-anchor="end" font-size="12" font-weight="700" fill="#0f172a">${value} (${percentage}%)</text>
+          <rect x="105" y="0" width="135" height="10" rx="5" fill="#e8edf3"/>
+          <rect x="105" y="0" width="${barWidth}" height="10" rx="5" fill="${colors[key as keyof typeof colors]}"/>
+          <text x="350" y="10" text-anchor="end" font-size="12" font-weight="700" fill="#0f172a">${value} (${percentage}%)</text>
         </g>`;
       })
       .join("");
 
-    return `<svg viewBox="0 0 400 190" role="img" aria-label="Work health distribution">
+    return `<svg viewBox="0 0 400 325" role="img" aria-label="Work health distribution">
       ${circles}
-      <text x="90" y="88" text-anchor="middle" font-size="28" font-weight="700" fill="#0f172a">${total}</text>
-      <text x="90" y="106" text-anchor="middle" font-size="10" fill="#64748b">SUBTASKS</text>
+      <text x="200" y="89" text-anchor="middle" font-size="28" font-weight="700" fill="#0f172a">${total}</text>
+      <text x="200" y="108" text-anchor="middle" font-size="10" fill="#64748b">SUBTASKS</text>
       ${labels}
     </svg>`;
   }

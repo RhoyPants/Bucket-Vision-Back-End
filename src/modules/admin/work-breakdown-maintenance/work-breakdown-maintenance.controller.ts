@@ -18,9 +18,20 @@ export class WorkBreakdownMaintenanceController {
             include: {
               taskMaintenance: {
                 include: {
+                  scopeLinks: {
+                    select: { scopeMaintenanceId: true },
+                  },
                   subtaskLinks: {
                     where: activeOnly ? { subtaskMaintenance: { isActive: true } } : undefined,
-                    include: { subtaskMaintenance: true },
+                    include: {
+                      subtaskMaintenance: {
+                        include: {
+                          taskLinks: {
+                            select: { taskMaintenanceId: true },
+                          },
+                        },
+                      },
+                    },
                     orderBy: [{ order: "asc" }, { subtaskMaintenance: { name: "asc" } }],
                   },
                 },
@@ -39,12 +50,20 @@ export class WorkBreakdownMaintenanceController {
           tasks: scope.taskLinks.map((link: any) => ({
             ...link.taskMaintenance,
             order: link.order,
+            scopeMaintenanceIds: link.taskMaintenance.scopeLinks.map(
+              (scopeLink: any) => scopeLink.scopeMaintenanceId,
+            ),
             subtasks: link.taskMaintenance.subtaskLinks.map(
               (subtaskLink: any) => ({
                 ...subtaskLink.subtaskMaintenance,
                 order: subtaskLink.order,
+                taskMaintenanceIds: subtaskLink.subtaskMaintenance.taskLinks.map(
+                  (taskLink: any) => taskLink.taskMaintenanceId,
+                ),
+                taskLinks: undefined,
               }),
             ),
+            scopeLinks: undefined,
             subtaskLinks: undefined,
           })),
           taskLinks: undefined,
@@ -75,12 +94,25 @@ export class WorkBreakdownMaintenanceController {
           scopeMaintenanceId: scopeId,
           ...(activeOnly ? { taskMaintenance: { isActive: true } } : {}),
         },
-        include: { taskMaintenance: true },
+        include: {
+          taskMaintenance: {
+            include: {
+              scopeLinks: { select: { scopeMaintenanceId: true } },
+            },
+          },
+        },
         orderBy: [{ order: "asc" }, { taskMaintenance: { name: "asc" } }],
       });
       return res.json({
         success: true,
-        data: links.map((link: any) => ({ ...link.taskMaintenance, order: link.order })),
+        data: links.map((link: any) => ({
+          ...link.taskMaintenance,
+          order: link.order,
+          scopeMaintenanceIds: link.taskMaintenance.scopeLinks.map(
+            (scopeLink: any) => scopeLink.scopeMaintenanceId,
+          ),
+          scopeLinks: undefined,
+        })),
       });
     }
     const data = await (prisma as any).taskMaintenance.findMany({
@@ -88,9 +120,21 @@ export class WorkBreakdownMaintenanceController {
         ...(activeOnly ? { isActive: true } : {}),
         ...(scopeId ? { scopeLinks: { some: { scopeMaintenanceId: scopeId } } } : {}),
       },
+      include: {
+        scopeLinks: { select: { scopeMaintenanceId: true } },
+      },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     });
-    return res.json({ success: true, data });
+    return res.json({
+      success: true,
+      data: data.map((task: any) => ({
+        ...task,
+        scopeMaintenanceIds: task.scopeLinks.map(
+          (scopeLink: any) => scopeLink.scopeMaintenanceId,
+        ),
+        scopeLinks: undefined,
+      })),
+    });
   }
 
   static async listSubtasks(req: Request, res: Response) {
@@ -104,12 +148,25 @@ export class WorkBreakdownMaintenanceController {
           taskMaintenanceId: taskId,
           ...(activeOnly ? { subtaskMaintenance: { isActive: true } } : {}),
         },
-        include: { subtaskMaintenance: true },
+        include: {
+          subtaskMaintenance: {
+            include: {
+              taskLinks: { select: { taskMaintenanceId: true } },
+            },
+          },
+        },
         orderBy: [{ order: "asc" }, { subtaskMaintenance: { name: "asc" } }],
       });
       return res.json({
         success: true,
-        data: links.map((link: any) => ({ ...link.subtaskMaintenance, order: link.order })),
+        data: links.map((link: any) => ({
+          ...link.subtaskMaintenance,
+          order: link.order,
+          taskMaintenanceIds: link.subtaskMaintenance.taskLinks.map(
+            (taskLink: any) => taskLink.taskMaintenanceId,
+          ),
+          taskLinks: undefined,
+        })),
       });
     }
     const data = await (prisma as any).subtaskMaintenance.findMany({
@@ -117,9 +174,21 @@ export class WorkBreakdownMaintenanceController {
         ...(activeOnly ? { isActive: true } : {}),
         ...(taskId ? { taskLinks: { some: { taskMaintenanceId: taskId } } } : {}),
       },
+      include: {
+        taskLinks: { select: { taskMaintenanceId: true } },
+      },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     });
-    return res.json({ success: true, data });
+    return res.json({
+      success: true,
+      data: data.map((subtask: any) => ({
+        ...subtask,
+        taskMaintenanceIds: subtask.taskLinks.map(
+          (taskLink: any) => taskLink.taskMaintenanceId,
+        ),
+        taskLinks: undefined,
+      })),
+    });
   }
 
   static async createScope(req: Request, res: Response) {
