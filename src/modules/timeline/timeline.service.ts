@@ -84,7 +84,7 @@ export async function calculateActualProgress(
     let progress = 0;
 
     if (subtask.progressLogs.length > 0) {
-      progress = subtask.progressLogs[0].cumulativePercent || 0;
+      progress = Number(subtask.progressLogs[0].cumulativePercent);
     } else if (subtask.actualEndDate && subtask.actualEndDate <= targetDate) {
       // If task is completed, assume 100%
       progress = 100;

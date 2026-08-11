@@ -363,7 +363,7 @@ export class ProjectDashboardService {
       unclassified: configuredKpis.filter((kpi) => kpi.status === "UNCLASSIFIED").length,
     };
     const evaluated = subtasks.map((subtask) => {
-      const actualProgress = this.roundNumber(subtask.progress || 0, 2);
+      const actualProgress = this.roundNumber(Number(subtask.progress), 2);
       const expectedProgress = this.getExpectedSubtaskProgress(
         now,
         subtask.projectedStartDate,
@@ -1059,24 +1059,24 @@ export class ProjectDashboardService {
     if (sourceType === "SUBTASK") {
       const subtask = await prisma.subtask.findUnique({ where: { id: input.subtaskId } });
       if (!subtask) throw new Error("Subtask not found");
-      return subtask.progress || 0;
+      return Number(subtask.progress);
     }
 
     if (sourceType === "TASK") {
       const task = await prisma.task.findUnique({ where: { id: input.taskId } });
       if (!task) throw new Error("Task not found");
-      return task.progress || 0;
+      return Number(task.progress);
     }
 
     if (sourceType === "SCOPE") {
       const scope = await prisma.scope.findUnique({ where: { id: input.scopeId } });
       if (!scope) throw new Error("Scope not found");
-      return scope.progress || 0;
+      return Number(scope.progress);
     }
 
     const project = await prisma.project.findUnique({ where: { id: input.projectId } });
     if (!project) throw new Error("Project not found");
-    return project.progress || 0;
+    return Number(project.progress);
   }
 
   private async getTaskCompletion(projectId: string) {
@@ -1097,13 +1097,14 @@ export class ProjectDashboardService {
     // Status mapping in the codebase is primarily 0=pending, 1=ongoing, 2=completed.
     // Some historical data may use 3 as completed, so we treat both 2 and 3 as completed.
     const completed = subtasks.filter(
-      (subtask) => subtask.progress >= 100 || subtask.status === 2 || subtask.status === 3
+      (subtask) => Number(subtask.progress) >= 100 || subtask.status === 2 || subtask.status === 3
     ).length;
 
     const ongoing = subtasks.filter(
       (subtask) =>
-        !(subtask.progress >= 100 || subtask.status === 2 || subtask.status === 3) &&
-        (subtask.status === 1 || (subtask.progress > 0 && subtask.progress < 100))
+        !(Number(subtask.progress) >= 100 || subtask.status === 2 || subtask.status === 3) &&
+        (subtask.status === 1 ||
+          (Number(subtask.progress) > 0 && Number(subtask.progress) < 100))
     ).length;
 
     const pending = Math.max(0, subtasks.length - completed - ongoing);

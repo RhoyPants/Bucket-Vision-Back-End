@@ -116,7 +116,7 @@ export class DashboardService {
           id: project.id,
           name: project.name,
           description: project.description,
-          progress: this.round(project.progress || 0),
+          progress: this.round(Number(project.progress)),
           version: project.versionLabel || `v${project.versionNumber}`,
           versionLabel: project.versionLabel,
           versionNumber: project.versionNumber,
@@ -211,11 +211,11 @@ export class DashboardService {
     );
 
     const progressCounts = {
-      NOT_STARTED: projects.filter((project) => project.progress <= 0).length,
+      NOT_STARTED: projects.filter((project) => Number(project.progress) <= 0).length,
       IN_PROGRESS: projects.filter(
-        (project) => project.progress > 0 && project.progress < 100
+        (project) => Number(project.progress) > 0 && Number(project.progress) < 100
       ).length,
-      COMPLETED: projects.filter((project) => project.progress >= 100).length,
+      COMPLETED: projects.filter((project) => Number(project.progress) >= 100).length,
     };
     const progressDistribution = Object.entries(progressCounts).map(
       ([status, count]) => ({
@@ -226,7 +226,7 @@ export class DashboardService {
     );
     const averageProgress = totalProjects
       ? this.round(
-          projects.reduce((sum, project) => sum + (project.progress || 0), 0) /
+          projects.reduce((sum, project) => sum + Number(project.progress), 0) /
             totalProjects
         )
       : 0;
@@ -300,7 +300,7 @@ export class DashboardService {
         id: project.id,
         name: project.name,
         description: project.description,
-        progress: this.round(project.progress || 0),
+        progress: this.round(Number(project.progress)),
         version: project.versionLabel || `v${project.versionNumber}`,
         versionLabel: project.versionLabel,
         versionNumber: project.versionNumber,

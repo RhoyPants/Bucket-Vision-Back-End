@@ -33,7 +33,7 @@ async function recomputeTask(taskId: string) {
   let total = 0;
 
   for (const s of subtasks) {
-    total += s.progress || 0;
+    total += Number(s.progress);
   }
 
   const progress = total / subtasks.length;

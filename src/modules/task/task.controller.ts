@@ -29,7 +29,7 @@ async function recomputeScopeProgress(scopeId: string) {
     const weight = t.budgetPercent ?? 1;
 
     totalWeight += weight;
-    weightedSum += (t.progress || 0) * weight;
+    weightedSum += Number(t.progress) * weight;
   }
 
   const progress = totalWeight > 0 ? weightedSum / totalWeight : 0;
@@ -50,7 +50,7 @@ async function recomputeScopeProgress(scopeId: string) {
   for (const s of scopes) {
     const weight = s.budgetPercent ?? 1;
     total += weight;
-    sum += (s.progress || 0) * weight;
+    sum += Number(s.progress) * weight;
   }
 
   const projectProgress = total > 0 ? sum / total : 0;

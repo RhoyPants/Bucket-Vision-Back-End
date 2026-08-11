@@ -765,7 +765,9 @@ export class VersioningService {
                       (1000 * 60 * 60 * 24)
                   )
                 : null,
-            progressDiff: parseFloat((v2.progress - v1.progress).toFixed(2)),
+            progressDiff: parseFloat(
+              (Number(v2.progress) - Number(v1.progress)).toFixed(2)
+            ),
           },
         },
         versions: {

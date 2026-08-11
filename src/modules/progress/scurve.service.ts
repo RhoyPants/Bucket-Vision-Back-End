@@ -159,7 +159,7 @@ export async function getSCurve(projectId: string) {
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
 
-      const latestProgress = logs[0]?.cumulativePercent || 0;
+      const latestProgress = Number(logs[0]?.cumulativePercent || 0);
 
       weightedProgress += latestProgress * weight;
     }

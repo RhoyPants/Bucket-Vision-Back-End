@@ -135,7 +135,7 @@ export class CalendarService {
       description: st.description || undefined,
       projectedStartDate: st.projectedStartDate || undefined,
       projectedEndDate: st.projectedEndDate || undefined,
-      progress: st.progress,
+      progress: Number(st.progress),
       priority: st.priority || undefined,
       status: st.status || undefined,
       assignedUsers: st.assignees.map((a) => ({

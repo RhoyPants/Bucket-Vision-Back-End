@@ -1300,7 +1300,8 @@ console.log("✅ Real construction project created");
   // Create progress logs for each subtask
   for (const task of allTasks) {
     for (const subtask of task.subtasks) {
-      if (subtask.progress > 0 && subtask.projectedStartDate && subtask.projectedEndDate) {
+      const subtaskProgress = Number(subtask.progress);
+      if (subtaskProgress > 0 && subtask.projectedStartDate && subtask.projectedEndDate) {
         // Calculate days between start and end date
         const startDate = new Date(subtask.projectedStartDate);
         const endDate = new Date(subtask.projectedEndDate);
@@ -1314,11 +1315,11 @@ console.log("✅ Real construction project created");
 
           // Calculate daily increment - gradually reach target progress
           const dailyIncrement = Math.min(
-            subtask.progress / daysCount,
-            subtask.progress - cumulativeProgress
+            subtaskProgress / daysCount,
+            subtaskProgress - cumulativeProgress
           );
           
-          cumulativeProgress = Math.min(cumulativeProgress + dailyIncrement, subtask.progress);
+          cumulativeProgress = Math.min(cumulativeProgress + dailyIncrement, subtaskProgress);
 
           // Only create log if there's actual progress
           if (dailyIncrement > 0 || dayOffset === daysCount - 1) {
@@ -1372,10 +1373,11 @@ console.log("✅ Real construction project created");
   for (const task of allTasks) {
     for (const subtask of task.subtasks) {
       let newStatus = 0; // default: pending
+      const subtaskProgress = Number(subtask.progress);
       
-      if (subtask.progress === 100) {
+      if (subtaskProgress === 100) {
         newStatus = 2; // completed
-      } else if (subtask.progress > 0) {
+      } else if (subtaskProgress > 0) {
         newStatus = 1; // ongoing
       }
 
