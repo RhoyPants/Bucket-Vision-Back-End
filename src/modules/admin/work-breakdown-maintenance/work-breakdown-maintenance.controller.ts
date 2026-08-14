@@ -6,6 +6,25 @@ const cleanName = (value: unknown) => String(value || "").trim();
 const uniqueIds = (value: unknown) =>
   Array.from(new Set(Array.isArray(value) ? value.map(String).filter(Boolean) : []));
 
+const duplicateCodeResponse = (
+  res: Response,
+  entity: "Scope" | "Task" | "Subtask",
+  error: any,
+) => {
+  if (error?.code !== "P2002") return null;
+
+  const target = Array.isArray(error?.meta?.target)
+    ? error.meta.target.map(String)
+    : [String(error?.meta?.target || "")];
+  if (!target.some((field: string) => field.toLowerCase().includes("code"))) return null;
+
+  return res.status(409).json({
+    success: false,
+    code: "DUPLICATE_CODE",
+    message: `${entity} code already exists.`,
+  });
+};
+
 export class WorkBreakdownMaintenanceController {
   static async hierarchy(req: Request, res: Response) {
     try {
@@ -211,6 +230,8 @@ export class WorkBreakdownMaintenanceController {
       });
       return res.status(201).json({ success: true, data });
     } catch (error: any) {
+      const duplicate = duplicateCodeResponse(res, "Scope", error);
+      if (duplicate) return duplicate;
       return res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -261,6 +282,8 @@ export class WorkBreakdownMaintenanceController {
       });
       return res.status(201).json({ success: true, data });
     } catch (error: any) {
+      const duplicate = duplicateCodeResponse(res, "Task", error);
+      if (duplicate) return duplicate;
       return res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -311,6 +334,8 @@ export class WorkBreakdownMaintenanceController {
       });
       return res.status(201).json({ success: true, data });
     } catch (error: any) {
+      const duplicate = duplicateCodeResponse(res, "Subtask", error);
+      if (duplicate) return duplicate;
       return res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -383,6 +408,8 @@ export class WorkBreakdownMaintenanceController {
     try {
       return res.json({ success: true, data: await WorkBreakdownMaintenanceController.update("scope", String(req.params.id), req.body) });
     } catch (error: any) {
+      const duplicate = duplicateCodeResponse(res, "Scope", error);
+      if (duplicate) return duplicate;
       return res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -390,6 +417,8 @@ export class WorkBreakdownMaintenanceController {
     try {
       return res.json({ success: true, data: await WorkBreakdownMaintenanceController.update("task", String(req.params.id), req.body) });
     } catch (error: any) {
+      const duplicate = duplicateCodeResponse(res, "Task", error);
+      if (duplicate) return duplicate;
       return res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -397,6 +426,8 @@ export class WorkBreakdownMaintenanceController {
     try {
       return res.json({ success: true, data: await WorkBreakdownMaintenanceController.update("subtask", String(req.params.id), req.body) });
     } catch (error: any) {
+      const duplicate = duplicateCodeResponse(res, "Subtask", error);
+      if (duplicate) return duplicate;
       return res.status(400).json({ success: false, message: error.message });
     }
   }

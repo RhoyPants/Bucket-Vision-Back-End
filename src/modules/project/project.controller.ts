@@ -13,8 +13,17 @@ import {
   fetchSharePointFile,
   uploadBufferToSharePoint,
 } from "../../services/sharepoint-upload.service";
+import { buildAccessibleProjectWhere } from "./project-access";
 
 export class ProjectController {
+  private static readonly DIRECTORY_LIMITS = new Set([6, 12, 24, 48]);
+  private static readonly DIRECTORY_SORT_FIELDS = new Set([
+    "name",
+    "createdAt",
+    "startDate",
+    "expectedEndDate",
+  ]);
+
   private static readonly LIST_SORTABLE_FIELDS = new Set([
     "createdAt",
     "updatedAt",
@@ -39,22 +48,33 @@ export class ProjectController {
       if (!completedById) {
         return res.status(401).json({
           success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication is required" },
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication is required",
+          },
         });
       }
 
-      const completionDate = actualEndDate ? new Date(actualEndDate) : new Date();
+      const completionDate = actualEndDate
+        ? new Date(actualEndDate)
+        : new Date();
       if (Number.isNaN(completionDate.getTime())) {
         return res.status(400).json({
           success: false,
-          error: { code: "INVALID_COMPLETION_DATE", message: "A valid completion date is required" },
+          error: {
+            code: "INVALID_COMPLETION_DATE",
+            message: "A valid completion date is required",
+          },
         });
       }
 
       if (completionDate.getTime() > Date.now()) {
         return res.status(400).json({
           success: false,
-          error: { code: "FUTURE_COMPLETION_DATE", message: "Completion date cannot be in the future" },
+          error: {
+            code: "FUTURE_COMPLETION_DATE",
+            message: "Completion date cannot be in the future",
+          },
         });
       }
 
@@ -64,13 +84,17 @@ export class ProjectController {
           owner: { select: { id: true, name: true, email: true } },
           projectMembers: {
             include: {
-              user: { select: { id: true, name: true, email: true, isActive: true } },
+              user: {
+                select: { id: true, name: true, email: true, isActive: true },
+              },
             },
           },
           approvals: {
             where: { status: "PENDING" },
             include: {
-              approver: { select: { id: true, name: true, email: true, isActive: true } },
+              approver: {
+                select: { id: true, name: true, email: true, isActive: true },
+              },
             },
           },
         },
@@ -86,7 +110,10 @@ export class ProjectController {
       if (project.status === "COMPLETED") {
         return res.status(409).json({
           success: false,
-          error: { code: "ALREADY_COMPLETED", message: "Project is already completed" },
+          error: {
+            code: "ALREADY_COMPLETED",
+            message: "Project is already completed",
+          },
         });
       }
 
@@ -118,8 +145,12 @@ export class ProjectController {
                 isActive: true,
                 OR: [
                   { id: projectBusinessUnit },
-                  { code: { equals: projectBusinessUnit, mode: "insensitive" } },
-                  { name: { equals: projectBusinessUnit, mode: "insensitive" } },
+                  {
+                    code: { equals: projectBusinessUnit, mode: "insensitive" },
+                  },
+                  {
+                    name: { equals: projectBusinessUnit, mode: "insensitive" },
+                  },
                 ],
               },
               select: {
@@ -160,7 +191,8 @@ export class ProjectController {
               previousStatus: project.status,
               newStatus: "COMPLETED",
               actualEndDate: completionDate.toISOString(),
-              remarks: typeof remarks === "string" ? remarks.trim() || null : null,
+              remarks:
+                typeof remarks === "string" ? remarks.trim() || null : null,
             },
           },
         });
@@ -168,7 +200,10 @@ export class ProjectController {
         return updated;
       });
 
-      const recipientsById = new Map<string, { id: string; name: string; email: string }>();
+      const recipientsById = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
       const addRecipient = (user: any) => {
         if (user?.id && user?.email && user?.isActive !== false) {
           recipientsById.set(user.id, {
@@ -194,7 +229,8 @@ export class ProjectController {
             completedBy,
             completedAt: updatedProject.updatedAt,
             actualEndDate: updatedProject.actualEndDate,
-            remarks: typeof remarks === "string" ? remarks.trim() || null : null,
+            remarks:
+              typeof remarks === "string" ? remarks.trim() || null : null,
           },
           notificationRecipients: Array.from(recipientsById.values()),
         },
@@ -218,19 +254,26 @@ export class ProjectController {
     try {
       const projectId = String(req.params.id || "");
       const cancelledById = (req as any).user?.id;
-      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+      const reason =
+        typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
 
       if (!cancelledById) {
         return res.status(401).json({
           success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication is required" },
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication is required",
+          },
         });
       }
 
       if (!reason) {
         return res.status(400).json({
           success: false,
-          error: { code: "CANCELLATION_REASON_REQUIRED", message: "Cancellation reason is required" },
+          error: {
+            code: "CANCELLATION_REASON_REQUIRED",
+            message: "Cancellation reason is required",
+          },
         });
       }
 
@@ -240,13 +283,17 @@ export class ProjectController {
           owner: { select: { id: true, name: true, email: true } },
           projectMembers: {
             include: {
-              user: { select: { id: true, name: true, email: true, isActive: true } },
+              user: {
+                select: { id: true, name: true, email: true, isActive: true },
+              },
             },
           },
           approvals: {
             where: { status: "PENDING" },
             include: {
-              approver: { select: { id: true, name: true, email: true, isActive: true } },
+              approver: {
+                select: { id: true, name: true, email: true, isActive: true },
+              },
             },
           },
         },
@@ -328,10 +375,17 @@ export class ProjectController {
         return updated;
       });
 
-      const recipients = new Map<string, { id: string; name: string; email: string }>();
+      const recipients = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
       const addRecipient = (user: any) => {
         if (user?.id && user?.email && user?.isActive !== false) {
-          recipients.set(user.id, { id: user.id, name: user.name, email: user.email });
+          recipients.set(user.id, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          });
         }
       };
       addRecipient(project.owner);
@@ -366,19 +420,26 @@ export class ProjectController {
     try {
       const projectId = String(req.params.id || "");
       const resumedById = (req as any).user?.id;
-      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+      const reason =
+        typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
 
       if (!resumedById) {
         return res.status(401).json({
           success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication is required" },
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication is required",
+          },
         });
       }
 
       if (!reason) {
         return res.status(400).json({
           success: false,
-          error: { code: "RESUME_REASON_REQUIRED", message: "Resume reason is required" },
+          error: {
+            code: "RESUME_REASON_REQUIRED",
+            message: "Resume reason is required",
+          },
         });
       }
 
@@ -388,7 +449,9 @@ export class ProjectController {
           owner: { select: { id: true, name: true, email: true } },
           projectMembers: {
             include: {
-              user: { select: { id: true, name: true, email: true, isActive: true } },
+              user: {
+                select: { id: true, name: true, email: true, isActive: true },
+              },
             },
           },
         },
@@ -456,10 +519,17 @@ export class ProjectController {
         return updated;
       });
 
-      const recipients = new Map<string, { id: string; name: string; email: string }>();
+      const recipients = new Map<
+        string,
+        { id: string; name: string; email: string }
+      >();
       const addRecipient = (user: any) => {
         if (user?.id && user?.email && user?.isActive !== false) {
-          recipients.set(user.id, { id: user.id, name: user.name, email: user.email });
+          recipients.set(user.id, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          });
         }
       };
       addRecipient(project.owner);
@@ -890,9 +960,10 @@ export class ProjectController {
         },
       });
 
-      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails(
-        projectWithAttachments ? [projectWithAttachments] : [],
-      );
+      const [enrichedProject] =
+        await ProjectController.enrichBusinessUnitDetails(
+          projectWithAttachments ? [projectWithAttachments] : [],
+        );
 
       res.json(enrichedProject ?? projectWithAttachments);
     } catch (error: any) {
@@ -914,7 +985,6 @@ export class ProjectController {
       let projects;
 
       if (userRole?.name === "SUPERADMIN" || userRole?.name === "OP") {
-        // SUPER_ADMIN sees all projects
         projects = await prisma.project.findMany({
           orderBy: { createdAt: "desc" },
           include: {
@@ -996,6 +1066,186 @@ export class ProjectController {
       res.json(enriched);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
+    }
+  }
+
+  // GET PAGINATED PROJECT DIRECTORY
+  static async getDirectory(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const userRoleId = (req as any).user.roleId;
+      const first = (input: unknown) =>
+        Array.isArray(input) ? input[0] : input;
+      const requestedPage = Number(first(req.query.page));
+      const requestedLimit = Number(first(req.query.limit));
+      const page =
+        Number.isInteger(requestedPage) && requestedPage > 0
+          ? requestedPage
+          : 1;
+      const limit = ProjectController.DIRECTORY_LIMITS.has(requestedLimit)
+        ? requestedLimit
+        : 12;
+      const search = String(first(req.query.search) || "").trim();
+      const status = String(first(req.query.status) || "")
+        .trim()
+        .toUpperCase();
+      const businessUnitId = String(
+        first(req.query.businessUnitId) || "",
+      ).trim();
+      const requestedSortBy = String(first(req.query.sortBy) || "createdAt");
+      const sortBy = ProjectController.DIRECTORY_SORT_FIELDS.has(
+        requestedSortBy,
+      )
+        ? requestedSortBy
+        : "createdAt";
+      const sortOrder: Prisma.SortOrder =
+        String(first(req.query.sortOrder) || "desc").toLowerCase() === "asc"
+          ? "asc"
+          : "desc";
+
+      if (
+        status &&
+        !Object.values(ProjectStatus).includes(status as ProjectStatus)
+      ) {
+        return res.status(400).json({
+          message: "Invalid status filter",
+          allowedStatuses: Object.values(ProjectStatus),
+        });
+      }
+
+      const role = await prisma.role.findUnique({
+        where: { id: userRoleId },
+        select: { name: true },
+      });
+      const conditions: Prisma.ProjectWhereInput[] = [
+        { status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.CANCELLED] } },
+      ];
+
+      if (role?.name === "BU_HEAD") {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { businessUnitId: true },
+        });
+        conditions.push({
+          businessUnit:
+            user?.businessUnitId || "__NO_ACCESSIBLE_BUSINESS_UNIT__",
+        });
+      } else if (!["SUPERADMIN", "OP"].includes(role?.name || "")) {
+        conditions.push({
+          OR: [{ ownerId: userId }, { projectMembers: { some: { userId } } }],
+        });
+      }
+
+      if (search) {
+        conditions.push({
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { pin: { contains: search, mode: "insensitive" } },
+          ],
+        });
+      }
+      if (status) conditions.push({ status: status as ProjectStatus });
+      if (businessUnitId) conditions.push({ businessUnit: businessUnitId });
+
+      const where: Prisma.ProjectWhereInput = conditions.length
+        ? { AND: conditions }
+        : {};
+      const [projects, total] = await Promise.all([
+        prisma.project.findMany({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: [{ [sortBy]: sortOrder }, { id: "asc" }],
+          select: {
+            id: true,
+            pin: true,
+            name: true,
+            description: true,
+            status: true,
+            startDate: true,
+            expectedEndDate: true,
+            actualStartDate: true,
+            businessUnit: true,
+            location: true,
+            versionLabel: true,
+            versionNumber: true,
+            progress: true,
+            owner: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        }),
+        prisma.project.count({ where }),
+      ]);
+
+      const businessUnitIds = [
+        ...new Set(
+          projects
+            .map((project) => project.businessUnit)
+            .filter(Boolean) as string[],
+        ),
+      ];
+      const businessUnits = businessUnitIds.length
+        ? await prisma.businessUnit.findMany({
+            where: { id: { in: businessUnitIds } },
+            select: { id: true, code: true, name: true },
+          })
+        : [];
+      const businessUnitMap = new Map(
+        businessUnits.map((unit) => [unit.id, unit]),
+      );
+
+      const data = projects.map((project) => {
+        const rawLocation =
+          project.location && typeof project.location === "object"
+            ? (project.location as Record<string, unknown>)
+            : null;
+        const progress = Number(project.progress);
+        const versionNumberFromLabel = String(project.versionLabel || "").match(
+          /(?:version|v)\s*(\d+)/i,
+        )?.[1];
+        const normalizedVersionNumber =
+          versionNumberFromLabel || String(project.versionNumber || 1);
+
+        return {
+          id: project.id,
+          pin: project.pin,
+          name: project.name,
+          description: project.description,
+          status: project.status,
+          startDate: project.startDate,
+          expectedEndDate: project.expectedEndDate,
+          activatedAt: project.actualStartDate,
+          owner: project.owner,
+          businessUnit: project.businessUnit
+            ? businessUnitMap.get(project.businessUnit) || null
+            : null,
+          location: rawLocation
+            ? {
+                street: rawLocation.street ?? null,
+                barangayName: rawLocation.barangayName ?? null,
+                cityName: rawLocation.cityName ?? null,
+                provinceName: rawLocation.provinceName ?? null,
+              }
+            : null,
+          versionLabel: `Version ${normalizedVersionNumber}`,
+          overallProgress: Number.isFinite(progress)
+            ? Math.min(100, Math.max(0, progress))
+            : 0,
+        };
+      });
+
+      return res.json({
+        data,
+        meta: ProjectController.buildListMeta(page, limit, total),
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error.message || "Failed to fetch project directory",
+      });
     }
   }
 
@@ -1237,46 +1487,18 @@ export class ProjectController {
     try {
       const userId = (req as any).user.id;
       const userRoleId = (req as any).user.roleId;
-
-      const userRole = await (prisma as any).role.findUnique({
-        where: { id: userRoleId },
-      });
-
-      const canSeeAllActiveProjects = ["OP", "SUPERADMIN"].includes(
-        userRole?.name,
-      );
+      const accessWhere = await buildAccessibleProjectWhere(userId, userRoleId);
 
       const projects = await prisma.project.findMany({
-        where: canSeeAllActiveProjects
-          ? { status: "ACTIVE" }
-          : {
-              status: "ACTIVE",
-              OR: [
-                { ownerId: userId },
-                {
-                  projectMembers: {
-                    some: { userId },
-                  },
-                },
-              ],
-            },
-        orderBy: { createdAt: "desc" },
+        where: { AND: [{ status: "ACTIVE" }, accessWhere] },
+        orderBy: [{ name: "asc" }, { id: "asc" }],
         select: {
           id: true,
           name: true,
-          pin: true,
-          status: true,
         },
       });
 
-      res.json(
-        projects.map((project) => ({
-          value: project.id,
-          label: project.name,
-          pin: project.pin,
-          status: project.status,
-        })),
-      );
+      res.json({ data: projects });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -1311,9 +1533,8 @@ export class ProjectController {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
-        project,
-      ]);
+      const [enrichedProject] =
+        await ProjectController.enrichBusinessUnitDetails([project]);
 
       res.json(enrichedProject);
     } catch (error: any) {
@@ -1335,9 +1556,8 @@ export class ProjectController {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
-        project,
-      ]);
+      const [enrichedProject] =
+        await ProjectController.enrichBusinessUnitDetails([project]);
 
       res.json(enrichedProject);
     } catch (error: any) {
@@ -1386,9 +1606,8 @@ export class ProjectController {
         }
       }
 
-      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
-        project,
-      ]);
+      const [enrichedProject] =
+        await ProjectController.enrichBusinessUnitDetails([project]);
 
       res.json({
         success: true,
@@ -1443,7 +1662,8 @@ export class ProjectController {
         if (status !== "DRAFT") {
           return res.status(400).json({
             success: false,
-            message: "Only DRAFT can be set through the project update endpoint",
+            message:
+              "Only DRAFT can be set through the project update endpoint",
           });
         }
 
@@ -1515,9 +1735,8 @@ export class ProjectController {
         }
       }
 
-      const [enrichedProject] = await ProjectController.enrichBusinessUnitDetails([
-        updated,
-      ]);
+      const [enrichedProject] =
+        await ProjectController.enrichBusinessUnitDetails([updated]);
 
       res.json(enrichedProject);
     } catch (error: any) {
@@ -2060,7 +2279,9 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
       where: { projectId, userId: project.ownerId },
       select: { id: true },
     });
-    const subOwners = projectMembers.filter((item) => item.role === "SUB_OWNER");
+    const subOwners = projectMembers.filter(
+      (item) => item.role === "SUB_OWNER",
+    );
     const members = projectMembers.filter((item) => item.role === "MEMBER");
 
     const relations =
@@ -2076,7 +2297,8 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
 
     const managerIdsByMember = new Map<string, Set<string>>();
     relations.forEach((relation) => {
-      const managerIds = managerIdsByMember.get(relation.memberId) || new Set<string>();
+      const managerIds =
+        managerIdsByMember.get(relation.memberId) || new Set<string>();
       managerIds.add(relation.managerId);
       managerIdsByMember.set(relation.memberId, managerIds);
     });
@@ -2085,7 +2307,7 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
       user: typeof project.owner,
       projectRole: "OWNER" | "SUB_OWNER" | "MEMBER",
       projectMemberId: string | null,
-      children: any[] = []
+      children: any[] = [],
     ) => ({
       id: user.id,
       userId: user.id,
@@ -2105,7 +2327,9 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
     const assignedMemberIds = new Set<string>();
     const subOwnerNodes = subOwners.map((subOwner) => {
       const children = members
-        .filter((member) => managerIdsByMember.get(member.userId)?.has(subOwner.userId))
+        .filter((member) =>
+          managerIdsByMember.get(member.userId)?.has(subOwner.userId),
+        )
         .map((member) => {
           assignedMemberIds.add(member.userId);
           return toNode(member.user, "MEMBER", member.id);
@@ -2125,20 +2349,16 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
           id: project.id,
           name: project.name,
         },
-        tree: toNode(
-          project.owner,
-          "OWNER",
-          ownerMembership?.id || null,
-          [...subOwnerNodes, ...directMemberNodes]
-        ),
+        tree: toNode(project.owner, "OWNER", ownerMembership?.id || null, [
+          ...subOwnerNodes,
+          ...directMemberNodes,
+        ]),
         levels: {
           owner: [toNode(project.owner, "OWNER", ownerMembership?.id || null)],
           subOwners: subOwners.map((item) =>
-            toNode(item.user, "SUB_OWNER", item.id)
+            toNode(item.user, "SUB_OWNER", item.id),
           ),
-          members: members.map((item) =>
-            toNode(item.user, "MEMBER", item.id)
-          ),
+          members: members.map((item) => toNode(item.user, "MEMBER", item.id)),
         },
         summary: {
           owners: 1,

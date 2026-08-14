@@ -46,6 +46,14 @@ router.get(
   ProjectController.getActiveDropdown,
 );
 
+// PAGINATED, LIGHTWEIGHT PROJECT DIRECTORY
+router.get(
+  "/directory",
+  authenticate,
+  // authorize("projects", "READ"),
+  ProjectController.getDirectory,
+);
+
 // GET BY STATUS
 router.get(
   "/status/:status",

@@ -5,6 +5,12 @@ import { authorize } from "../../middleware/rbac.middleware";
 
 const router = Router();
 
+router.get(
+  "/scope/:scopeId/dropdown",
+  authenticate,
+  TaskController.getDropdownByScope,
+);
+
 // 🔥 GET TASKS BY SCOPE
 router.get(
   "/scope/:scopeId",

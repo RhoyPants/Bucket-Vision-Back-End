@@ -36,15 +36,15 @@ export class BusinessUnitController {
   async getBusinessUnitsForDropdown(req: Request, res: Response): Promise<void> {
     try {
       const { entity } = req.params as { entity?: string };
+      const userId = (req as any).user.id;
 
-      const businessUnits = await businessUnitService.getBusinessUnitsForDropdown(
+      const businessUnits = await businessUnitService.getAccessibleBusinessUnitsForDropdown(
+        userId,
         entity && entity !== "all" ? entity : undefined
       );
 
       res.status(200).json({
-        success: true,
         data: businessUnits,
-        count: businessUnits.length,
       });
     } catch (error: any) {
       res.status(500).json({

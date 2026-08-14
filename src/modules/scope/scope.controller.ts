@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 import { resolveScopeSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
+import { buildAccessibleProjectWhere } from "../project/project-access";
 
 import {
   CreateScopeDTO,
@@ -11,6 +12,30 @@ import {
 } from "./scope.dto";
 
 export class ScopeController {
+
+  static async getDropdownByProject(req: Request<{ projectId: string }>, res: Response) {
+    try {
+      const { projectId } = req.params;
+      const accessWhere = await buildAccessibleProjectWhere(
+        (req as any).user.id,
+        (req as any).user.roleId,
+      );
+      const project = await prisma.project.findFirst({
+        where: { AND: [{ id: projectId }, accessWhere] },
+        select: { id: true },
+      });
+      if (!project) return res.status(404).json({ message: "Project not found" });
+
+      const scopes = await prisma.scope.findMany({
+        where: { projectId, deletedAt: null },
+        select: { id: true, name: true },
+        orderBy: [{ order: "asc" }, { name: "asc" }, { id: "asc" }],
+      });
+      return res.json({ data: scopes });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
 
   // CREATE
   static async create(
@@ -142,10 +167,14 @@ export class ScopeController {
       } = req.body;
       const existing = await (prisma.scope.findUnique as any)({ where: { id } });
       if (!existing) return res.status(404).json({ message: "Scope not found" });
+      const requestedSourceType = req.body.sourceType === undefined
+        ? existing.sourceType
+        : String(req.body.sourceType).trim().toUpperCase();
       const selectionChanged =
-        req.body.sourceType !== undefined ||
-        req.body.scopeMaintenanceId !== undefined ||
-        name !== undefined;
+        requestedSourceType !== existing.sourceType ||
+        (req.body.scopeMaintenanceId !== undefined &&
+          req.body.scopeMaintenanceId !== existing.scopeMaintenanceId) ||
+        (existing.sourceType === "CUSTOM" && name !== undefined);
       const selection = selectionChanged
         ? await resolveScopeSelection({
             sourceType: req.body.sourceType ?? existing.sourceType,

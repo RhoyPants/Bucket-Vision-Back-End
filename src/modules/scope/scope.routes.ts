@@ -5,6 +5,12 @@ import { authorize } from "../../middleware/rbac.middleware";
 
 const router = Router();
 
+router.get(
+  "/project/:projectId/dropdown",
+  authenticate,
+  ScopeController.getDropdownByProject,
+);
+
 // GET BY PROJECT
 router.get(
   "/project/:projectId",

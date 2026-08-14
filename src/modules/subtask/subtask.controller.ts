@@ -222,10 +222,14 @@ export class SubtaskController {
         include: { task: true },
       });
       if (!existing) return res.status(404).json({ message: "Subtask not found" });
+      const requestedSourceType = req.body.sourceType === undefined
+        ? existing.sourceType
+        : String(req.body.sourceType).trim().toUpperCase();
       const selectionChanged =
-        req.body.sourceType !== undefined ||
-        req.body.subtaskMaintenanceId !== undefined ||
-        title !== undefined;
+        requestedSourceType !== existing.sourceType ||
+        (req.body.subtaskMaintenanceId !== undefined &&
+          req.body.subtaskMaintenanceId !== existing.subtaskMaintenanceId) ||
+        (existing.sourceType === "CUSTOM" && title !== undefined);
       const selection = selectionChanged
         ? await resolveSubtaskSelection({
             sourceType: req.body.sourceType ?? existing.sourceType,
@@ -634,7 +638,12 @@ export class SubtaskController {
 export async function getMyTaskBoard(req: any, res: any) {
   try {
     const userId = req.user.id;
-    const { projectId, scopeId, taskId, search } = req.query;
+    const { projectId, scopeId, taskId, projectStatus } = req.query;
+    const search = String(req.query.search || "").trim();
+
+    if (projectStatus && String(projectStatus).toUpperCase() !== "ACTIVE") {
+      return res.status(400).json({ message: "Task Board only supports ACTIVE projects" });
+    }
 
     const page = Math.max(1, Number(req.query.page || 1));
     const requestedLimit = Number(req.query.limit || 20);
@@ -688,11 +697,13 @@ export async function getMyTaskBoard(req: any, res: any) {
       whereConditions.taskId = taskId;
     }
 
-    // Optional: search filter (if backend supports it)
     if (search) {
       whereConditions.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { task: { title: { contains: search, mode: 'insensitive' } } },
+        { task: { scope: { name: { contains: search, mode: 'insensitive' } } } },
+        { task: { scope: { project: { name: { contains: search, mode: 'insensitive' } } } } },
+        { assignees: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
       ];
     }
 
@@ -703,26 +714,25 @@ export async function getMyTaskBoard(req: any, res: any) {
           id: true,
           title: true,
           progress: true,
-          createdAt: true,
+          priority: true,
+          order: true,
           projectedStartDate: true,
           projectedEndDate: true,
-          actualStartDate: true,
-          actualEndDate: true,
           creator: {
             select: {
-              id: true,
               name: true,
-              email: true,
             },
           },
           task: {
             select: {
               id: true,
               title: true,
+              order: true,
               scope: {
                 select: {
                   id: true,
                   name: true,
+                  order: true,
                   project: {
                     select: {
                       id: true,
@@ -735,30 +745,20 @@ export async function getMyTaskBoard(req: any, res: any) {
           },
           assignees: {
             select: {
-              userId: true,
               user: {
                 select: {
-                  id: true,
                   name: true,
                 }
               }
             }
           },
-          checklists: {
-            orderBy: { order: "asc" },
-            select: {
-              id: true,
-              title: true,
-              isCompleted: true,
-              order: true,
-            },
-          },
         },
         orderBy: [
-          { task: { scope: { projectId: 'asc' } } },
-          { task: { scopeId: 'asc' } },
-          { taskId: 'asc' },
-          { createdAt: 'asc' }
+          { task: { scope: { project: { name: 'asc' } } } },
+          { task: { scope: { order: 'asc' } } },
+          { task: { order: 'asc' } },
+          { order: 'asc' },
+          { id: 'asc' },
         ],
         skip,
         take: limit,
@@ -776,31 +776,32 @@ export async function getMyTaskBoard(req: any, res: any) {
 
       return {
         id: subtask.id,
+        title: subtask.title,
         projectId: project?.id || null,
         projectName: project?.name || null,
         scopeId: scope?.id || null,
         scopeName: scope?.name || null,
         taskId: task?.id || null,
         taskName: task?.title || null,
-        subtaskName: subtask.title,
-        startDate: subtask.projectedStartDate || subtask.actualStartDate || null,
-        endDate: subtask.projectedEndDate || subtask.actualEndDate || null,
         assignorName: subtask.creator?.name || null,
         assigneeNames,
-        progress: subtask.progress,
-        checklist: subtask.checklists || [],
-        checklistCount: Array.isArray(subtask.checklists) ? subtask.checklists.length : 0,
-        createdAt: subtask.createdAt,
+        progress: Number(subtask.progress || 0),
+        priority: subtask.priority || null,
+        projectedStartDate: subtask.projectedStartDate || null,
+        projectedEndDate: subtask.projectedEndDate || null,
       };
     });
 
     res.json({
-      success: true,
       data: enrichedSubtasks,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+      },
     });
   } catch (err: any) {
     res.status(500).json({

@@ -280,6 +280,50 @@ export class BusinessUnitService {
       orderBy: { code: "asc" },
     });
   }
+
+  /** Minimal business-unit options restricted to units visible to the user. */
+  async getAccessibleBusinessUnitsForDropdown(userId: string, entity?: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        businessUnitId: true,
+        role: { select: { name: true } },
+      },
+    });
+
+    if (!user) return [];
+
+    const where: any = { isActive: true };
+    if (entity) where.entity = entity;
+
+    if (user.role.name === "BU_HEAD") {
+      if (!user.businessUnitId) return [];
+      where.id = user.businessUnitId;
+    } else if (!["SUPERADMIN", "OP"].includes(user.role.name)) {
+      const accessibleProjects = await prisma.project.findMany({
+        where: {
+          businessUnit: { not: null },
+          OR: [
+            { ownerId: userId },
+            { projectMembers: { some: { userId } } },
+          ],
+        },
+        select: { businessUnit: true },
+        distinct: ["businessUnit"],
+      });
+      const ids = accessibleProjects
+        .map((project) => project.businessUnit)
+        .filter(Boolean) as string[];
+      if (!ids.length) return [];
+      where.id = { in: ids };
+    }
+
+    return prisma.businessUnit.findMany({
+      where,
+      select: { id: true, code: true, name: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+    });
+  }
 }
 
 export const businessUnitService = new BusinessUnitService();

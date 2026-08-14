@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 import { resolveTaskSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
+import { buildAccessibleProjectWhere } from "../project/project-access";
 
 import {
   CreateTaskDTO,
@@ -61,6 +62,31 @@ async function recomputeScopeProgress(scopeId: string) {
   });
 }
 export class TaskController {
+  static async getDropdownByScope(req: Request<{ scopeId: string }>, res: Response) {
+    try {
+      const { scopeId } = req.params;
+      const accessWhere = await buildAccessibleProjectWhere(
+        (req as any).user.id,
+        (req as any).user.roleId,
+      );
+      const scope = await prisma.scope.findFirst({
+        where: { id: scopeId, deletedAt: null, project: accessWhere },
+        select: { id: true },
+      });
+      if (!scope) return res.status(404).json({ message: "Scope not found" });
+
+      const tasks = await prisma.task.findMany({
+        where: { scopeId, deletedAt: null },
+        select: { id: true, title: true },
+        orderBy: [{ order: "asc" }, { title: "asc" }, { id: "asc" }],
+      });
+      return res.json({
+        data: tasks.map((task) => ({ id: task.id, name: task.title })),
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
   static async create(req: Request<{}, {}, CreateTaskDTO>, res: Response) {
     try {
       const { title, description, scopeId, budgetAllocated, budgetPercent, order } =
@@ -183,10 +209,14 @@ export class TaskController {
         include: { scope: true },
       });
       if (!existing) return res.status(404).json({ message: "Task not found" });
+      const requestedSourceType = req.body.sourceType === undefined
+        ? existing.sourceType
+        : String(req.body.sourceType).trim().toUpperCase();
       const selectionChanged =
-        req.body.sourceType !== undefined ||
-        req.body.taskMaintenanceId !== undefined ||
-        title !== undefined;
+        requestedSourceType !== existing.sourceType ||
+        (req.body.taskMaintenanceId !== undefined &&
+          req.body.taskMaintenanceId !== existing.taskMaintenanceId) ||
+        (existing.sourceType === "CUSTOM" && title !== undefined);
       const selection = selectionChanged
         ? await resolveTaskSelection({
             sourceType: req.body.sourceType ?? existing.sourceType,
