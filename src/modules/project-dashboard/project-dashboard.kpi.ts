@@ -1,15 +1,6 @@
-import {
-  KpiSourceType,
-  KpiStatus,
-  KpiThresholdDTO,
-  KpiValueOperator,
-} from "./project-dashboard.dto";
+import { KpiSourceType, KpiStatus } from "./project-dashboard.dto";
 
-export const REQUIRED_THRESHOLD_STATUSES: Array<Exclude<KpiStatus, "UNCLASSIFIED">> = [
-  "CRITICAL",
-  "ONFLOW",
-  "HEALTHY",
-];
+export const DEFAULT_KPI_THRESHOLDS = { criticalBelow: -15, healthyAtOrAbove: -5 };
 
 export function detectSourceType(input: {
   scopeId?: string | null;
@@ -22,111 +13,36 @@ export function detectSourceType(input: {
   return "PROJECT";
 }
 
-export function validateProgressThresholds(thresholds: KpiThresholdDTO[]) {
-  if (!Array.isArray(thresholds) || thresholds.length !== 3) {
-    throw new Error("Critical, Onflow, and Healthy threshold rules are required");
-  }
-
-  const seen = new Set(thresholds.map((rule) => rule.status));
-
-  for (const status of REQUIRED_THRESHOLD_STATUSES) {
-    if (!seen.has(status)) {
-      throw new Error(`${status} threshold rule is required`);
-    }
-  }
-
-  for (const rule of thresholds) {
-    validateOperator(rule.operator);
-
-    if (typeof rule.value1 !== "number" || Number.isNaN(rule.value1)) {
-      throw new Error(`${rule.status} value1 is required`);
-    }
-
-    validateProgressValue(rule.value1, `${rule.status} value1`);
-
-    if (rule.operator === "BETWEEN") {
-      if (typeof rule.value2 !== "number" || Number.isNaN(rule.value2)) {
-        throw new Error(`${rule.status} value2 is required when operator is BETWEEN`);
-      }
-
-      validateProgressValue(rule.value2, `${rule.status} value2`);
-
-      if (rule.value2 < rule.value1) {
-        throw new Error(`${rule.status} value2 must be greater than or equal to value1`);
-      }
-    }
-  }
+export function expectedProgressAt(
+  now: Date,
+  startDate: Date | null,
+  endDate: Date | null
+): number | null {
+  if (!startDate || !endDate) return null;
+  const start = startDate.getTime();
+  const end = endDate.getTime();
+  const current = now.getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  if (current < start) return 0;
+  if (current >= end) return 100;
+  return round(((current - start) / (end - start)) * 100);
 }
 
-export function evaluateProgressStatus(
-  progress: number,
-  thresholds: KpiThresholdDTO[]
-): KpiStatus {
-  // HEALTHY is evaluated before ONFLOW because an automatically generated
-  // BETWEEN rule shares its upper boundary with the HEALTHY GTE rule.
-  const orderedStatuses: KpiStatus[] = ["CRITICAL", "HEALTHY", "ONFLOW"];
-
-  for (const status of orderedStatuses) {
-    const rule = thresholds.find((item) => item.status === status);
-    if (rule && matchesOperator(progress, rule.operator, rule.value1, rule.value2)) {
-      return status;
-    }
+export function evaluateVarianceStatus(
+  actualProgress: number | null,
+  expectedProgress: number | null,
+  criticalBelow: number,
+  healthyAtOrAbove: number
+): { variance: number | null; status: KpiStatus } {
+  if (actualProgress === null || expectedProgress === null) {
+    return { variance: null, status: "UNCLASSIFIED" };
   }
-
-  return "UNCLASSIFIED";
+  const variance = round(actualProgress - expectedProgress);
+  if (variance < criticalBelow) return { variance, status: "CRITICAL" };
+  if (variance >= healthyAtOrAbove) return { variance, status: "HEALTHY" };
+  return { variance, status: "ONFLOW" };
 }
 
-export function buildProgressPreview(
-  sourceType: KpiSourceType,
-  progress: number,
-  expectedStartDate: Date | null = null,
-  expectedEndDate: Date | null = null
-) {
-  return {
-    sourceType,
-    field: "PROGRESS",
-    unit: "%",
-    currentProgress: Number(progress.toFixed(2)),
-    currentValue: Number(progress.toFixed(2)),
-    expectedStartDate: expectedStartDate ?? null,
-    expectedEndDate: expectedEndDate ?? null,
-  };
-}
-
-function matchesOperator(
-  value: number,
-  operator: KpiValueOperator,
-  value1: number,
-  value2?: number
-) {
-  switch (operator) {
-    case "LT":
-      return value < value1;
-    case "LTE":
-      return value <= value1;
-    case "EQ":
-      return value === value1;
-    case "GTE":
-      return value >= value1;
-    case "GT":
-      return value > value1;
-    case "BETWEEN":
-      return typeof value2 === "number" && value >= value1 && value <= value2;
-    default:
-      return false;
-  }
-}
-
-function validateOperator(operator: KpiValueOperator) {
-  const validOperators: KpiValueOperator[] = ["LT", "LTE", "EQ", "GTE", "GT", "BETWEEN"];
-
-  if (!validOperators.includes(operator)) {
-    throw new Error("Invalid threshold operator");
-  }
-}
-
-function validateProgressValue(value: number, label: string) {
-  if (value < 0 || value > 100) {
-    throw new Error(`${label} must be between 0 and 100`);
-  }
+function round(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }

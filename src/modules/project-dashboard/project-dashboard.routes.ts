@@ -47,12 +47,32 @@ router.get("/:projectId", authenticate, projectDashboardController.get);
 router.get(
   "/:projectId/source-options",
   authenticate,
+  authorize("project_dashboard", "READ"),
   projectDashboardController.getSourceOptions,
 );
 router.get(
   "/:projectId/source-preview",
   authenticate,
+  authorize("project_dashboard", "READ"),
   projectDashboardController.previewSource,
+);
+router.post(
+  "/:projectId/source-preview",
+  authenticate,
+  authorize("project_dashboard", "READ"),
+  projectDashboardController.previewSource,
+);
+router.get(
+  "/:projectId/kpis",
+  authenticate,
+  authorize("project_dashboard", "READ"),
+  projectDashboardController.listKpis,
+);
+router.get(
+  "/:projectId/kpis/:kpiId",
+  authenticate,
+  authorize("project_dashboard", "READ"),
+  projectDashboardController.getKpi,
 );
 router.post(
   "/:projectId/kpis",
@@ -71,6 +91,24 @@ router.delete(
   authenticate,
   authorize("project_dashboard", "DELETE"),
   projectDashboardController.deleteKpi,
+);
+router.post(
+  "/:projectId/kpis/:kpiId/targets",
+  authenticate,
+  authorize("project_dashboard", "UPDATE"),
+  projectDashboardController.addTarget,
+);
+router.put(
+  "/:projectId/kpis/:kpiId/targets/:targetId",
+  authenticate,
+  authorize("project_dashboard", "UPDATE"),
+  projectDashboardController.updateTarget,
+);
+router.delete(
+  "/:projectId/kpis/:kpiId/targets/:targetId",
+  authenticate,
+  authorize("project_dashboard", "UPDATE"),
+  projectDashboardController.deleteTarget,
 );
 router.get(
   "/:projectId/charts/data",

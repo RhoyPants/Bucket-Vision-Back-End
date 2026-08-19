@@ -1,38 +1,33 @@
 export type KpiSourceType = "PROJECT" | "SCOPE" | "TASK" | "SUBTASK";
 export type KpiField = "PROGRESS";
 export type KpiStatus = "CRITICAL" | "ONFLOW" | "HEALTHY" | "UNCLASSIFIED";
-export type KpiValueOperator = "LT" | "LTE" | "EQ" | "GTE" | "GT" | "BETWEEN";
-export interface KpiThresholdDTO {
-  status: Exclude<KpiStatus, "UNCLASSIFIED">;
-  operator: KpiValueOperator;
-  value1: number;
-  value2?: number;
-  dateOperator?: KpiValueOperator | null;
-  dateValue1?: Date | null;
-  dateValue2?: Date | null;
+export type KpiChartType = "DONUT" | "BAR";
+
+export interface KpiTargetDTO {
+  id?: string;
+  scopeId?: string | null;
+  taskId?: string | null;
+  subtaskId?: string | null;
+  field?: KpiField;
+  unit?: string;
+  criticalBelow?: number;
+  healthyAtOrAbove?: number;
+  sortOrder?: number;
 }
 
 export interface CreateDashboardKpiDTO {
   name: string;
   description?: string;
-  scopeId?: string;
-  taskId?: string;
-  subtaskId?: string;
-  field?: KpiField;
-  criticalBelow?: number;
-  healthyAtOrAbove?: number;
-  thresholds?: KpiThresholdDTO[];
+  chartTypes?: KpiChartType[];
+  targets: KpiTargetDTO[];
 }
 
 export interface UpdateDashboardKpiDTO {
   name?: string;
   description?: string | null;
-  scopeId?: string | null;
-  taskId?: string | null;
-  subtaskId?: string | null;
-  criticalBelow?: number;
-  healthyAtOrAbove?: number;
-  thresholds?: KpiThresholdDTO[];
+  chartTypes?: KpiChartType[];
+  targets?: KpiTargetDTO[];
+  deletedTargetIds?: string[];
 }
 
 export interface SourcePreviewQueryDTO {
@@ -40,6 +35,9 @@ export interface SourcePreviewQueryDTO {
   scopeId?: string;
   taskId?: string;
   subtaskId?: string;
+  field?: KpiField;
+  criticalBelow?: number;
+  healthyAtOrAbove?: number;
 }
 
 export interface DashboardNoteItemDTO {

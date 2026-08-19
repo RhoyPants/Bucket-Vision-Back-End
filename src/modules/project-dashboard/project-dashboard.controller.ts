@@ -3,7 +3,7 @@ import { projectDashboardService } from "./project-dashboard.service";
 
 const notFoundStatus = (error: any) => {
   if (
-    ["Project not found or access denied", "KPI not found", "Note not found", "Checklist item not found"]
+    ["Project not found or access denied", "KPI not found", "KPI target not found", "Note not found", "Checklist item not found"]
       .includes(error.message)
   ) {
     return 404;
@@ -36,12 +36,42 @@ export class ProjectDashboardController {
       const data = await projectDashboardService.previewSource(
         String(req.params.projectId),
         (req as any).user?.id,
-        req.query as any
+        ({ ...req.query, ...req.body }) as any
       );
       res.json({ success: true, data });
     } catch (error: any) {
       res.status(notFoundStatus(error)).json({ success: false, message: error.message });
     }
+  }
+
+  async listKpis(req: Request, res: Response) {
+    try {
+      const data = await projectDashboardService.listKpis(String(req.params.projectId), (req as any).user?.id, {
+        includeTargets: req.query.includeTargets !== "false",
+        includeComputed: req.query.includeComputed !== "false",
+      });
+      res.json({ success: true, data, count: data.length });
+    } catch (error: any) { res.status(notFoundStatus(error)).json({ success: false, message: error.message }); }
+  }
+
+  async getKpi(req: Request, res: Response) {
+    try { res.json({ success: true, data: await projectDashboardService.getKpi(String(req.params.projectId), String(req.params.kpiId), (req as any).user?.id) }); }
+    catch (error: any) { res.status(notFoundStatus(error)).json({ success: false, message: error.message }); }
+  }
+
+  async addTarget(req: Request, res: Response) {
+    try { res.status(201).json({ success: true, data: await projectDashboardService.addTarget(String(req.params.projectId), String(req.params.kpiId), (req as any).user?.id, req.body) }); }
+    catch (error: any) { res.status(notFoundStatus(error)).json({ success: false, message: error.message }); }
+  }
+
+  async updateTarget(req: Request, res: Response) {
+    try { res.json({ success: true, data: await projectDashboardService.updateTarget(String(req.params.projectId), String(req.params.kpiId), String(req.params.targetId), (req as any).user?.id, req.body) }); }
+    catch (error: any) { res.status(notFoundStatus(error)).json({ success: false, message: error.message }); }
+  }
+
+  async deleteTarget(req: Request, res: Response) {
+    try { res.json({ success: true, data: await projectDashboardService.deleteTarget(String(req.params.projectId), String(req.params.kpiId), String(req.params.targetId), (req as any).user?.id) }); }
+    catch (error: any) { res.status(notFoundStatus(error)).json({ success: false, message: error.message }); }
   }
 
   async createKpi(req: Request, res: Response) {

@@ -50,6 +50,8 @@ model User {
   cancelledIncidents           IncidentReport[]          @relation("IncidentCanceller")
   incidentAttachments          IncidentAttachment[]
   updatedSubtaskKpiConfigs     ProjectSubtaskKpiConfig[]
+  createdDashboardKpis         DashboardKpi[]            @relation("DashboardKpiCreatedBy")
+  updatedDashboardKpis         DashboardKpi[]            @relation("DashboardKpiUpdatedBy")
   weeklyReports                WeeklyReport[]
   weeklyReports_recv           WeeklyReportReceiver[]
   reviewedSsoRegistrations     SsoRegistration[]         @relation("SsoRegistrationReviewedBy")
@@ -205,6 +207,7 @@ model Scope {
   scopeMaintenance   ScopeMaintenance? @relation(fields: [scopeMaintenanceId], references: [id], onDelete: SetNull)
   tasks              Task[]
   incidentReports    IncidentReport[]
+  kpiTargets         KpiTarget[]
 
   @@index([projectId])
   @@index([scopeMaintenanceId])
@@ -238,6 +241,7 @@ model Task {
   taskMaintenance   TaskMaintenance? @relation(fields: [taskMaintenanceId], references: [id], onDelete: SetNull)
   assignees         TaskAssignee[]
   incidentReports   IncidentReport[]
+  kpiTargets        KpiTarget[]
 
   @@index([scopeId])
   @@index([taskMaintenanceId])
@@ -275,6 +279,7 @@ model Subtask {
   subtaskMaintenance   SubtaskMaintenance? @relation(fields: [subtaskMaintenanceId], references: [id], onDelete: SetNull)
   assignees            SubtaskAssignee[]
   incidentReports      IncidentReport[]
+  kpiTargets           KpiTarget[]
 
   @@index([taskId])
   @@index([subtaskMaintenanceId])
@@ -706,43 +711,47 @@ model DashboardNoteItem {
 }
 
 model DashboardKpi {
-  id          String             @id @default(uuid())
+  id          String      @id @default(uuid())
   name        String
   description String?
-  unit        String             @default("%")
-  field       KpiField           @default(PROGRESS)
-  sourceType  KpiSourceType
   projectId   String
-  scopeId     String?
-  taskId      String?
-  subtaskId   String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  thresholds  KpiThresholdRule[]
+  createdById String
+  updatedById String?
+  chartTypes  Json        @default("[\"DONUT\"]")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation("DashboardKpiCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?       @relation("DashboardKpiUpdatedBy", fields: [updatedById], references: [id])
+  targets     KpiTarget[]
 
   @@index([projectId])
+  @@index([createdById])
+  @@index([updatedById])
+}
+
+model KpiTarget {
+  id               String       @id @default(uuid())
+  kpiId            String
+  scopeId          String?
+  taskId           String?
+  subtaskId        String?
+  field            KpiField     @default(PROGRESS)
+  unit             String       @default("%")
+  criticalBelow    Decimal      @default(-15) @db.Decimal(5, 2)
+  healthyAtOrAbove Decimal      @default(-5) @db.Decimal(5, 2)
+  sortOrder        Int          @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  kpi              DashboardKpi @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  scope            Scope?       @relation(fields: [scopeId], references: [id], onDelete: SetNull)
+  task             Task?        @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  subtask          Subtask?     @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
+
+  @@index([kpiId])
   @@index([scopeId])
   @@index([taskId])
   @@index([subtaskId])
-}
-
-model KpiThresholdRule {
-  id           String            @id @default(uuid())
-  kpiId        String
-  status       KpiStatus
-  operator     KpiValueOperator
-  value1       Float
-  value2       Float?
-  dateOperator KpiValueOperator?
-  dateValue1   DateTime?
-  dateValue2   DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  kpi          DashboardKpi      @relation(fields: [kpiId], references: [id], onDelete: Cascade)
-
-  @@unique([kpiId, status])
-  @@index([kpiId])
 }
 
 model Holiday {
