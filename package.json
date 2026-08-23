@@ -11,6 +11,7 @@
     "seed:work-breakdown": "ts-node prisma/seed-work-breakdown-maintenance.ts",
     "build": "tsc",
     "test:progress": "ts-node src/modules/progress/progress-precision.test.ts",
+    "test:cpm": "ts-node src/modules/cpm/cpm.calculator.test.ts",
     "test:reports": "ts-node src/reports/tests/report-foundation.test.ts",
     "test:reports:integration": "ts-node src/reports/tests/report-integration.test.ts",
     "test:reports:pdf": "ts-node src/reports/tests/report-pdf.integration.test.ts",

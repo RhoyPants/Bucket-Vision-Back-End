@@ -13,7 +13,7 @@ import {
   fetchSharePointFile,
   uploadBufferToSharePoint,
 } from "../../services/sharepoint-upload.service";
-import { buildAccessibleProjectWhere } from "./project-access";
+import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
 
 export class ProjectController {
   private static readonly DIRECTORY_LIMITS = new Set([6, 12, 24, 48]);
@@ -1587,23 +1587,10 @@ export class ProjectController {
         return res.status(404).json({ error: "Project not found" });
       }
 
-      // Check if user has access: either owner or approver
-      const isOwner = project.ownerId === userId;
-
-      if (!isOwner) {
-        // Check if user is an approver in this project's approval chain
-        const isApprover = await prisma.projectApproval.findFirst({
-          where: {
-            projectId: id,
-            approverId: userId,
-          },
+      if (!await canViewProjectForApproval(id, userId, (req as any).user.roleId)) {
+        return res.status(403).json({
+          error: "Access denied - you cannot view this project approval",
         });
-
-        if (!isApprover) {
-          return res.status(403).json({
-            error: "Access denied - you are not an approver for this project",
-          });
-        }
       }
 
       const [enrichedProject] =

@@ -180,6 +180,7 @@ model Project {
   timelines          ProjectTimeline[]
   scopes             Scope[]
   weeklyReports      WeeklyReport[]
+  cpmDependencies    CpmDependency[]
 
   @@index([status])
   @@index([isActive])
@@ -280,9 +281,28 @@ model Subtask {
   assignees            SubtaskAssignee[]
   incidentReports      IncidentReport[]
   kpiTargets           KpiTarget[]
+  cpmPredecessorLinks  CpmDependency[]     @relation("CpmPredecessor")
+  cpmSuccessorLinks    CpmDependency[]     @relation("CpmSuccessor")
 
   @@index([taskId])
   @@index([subtaskMaintenanceId])
+}
+
+model CpmDependency {
+  id                   String   @id @default(uuid())
+  projectId            String
+  predecessorSubtaskId String
+  successorSubtaskId   String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  predecessorSubtask   Subtask  @relation("CpmPredecessor", fields: [predecessorSubtaskId], references: [id], onDelete: Cascade)
+  successorSubtask     Subtask  @relation("CpmSuccessor", fields: [successorSubtaskId], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorSubtaskId, successorSubtaskId])
+  @@index([projectId])
+  @@index([predecessorSubtaskId])
+  @@index([successorSubtaskId])
 }
 
 model ScopeMaintenance {

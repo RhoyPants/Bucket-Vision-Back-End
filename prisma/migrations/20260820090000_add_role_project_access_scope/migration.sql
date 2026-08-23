@@ -1,0 +1,2 @@
+-- Project access scoping in this release was implemented in application logic.
+-- No database schema changes are required.

@@ -3,8 +3,28 @@ import { ProjectController, assignProjectMember, getProjectMembers, getProjectTe
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 import upload from "../../middleware/upload.middleware";
+import { CpmController } from "../cpm/cpm.controller";
 
 const router = Router();
+
+router.get(
+  "/:projectId/cpm",
+  authenticate,
+  CpmController.get,
+);
+
+router.put(
+  "/:projectId/cpm/dependencies",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  CpmController.save,
+);
+
+router.post(
+  "/:projectId/cpm/preview",
+  authenticate,
+  CpmController.preview,
+);
 
 // GET ALL
 router.get(
