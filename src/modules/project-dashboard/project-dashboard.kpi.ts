@@ -22,7 +22,13 @@ export function expectedProgressAt(
   const start = startDate.getTime();
   const end = endDate.getTime();
   const current = now.getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+
+  // A subtask that starts and ends on the same scheduled day is a milestone,
+  // not an invalid range. Its planned progress is 0% before that day and 100%
+  // from that day onward, so it can be evaluated by the normal KPI thresholds.
+  if (end === start) return current < start ? 0 : 100;
+
   if (current < start) return 0;
   if (current >= end) return 100;
   return round(((current - start) / (end - start)) * 100);

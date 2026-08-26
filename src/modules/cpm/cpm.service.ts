@@ -47,6 +47,17 @@ function countWorkingDays(start: Date, end: Date, calendar: Calendar): number {
   return count;
 }
 
+/**
+ * CPM uses inclusive day durations. A valid same-calendar-day activity is a
+ * one-day milestone even when that date is not enabled in the work calendar.
+ * This keeps the dependency graph schedulable instead of reporting a zero
+ * duration for a same-day subtask.
+ */
+export function scheduledDurationDays(start: Date, end: Date, calendar: Calendar): number {
+  if (utcDate(start).getTime() === utcDate(end).getTime()) return 1;
+  return countWorkingDays(start, end, calendar);
+}
+
 function firstWorkingDay(date: Date, calendar: Calendar): Date {
   let current = utcDate(date);
   while (!isWorkingDay(current, calendar)) current = moveDate(current, 1);
@@ -150,7 +161,7 @@ async function buildResult(
   const invalidRanges = subtasks.filter((subtask) => subtask.projectedStartDate && subtask.projectedEndDate && subtask.projectedEndDate < subtask.projectedStartDate);
   const durations = new Map(subtasks.map((subtask) => [subtask.id,
     subtask.projectedStartDate && subtask.projectedEndDate && subtask.projectedEndDate >= subtask.projectedStartDate
-      ? countWorkingDays(subtask.projectedStartDate, subtask.projectedEndDate, calendar) : null]));
+      ? scheduledDurationDays(subtask.projectedStartDate, subtask.projectedEndDate, calendar) : null]));
   const zeroDurations = subtasks.filter((subtask) => durations.get(subtask.id) === 0);
   const canCalculate = (calculateEmptyGraph || dependencies.length > 0) && !missing.length && !invalidRanges.length && !zeroDurations.length;
   const calculation = canCalculate ? calculateCpm(
@@ -237,7 +248,9 @@ async function validateDependencies(
       calendar.friday, calendar.saturday, calendar.sunday].some(Boolean)) {
       throw new CpmHttpError(422, "CPM_NO_WORKING_DAYS", "The project calendar must include at least one working day.");
     }
-    const noWorkingDays = subtasks.find((subtask) => countWorkingDays(subtask.projectedStartDate!, subtask.projectedEndDate!, calendar) === 0);
+    const noWorkingDays = subtasks.find(
+      (subtask) => scheduledDurationDays(subtask.projectedStartDate!, subtask.projectedEndDate!, calendar) === 0
+    );
     if (noWorkingDays) throw new CpmHttpError(422, "CPM_NO_WORKING_DAYS", "A subtask date range contains no working days.", { subtaskId: noWorkingDays.id });
   }
   try {

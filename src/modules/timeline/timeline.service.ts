@@ -34,8 +34,12 @@ export async function calculatePlannedProgress(
   // If after end, planned = 100%
   if (now > end) return 100;
 
-  // Linear calculation
+  // A project that starts and ends on the same date is a one-day milestone.
+  // It is due in full on that date; avoid a 0 / 0 (NaN) result.
   const totalMs = end.getTime() - start.getTime();
+  if (totalMs === 0) return 100;
+
+  // Linear calculation
   const elapsedMs = now.getTime() - start.getTime();
   const planned = (elapsedMs / totalMs) * 100;
 

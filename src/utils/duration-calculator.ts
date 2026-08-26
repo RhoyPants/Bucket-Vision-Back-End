@@ -211,6 +211,16 @@ export class DurationCalculator {
     currentDate: Date,
     schedule: WorkScheduleConfig
   ): number {
+    const projectStartDay = new Date(projectStart);
+    const currentDay = new Date(currentDate);
+    projectStartDay.setHours(0, 0, 0, 0);
+    currentDay.setHours(0, 0, 0, 0);
+
+    // `calculateWorkDays` deliberately swaps its inputs for duration use.
+    // A timeline must not use that behaviour: dates before the project start
+    // represent 0% elapsed, including for a one-day project.
+    if (currentDay < projectStartDay) return 0;
+
     const totalWorkDays = this.calculateWorkDays(projectStart, expectedEnd, schedule);
     const elapsedWorkDays = this.calculateWorkDays(projectStart, currentDate, schedule);
 
