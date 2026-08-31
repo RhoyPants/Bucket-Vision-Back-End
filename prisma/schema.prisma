@@ -152,6 +152,8 @@ model Project {
   status             ProjectStatus              @default(DRAFT)
   versionLabel       String?
   versionNumber      Int                        @default(1)
+  versionForkedAt    DateTime?
+  progressSyncedAt   DateTime?
   approvalFlowId     String?
   approvalEnabled    Boolean                    @default(true)
   monday             Boolean                    @default(true)
@@ -181,6 +183,7 @@ model Project {
   scopes             Scope[]
   weeklyReports      WeeklyReport[]
   cpmDependencies    CpmDependency[]
+  orgChart           ProjectOrgChart?
 
   @@index([status])
   @@index([isActive])
@@ -188,6 +191,57 @@ model Project {
   @@index([rootProjectId])
   @@index([parentProjectId])
   @@index([approvalFlowId])
+}
+
+model ProjectOrgChart {
+  id        String                @id @default(uuid())
+  projectId String                @unique
+  title     String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  project   Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  nodes     ProjectOrgChartNode[]
+
+  @@index([projectId])
+}
+
+model ProjectOrgChartNode {
+  id              String                @id @default(uuid())
+  chartId         String
+  parentId        String?
+  name            String?
+  position        String
+  sortOrder       Int                   @default(0)
+  x               Float?
+  y               Float?
+  photoUrl        String?
+  parentAnchor    ProjectOrgChartAnchor @default(BOTTOM_CENTER)
+  childAnchor     ProjectOrgChartAnchor @default(TOP_CENTER)
+  backgroundColor String?
+  textColor       String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  chart           ProjectOrgChart       @relation(fields: [chartId], references: [id], onDelete: Cascade)
+  parent          ProjectOrgChartNode?  @relation("ProjectOrgChartTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children        ProjectOrgChartNode[] @relation("ProjectOrgChartTree")
+
+  @@index([chartId])
+  @@index([parentId])
+}
+
+enum ProjectOrgChartAnchor {
+  TOP_LEFT
+  TOP_CENTER
+  TOP_RIGHT
+  RIGHT_TOP
+  RIGHT_CENTER
+  RIGHT_BOTTOM
+  BOTTOM_RIGHT
+  BOTTOM_CENTER
+  BOTTOM_LEFT
+  LEFT_BOTTOM
+  LEFT_CENTER
+  LEFT_TOP
 }
 
 model Scope {
@@ -270,6 +324,7 @@ model Subtask {
   status               Int                 @default(0)
   sourceType           String?
   subtaskMaintenanceId String?
+  sourceSubtaskId       String?
   activities           ActivityLog[]       @relation("SubtaskActivity")
   attachments          Attachment[]
   checklists           Checklist[]
@@ -286,6 +341,7 @@ model Subtask {
 
   @@index([taskId])
   @@index([subtaskMaintenanceId])
+  @@index([sourceSubtaskId])
 }
 
 model CpmDependency {
@@ -312,13 +368,16 @@ model ScopeMaintenance {
   description String?
   order       Int                    @default(0)
   isActive    Boolean                @default(true)
+  maintenanceTableId String?
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   taskLinks   ScopeMaintenanceTask[]
   scopes      Scope[]
+  maintenanceTable MaintenanceTable? @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([order])
+  @@index([maintenanceTableId])
 }
 
 model TaskMaintenance {
@@ -328,14 +387,17 @@ model TaskMaintenance {
   description  String?
   order        Int                      @default(0)
   isActive     Boolean                  @default(true)
+  maintenanceTableId String?
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
   scopeLinks   ScopeMaintenanceTask[]
   subtaskLinks TaskMaintenanceSubtask[]
   tasks        Task[]
+  maintenanceTable MaintenanceTable?    @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([order])
+  @@index([maintenanceTableId])
 }
 
 model SubtaskMaintenance {
@@ -345,13 +407,43 @@ model SubtaskMaintenance {
   description String?
   order       Int                      @default(0)
   isActive    Boolean                  @default(true)
+  maintenanceTableId String?
   createdAt   DateTime                 @default(now())
   updatedAt   DateTime                 @updatedAt
   taskLinks   TaskMaintenanceSubtask[]
   subtasks    Subtask[]
+  maintenanceTable MaintenanceTable?   @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([order])
+  @@index([maintenanceTableId])
+}
+
+model MaintenanceTable {
+  id            String                         @id @default(uuid())
+  code          String                         @unique
+  name          String
+  description   String?
+  isActive      Boolean                        @default(true)
+  isGlobal      Boolean                        @default(false)
+  createdAt     DateTime                       @default(now())
+  updatedAt     DateTime                       @updatedAt
+  businessUnits MaintenanceTableBusinessUnit[]
+  scopes        ScopeMaintenance[]
+  tasks         TaskMaintenance[]
+  subtasks      SubtaskMaintenance[]
+
+  @@index([isActive])
+}
+
+model MaintenanceTableBusinessUnit {
+  maintenanceTableId String
+  businessUnitId     String
+  maintenanceTable   MaintenanceTable @relation(fields: [maintenanceTableId], references: [id], onDelete: Cascade)
+  businessUnit       BusinessUnit     @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
+
+  @@id([maintenanceTableId, businessUnitId])
+  @@index([businessUnitId])
 }
 
 model ScopeMaintenanceTask {
@@ -441,6 +533,7 @@ model ProgressLog {
   dayNumber         Int?
   location          String?
   userId            String?
+  sourceLogId       String?                 @unique
   subtask           Subtask                 @relation(fields: [subtaskId], references: [id])
   user              User?                   @relation(fields: [userId], references: [id])
   attachments       ProgressLogAttachment[]
@@ -857,6 +950,7 @@ model BusinessUnit {
   updatedAt           DateTime          @updatedAt
   ssoRegistrations    SsoRegistration[]
   users               User[]
+  maintenanceTables   MaintenanceTableBusinessUnit[]
 
   @@index([code])
   @@index([entity])

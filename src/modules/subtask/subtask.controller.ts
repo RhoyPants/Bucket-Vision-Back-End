@@ -63,13 +63,14 @@ export class SubtaskController {
       } = req.body as any;
 
       const userId = (req as any).user.id;
-      const parentTask = await (prisma.task.findUnique as any)({ where: { id: taskId } });
+      const parentTask = await (prisma.task.findUnique as any)({ where: { id: taskId }, include: { scope: true } });
       if (!parentTask) return res.status(404).json({ message: "Task not found" });
       const selection = await resolveSubtaskSelection({
         sourceType: req.body.sourceType,
         maintenanceId: req.body.subtaskMaintenanceId,
         customTitle: title,
         parentTaskMaintenanceId: parentTask.taskMaintenanceId,
+        projectId: parentTask.scope.projectId,
       });
 
       const subtask = await prisma.subtask.create({
@@ -219,7 +220,7 @@ export class SubtaskController {
       } = req.body;
       const existing = await (prisma.subtask.findUnique as any)({
         where: { id },
-        include: { task: true },
+        include: { task: { include: { scope: true } } },
       });
       if (!existing) return res.status(404).json({ message: "Subtask not found" });
       const requestedSourceType = req.body.sourceType === undefined
@@ -239,6 +240,7 @@ export class SubtaskController {
                 : existing.subtaskMaintenanceId,
             customTitle: title ?? existing.title,
             parentTaskMaintenanceId: existing.task.taskMaintenanceId,
+            projectId: existing.task.scope.projectId,
           })
         : null;
 

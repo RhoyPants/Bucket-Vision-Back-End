@@ -55,6 +55,7 @@ export class ScopeController {
         sourceType: req.body.sourceType,
         maintenanceId: req.body.scopeMaintenanceId,
         customName: name,
+        projectId,
       });
 
       // Calculate next order if not provided
@@ -182,7 +183,8 @@ export class ScopeController {
               req.body.scopeMaintenanceId !== undefined
                 ? req.body.scopeMaintenanceId
                 : existing.scopeMaintenanceId,
-            customName: name ?? existing.name,
+          customName: name ?? existing.name,
+          projectId: existing.projectId,
           })
         : null;
 

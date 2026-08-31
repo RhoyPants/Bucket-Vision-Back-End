@@ -10,10 +10,38 @@ export function normalizeSourceType(value: unknown): MaintenanceSourceType {
   return normalized;
 }
 
+// Old records have no table and intentionally remain global, preserving all
+// current projects after this feature is deployed. New tables are available
+// only when assigned to the project's Business Unit.
+async function availableMaintenanceWhere(projectId?: string) {
+  if (!projectId) return {};
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { businessUnit: true },
+  });
+  if (!project) throw new Error("Project not found");
+  const businessUnitId = String(project.businessUnit || "").trim();
+  return {
+    OR: [
+      { maintenanceTableId: null },
+      {
+        maintenanceTable: {
+          isActive: true,
+          OR: [
+            { isGlobal: true },
+            { businessUnits: { some: { businessUnitId } } },
+          ],
+        },
+      },
+    ],
+  };
+}
+
 export async function resolveScopeSelection(input: {
   sourceType?: unknown;
   maintenanceId?: string | null;
   customName?: string | null;
+  projectId?: string;
 }) {
   const sourceType = normalizeSourceType(input.sourceType);
   if (sourceType === "CUSTOM") {
@@ -25,7 +53,7 @@ export async function resolveScopeSelection(input: {
 
   if (!input.maintenanceId) throw new Error("scopeMaintenanceId is required");
   const master = await (prisma as any).scopeMaintenance.findFirst({
-    where: { id: input.maintenanceId, isActive: true },
+    where: { id: input.maintenanceId, isActive: true, ...(await availableMaintenanceWhere(input.projectId)) },
   });
   if (!master) throw new Error("Scope maintenance record not found or inactive");
   return { sourceType, maintenanceId: master.id, name: master.name };
@@ -36,6 +64,7 @@ export async function resolveTaskSelection(input: {
   maintenanceId?: string | null;
   customTitle?: string | null;
   parentScopeMaintenanceId?: string | null;
+  projectId?: string;
 }) {
   const sourceType = normalizeSourceType(input.sourceType);
   if (sourceType === "CUSTOM") {
@@ -47,7 +76,7 @@ export async function resolveTaskSelection(input: {
 
   if (!input.maintenanceId) throw new Error("taskMaintenanceId is required");
   const master = await (prisma as any).taskMaintenance.findFirst({
-    where: { id: input.maintenanceId, isActive: true },
+    where: { id: input.maintenanceId, isActive: true, ...(await availableMaintenanceWhere(input.projectId)) },
   });
   if (!master) throw new Error("Task maintenance record not found or inactive");
 
@@ -71,6 +100,7 @@ export async function resolveSubtaskSelection(input: {
   maintenanceId?: string | null;
   customTitle?: string | null;
   parentTaskMaintenanceId?: string | null;
+  projectId?: string;
 }) {
   const sourceType = normalizeSourceType(input.sourceType);
   if (sourceType === "CUSTOM") {
@@ -82,7 +112,7 @@ export async function resolveSubtaskSelection(input: {
 
   if (!input.maintenanceId) throw new Error("subtaskMaintenanceId is required");
   const master = await (prisma as any).subtaskMaintenance.findFirst({
-    where: { id: input.maintenanceId, isActive: true },
+    where: { id: input.maintenanceId, isActive: true, ...(await availableMaintenanceWhere(input.projectId)) },
   });
   if (!master) throw new Error("Subtask maintenance record not found or inactive");
 
@@ -100,4 +130,3 @@ export async function resolveSubtaskSelection(input: {
 
   return { sourceType, maintenanceId: master.id, title: master.name };
 }
-

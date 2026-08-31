@@ -4,6 +4,7 @@ import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 import upload from "../../middleware/upload.middleware";
 import { CpmController } from "../cpm/cpm.controller";
+import { projectOrgChartController } from "./project-org-chart.controller";
 
 const router = Router();
 
@@ -24,6 +25,53 @@ router.post(
   "/:projectId/cpm/preview",
   authenticate,
   CpmController.preview,
+);
+
+router.get(
+  "/org-chart-builder/copy-sources",
+  authenticate,
+  projectOrgChartController.listCopySources,
+);
+
+router.post(
+  "/:projectId/org-chart-builder/clone-preview",
+  authenticate,
+  projectOrgChartController.previewCopy,
+);
+
+router.post(
+  "/:projectId/org-chart-builder/clone",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  projectOrgChartController.cloneFromProject,
+);
+
+router.post(
+  "/:projectId/org-chart-builder/photo",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  upload.single("photo"),
+  projectOrgChartController.uploadPhoto,
+);
+
+router.get(
+  "/:projectId/org-chart-builder",
+  authenticate,
+  projectOrgChartController.get,
+);
+
+router.put(
+  "/:projectId/org-chart-builder",
+  authenticate,
+  authorize("projects", "UPDATE"),
+  projectOrgChartController.save,
+);
+
+router.delete(
+  "/:projectId/org-chart-builder",
+  authenticate,
+  authorize("projects", "DELETE"),
+  projectOrgChartController.remove,
 );
 
 // GET ALL

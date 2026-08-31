@@ -23,6 +23,19 @@ router.post(
     versioningController.createNewVersion(req, res)
 );
 
+router.get(
+  "/:projectId/progress-sync",
+  authenticate,
+  versioningController.getProgressSyncStatus,
+);
+
+router.post(
+  "/:projectId/progress-sync",
+  authenticate,
+  authorize("versioning", "UPDATE"),
+  versioningController.syncProgressFromParent,
+);
+
 /**
  * GET /api/versioning/:projectId/detail
  * Get full detail of a specific version (scopes, tasks, subtasks, team, timelines, reports)

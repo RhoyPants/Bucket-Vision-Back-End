@@ -26,11 +26,89 @@ const duplicateCodeResponse = (
 };
 
 export class WorkBreakdownMaintenanceController {
+  private static async tableFilter(projectId?: string) {
+    if (!projectId) return {};
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }, select: { businessUnit: true },
+    });
+    if (!project) throw new Error("Project not found");
+    const tables = await (prisma as any).maintenanceTable.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { isGlobal: true },
+          { businessUnits: { some: { businessUnitId: String(project.businessUnit || "").trim() } } },
+        ],
+      },
+      select: { id: true },
+    });
+    return { OR: [{ maintenanceTableId: null }, { maintenanceTableId: { in: tables.map((table: any) => table.id) } }] };
+  }
+
+  static async listTables(_req: Request, res: Response) {
+    try {
+      const data = await (prisma as any).maintenanceTable.findMany({
+        include: { businessUnits: { include: { businessUnit: { select: { id: true, code: true, name: true, isActive: true } } } } },
+        orderBy: [{ name: "asc" }],
+      });
+      return res.json({ success: true, data });
+    } catch (error: any) { return res.status(500).json({ success: false, message: error.message }); }
+  }
+
+  static async createTable(req: Request, res: Response) {
+    try {
+      const code = cleanCode(req.body.code);
+      const name = cleanName(req.body.name);
+      const businessUnitIds = uniqueIds(req.body.businessUnitIds);
+      if (!code || !name) throw new Error("Table code and name are required");
+      if (businessUnitIds.length) {
+        const count = await prisma.businessUnit.count({ where: { id: { in: businessUnitIds } } });
+        if (count !== businessUnitIds.length) throw new Error("One or more Business Units are invalid");
+      }
+      const data = await prisma.$transaction(async (tx: any) => tx.maintenanceTable.create({
+        data: {
+          code, name, description: req.body.description || null, isActive: req.body.isActive ?? true,
+          isGlobal: req.body.isGlobal ?? false,
+          businessUnits: { create: businessUnitIds.map((businessUnitId) => ({ businessUnitId })) },
+        },
+        include: { businessUnits: { include: { businessUnit: true } } },
+      }));
+      return res.status(201).json({ success: true, data });
+    } catch (error: any) { return res.status(400).json({ success: false, message: error.message }); }
+  }
+
+  static async updateTable(req: Request, res: Response) {
+    try {
+      const id = String(req.params.id);
+      const businessUnitIds = req.body.businessUnitIds === undefined ? undefined : uniqueIds(req.body.businessUnitIds);
+      if (businessUnitIds) {
+        const count = await prisma.businessUnit.count({ where: { id: { in: businessUnitIds } } });
+        if (count !== businessUnitIds.length) throw new Error("One or more Business Units are invalid");
+      }
+      const data = await prisma.$transaction(async (tx: any) => tx.maintenanceTable.update({
+        where: { id },
+        data: {
+          ...(req.body.code !== undefined ? { code: cleanCode(req.body.code) } : {}),
+          ...(req.body.name !== undefined ? { name: cleanName(req.body.name) } : {}),
+          ...(req.body.description !== undefined ? { description: req.body.description || null } : {}),
+          ...(req.body.isActive !== undefined ? { isActive: !!req.body.isActive } : {}),
+          ...(req.body.isGlobal !== undefined ? { isGlobal: !!req.body.isGlobal } : {}),
+          ...(businessUnitIds ? { businessUnits: { deleteMany: {}, create: businessUnitIds.map((businessUnitId) => ({ businessUnitId })) } } : {}),
+        },
+        include: { businessUnits: { include: { businessUnit: true } } },
+      }));
+      return res.json({ success: true, data });
+    } catch (error: any) { return res.status(400).json({ success: false, message: error.message }); }
+  }
+
   static async hierarchy(req: Request, res: Response) {
     try {
       const activeOnly = req.query.active !== "false";
+      const tableFilter = await WorkBreakdownMaintenanceController.tableFilter(
+        typeof req.query.projectId === "string" ? req.query.projectId : undefined,
+      );
       const scopes = await (prisma as any).scopeMaintenance.findMany({
-        where: activeOnly ? { isActive: true } : undefined,
+        where: { ...(activeOnly ? { isActive: true } : {}), ...tableFilter },
         include: {
           taskLinks: {
             where: activeOnly ? { taskMaintenance: { isActive: true } } : undefined,
@@ -96,7 +174,7 @@ export class WorkBreakdownMaintenanceController {
   static async listScopes(req: Request, res: Response) {
     const activeOnly = req.query.active !== "false";
     const data = await (prisma as any).scopeMaintenance.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
+      where: { ...(activeOnly ? { isActive: true } : {}), ...(await WorkBreakdownMaintenanceController.tableFilter(typeof req.query.projectId === "string" ? req.query.projectId : undefined)) },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     });
     return res.json({ success: true, data });
@@ -215,6 +293,11 @@ export class WorkBreakdownMaintenanceController {
       const code = cleanCode(req.body.code);
       const name = cleanName(req.body.name);
       if (!code || !name) throw new Error("Code and name are required");
+      const maintenanceTableId = req.body.maintenanceTableId ? String(req.body.maintenanceTableId) : null;
+      if (maintenanceTableId) {
+        const table = await (prisma as any).maintenanceTable.findUnique({ where: { id: maintenanceTableId } });
+        if (!table) throw new Error("Maintenance table not found");
+      }
       const last = await (prisma as any).scopeMaintenance.findFirst({
         orderBy: { order: "desc" },
         select: { order: true },
@@ -226,6 +309,7 @@ export class WorkBreakdownMaintenanceController {
           description: req.body.description || null,
           order: (last?.order ?? -1) + 1,
           isActive: req.body.isActive ?? true,
+          maintenanceTableId,
         },
       });
       return res.status(201).json({ success: true, data });
@@ -247,6 +331,11 @@ export class WorkBreakdownMaintenanceController {
         where: { id: { in: scopeIds }, isActive: true },
       });
       if (count !== scopeIds.length) throw new Error("One or more scopes are invalid or inactive");
+      const scopes = await (prisma as any).scopeMaintenance.findMany({ where: { id: { in: scopeIds } }, select: { maintenanceTableId: true } });
+      const maintenanceTableId = scopes[0]?.maintenanceTableId ?? null;
+      if (scopes.some((scope: any) => scope.maintenanceTableId !== maintenanceTableId)) {
+        throw new Error("A task can only be linked to scopes in the same maintenance table");
+      }
       const data = await prisma.$transaction(async (tx: any) => {
         const lastTask = await tx.taskMaintenance.findFirst({
           orderBy: { order: "desc" },
@@ -259,6 +348,7 @@ export class WorkBreakdownMaintenanceController {
             description: req.body.description || null,
             order: (lastTask?.order ?? -1) + 1,
             isActive: req.body.isActive ?? true,
+            maintenanceTableId,
           },
         });
         for (const scopeMaintenanceId of scopeIds) {
@@ -299,6 +389,11 @@ export class WorkBreakdownMaintenanceController {
         where: { id: { in: taskIds }, isActive: true },
       });
       if (count !== taskIds.length) throw new Error("One or more tasks are invalid or inactive");
+      const tasks = await (prisma as any).taskMaintenance.findMany({ where: { id: { in: taskIds } }, select: { maintenanceTableId: true } });
+      const maintenanceTableId = tasks[0]?.maintenanceTableId ?? null;
+      if (tasks.some((task: any) => task.maintenanceTableId !== maintenanceTableId)) {
+        throw new Error("A subtask can only be linked to tasks in the same maintenance table");
+      }
       const data = await prisma.$transaction(async (tx: any) => {
         const lastSubtask = await tx.subtaskMaintenance.findFirst({
           orderBy: { order: "desc" },
@@ -311,6 +406,7 @@ export class WorkBreakdownMaintenanceController {
             description: req.body.description || null,
             order: (lastSubtask?.order ?? -1) + 1,
             isActive: req.body.isActive ?? true,
+            maintenanceTableId,
           },
         });
         for (const taskMaintenanceId of taskIds) {

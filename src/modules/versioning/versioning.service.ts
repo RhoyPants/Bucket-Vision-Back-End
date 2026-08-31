@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma";
 import { ProjectStatus } from "@prisma/client";
+import { recomputeSubtaskProgress } from "../progress/progress.service";
 
 export interface VersionAmendments {
   projectedEndDate?: Date;
@@ -19,8 +20,9 @@ export class VersioningService {
     amendments: VersionAmendments,
     userId: string
   ): Promise<any> {
+    const versionForkedAt = new Date();
     // Fetch source project with all related data
-    const source = await prisma.project.findUnique({
+    const source = await (prisma.project.findUnique as any)({
       where: { id: projectId },
       include: {
         scopes: {
@@ -43,6 +45,8 @@ export class VersioningService {
         weeklyReports: true,
         attachments: true,
         timelines: true,
+        cpmDependencies: true,
+        orgChart: { include: { nodes: true } },
         approvals: true,
       },
     });
@@ -71,7 +75,7 @@ export class VersioningService {
     }
 
     // Create new project version (header only)
-    const newProject = await prisma.project.create({
+    const newProject = await (prisma.project.create as any)({
       data: {
         name: source.name,
         description:
@@ -102,6 +106,7 @@ export class VersioningService {
         // VERSIONING
         versionNumber: source.versionNumber + 1,
         versionLabel: `Version ${source.versionNumber + 1}`,
+        versionForkedAt,
         parentProjectId: source.id, // Link to previous version
         rootProjectId: source.rootProjectId ?? source.id, // Link to root
 
@@ -116,7 +121,44 @@ export class VersioningService {
 
     console.log(`✅ Created new project version: v${newProject.versionNumber} (${newProject.id})`);
 
+    // Clone the manual organization chart as an independent tree. Parent IDs
+    // are remapped to newly created node IDs, never to the old version.
+    if (source.orgChart) {
+      const db: any = prisma;
+      const newChart = await db.projectOrgChart.create({
+        data: { projectId: newProject.id, title: source.orgChart.title },
+      });
+      const nodeIds = new Map<string, string>();
+      const pendingNodes = [...source.orgChart.nodes];
+      while (pendingNodes.length) {
+        const index = pendingNodes.findIndex((node: any) => !node.parentId || nodeIds.has(node.parentId));
+        if (index < 0) throw new Error("Source organization chart contains a circular parent relationship");
+        const node = pendingNodes.splice(index, 1)[0];
+        const clonedNode = await db.projectOrgChartNode.create({
+          data: {
+            chartId: newChart.id,
+            parentId: node.parentId ? nodeIds.get(node.parentId) : null,
+            name: node.name,
+            position: node.position,
+            sortOrder: node.sortOrder,
+            x: node.x,
+            y: node.y,
+            photoUrl: node.photoUrl,
+            parentAnchor: node.parentAnchor,
+            childAnchor: node.childAnchor,
+            backgroundColor: node.backgroundColor,
+            textColor: node.textColor,
+          },
+        });
+        nodeIds.set(node.id, clonedNode.id);
+      }
+    }
+
     // CLONE SCOPES → TASKS → SUBTASKS (with all progress data)
+    // Direct-parent ID -> new-version ID. CPM dependencies must use only the
+    // new IDs, keeping every version's network independent.
+    const clonedSubtaskIds = new Map<string, string>();
+
     for (const scope of source.scopes) {
       const newScope = await prisma.scope.create({
         data: {
@@ -148,11 +190,12 @@ export class VersioningService {
 
         // Clone all subtasks with their progress logs
         for (const subtask of task.subtasks) {
-          const newSubtask = await prisma.subtask.create({
+          const newSubtask = await (prisma.subtask.create as any)({
             data: {
               title: subtask.title,
               sourceType: (subtask as any).sourceType,
               subtaskMaintenanceId: (subtask as any).subtaskMaintenanceId,
+              sourceSubtaskId: subtask.id,
               description: subtask.description,
               order: subtask.order,
               progress: subtask.progress, // CARRY OVER progress
@@ -172,13 +215,15 @@ export class VersioningService {
               taskId: newTask.id,
             },
           });
+          clonedSubtaskIds.set(subtask.id, newSubtask.id);
 
           // Clone progress logs (audit trail of progress)
           for (const log of subtask.progressLogs) {
-            await prisma.progressLog.create({
+            await (prisma.progressLog.create as any)({
               data: {
                 subtaskId: newSubtask.id,
                 userId: log.userId,
+                sourceLogId: log.id,
                 date: log.date,
                 dailyPercent: log.dailyPercent,
                 cumulativePercent: log.cumulativePercent,
@@ -217,6 +262,20 @@ export class VersioningService {
     }
 
     console.log(`✅ Cloned ${source.scopes.length} scopes with all tasks & subtasks`);
+
+    // Clone only links whose two endpoints were cloned. If future data ever
+    // contains a broken source link, it is skipped rather than crossing versions.
+    const cpmDependencies = source.cpmDependencies.flatMap((dependency: any) => {
+      const predecessorSubtaskId = clonedSubtaskIds.get(dependency.predecessorSubtaskId);
+      const successorSubtaskId = clonedSubtaskIds.get(dependency.successorSubtaskId);
+      return predecessorSubtaskId && successorSubtaskId
+        ? [{ projectId: newProject.id, predecessorSubtaskId, successorSubtaskId }]
+        : [];
+    });
+    if (cpmDependencies.length) {
+      await prisma.cpmDependency.createMany({ data: cpmDependencies });
+    }
+    console.log(`Cloned ${cpmDependencies.length} CPM dependencies`);
 
     // CLONE PROJECT MEMBERS (same team)
     for (const member of source.projectMembers) {
@@ -319,9 +378,9 @@ export class VersioningService {
       newProject,
       summary: {
         scopesCloned: source.scopes.length,
-        tasksCloned: source.scopes.reduce((sum, s) => sum + s.tasks.length, 0),
+        tasksCloned: source.scopes.reduce((sum: number, s: any) => sum + s.tasks.length, 0),
         subtasksCloned: source.scopes.reduce(
-          (sum, s) => sum + s.tasks.reduce((t, task) => t + task.subtasks.length, 0),
+          (sum: number, s: any) => sum + s.tasks.reduce((t: number, task: any) => t + task.subtasks.length, 0),
           0
         ),
         teamMembersCloned: source.projectMembers.length,
@@ -329,6 +388,98 @@ export class VersioningService {
         reportsCloned: source.dailyReports.length + source.weeklyReports.length,
         timelinesCloned: source.timelines.length,
       },
+    };
+  }
+
+  /** Data for the post-activation progress-sync prompt. */
+  async getProgressSyncStatus(projectId: string): Promise<any> {
+    const db: any = prisma;
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true, name: true, versionNumber: true, status: true, isActive: true,
+        parentProjectId: true, versionForkedAt: true, progressSyncedAt: true,
+        parentProject: { select: { id: true, versionNumber: true } },
+      },
+    });
+    if (!project) throw new Error("Project not found");
+    if (!project.parentProjectId || !project.versionForkedAt) {
+      return { project, requiresSync: false, eligible: [], unmatched: [], conflicts: [] };
+    }
+
+    const [parentLogs, targetSubtasks]: [any[], any[]] = await Promise.all([
+      db.progressLog.findMany({
+        where: {
+          createdAt: { gte: project.versionForkedAt },
+          subtask: { task: { scope: { projectId: project.parentProjectId } } },
+        },
+        include: { subtask: { select: { id: true, title: true } } },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      }),
+      db.subtask.findMany({
+        where: { task: { scope: { projectId } } },
+        select: { id: true, title: true, sourceSubtaskId: true, progressLogs: { select: { sourceLogId: true, date: true, userId: true } } },
+      }),
+    ]);
+    const targetBySourceId = new Map(targetSubtasks
+      .filter((subtask: any) => subtask.sourceSubtaskId)
+      .map((subtask: any) => [subtask.sourceSubtaskId!, subtask]));
+    const alreadyCopied = new Set(targetSubtasks.flatMap((subtask: any) =>
+      subtask.progressLogs.map((log: any) => log.sourceLogId).filter(Boolean)));
+    const eligible: any[] = [], unmatched: any[] = [], conflicts: any[] = [];
+
+    for (const log of parentLogs) {
+      if (alreadyCopied.has(log.id)) continue;
+      const item = {
+        sourceLogId: log.id, sourceSubtaskId: log.subtaskId, sourceSubtaskTitle: log.subtask.title,
+        date: log.date, dailyPercent: Number(log.dailyPercent), userId: log.userId,
+      };
+      const target = targetBySourceId.get(log.subtaskId);
+      if (!target) { unmatched.push({ ...item, reason: "SOURCE_SUBTASK_REMOVED" }); continue; }
+      if ((target as any).progressLogs.some((targetLog: any) => targetLog.userId === log.userId && targetLog.date.getTime() === log.date.getTime())) {
+        conflicts.push({ ...item, targetSubtaskId: target.id, targetSubtaskTitle: target.title, reason: "TARGET_PROGRESS_ALREADY_EXISTS" });
+      } else {
+        eligible.push({ ...item, targetSubtaskId: target.id, targetSubtaskTitle: target.title });
+      }
+    }
+    return { project, requiresSync: eligible.length + unmatched.length + conflicts.length > 0, eligible, unmatched, conflicts };
+  }
+
+  /** Copies safely matched direct-parent logs. sourceLogId makes retries idempotent. */
+  async syncProgressFromParent(projectId: string): Promise<any> {
+    const db: any = prisma;
+    const status = await this.getProgressSyncStatus(projectId);
+    if (!status.project.parentProjectId) throw new Error("This is the first project version; there is no parent progress to sync");
+    if (status.project.status !== "ACTIVE" || !status.project.isActive) throw new Error("Progress can only be synced after the new version is active");
+
+    const targetBySourceLogId = new Map(status.eligible.map((item: any) => [item.sourceLogId, item.targetSubtaskId]));
+    const logs: any[] = await db.progressLog.findMany({
+      where: { id: { in: status.eligible.map((item: any) => item.sourceLogId) } },
+      include: { attachments: { orderBy: { sortOrder: "asc" } } },
+    });
+    const touched = new Set<string>();
+    for (const log of logs) {
+      const subtaskId = targetBySourceLogId.get(log.id) as string | undefined;
+      if (!subtaskId) continue;
+      await db.progressLog.create({ data: {
+        subtaskId, sourceLogId: log.id, userId: log.userId, date: log.date,
+        dailyPercent: log.dailyPercent, cumulativePercent: 0, remarks: log.remarks,
+        photoUrl: log.photoUrl, attachmentUrl: log.attachmentUrl, latitude: log.latitude,
+        longitude: log.longitude, location: log.location, dayNumber: log.dayNumber,
+        attachments: log.attachments.length ? { create: log.attachments.map((attachment: any) => ({
+          url: attachment.url, name: attachment.name, mimeType: attachment.mimeType,
+          size: attachment.size, sortOrder: attachment.sortOrder,
+        })) } : undefined,
+      }});
+      touched.add(subtaskId);
+    }
+    for (const subtaskId of touched) await recomputeSubtaskProgress(subtaskId);
+    const remaining = await this.getProgressSyncStatus(projectId);
+    if (!remaining.requiresSync) await db.project.update({ where: { id: projectId }, data: { progressSyncedAt: new Date() } });
+    return {
+      syncedLogs: logs.length, syncedSubtasks: touched.size,
+      requiresAttention: remaining.unmatched.length + remaining.conflicts.length > 0,
+      unmatched: remaining.unmatched, conflicts: remaining.conflicts,
     };
   }
 

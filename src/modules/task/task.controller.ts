@@ -98,6 +98,7 @@ export class TaskController {
         maintenanceId: req.body.taskMaintenanceId,
         customTitle: title,
         parentScopeMaintenanceId: parentScope.scopeMaintenanceId,
+        projectId: parentScope.projectId,
       });
 
       // Calculate next order if not provided
@@ -226,6 +227,7 @@ export class TaskController {
                 : existing.taskMaintenanceId,
             customTitle: title ?? existing.title,
             parentScopeMaintenanceId: existing.scope.scopeMaintenanceId,
+            projectId: existing.scope.projectId,
           })
         : null;
 

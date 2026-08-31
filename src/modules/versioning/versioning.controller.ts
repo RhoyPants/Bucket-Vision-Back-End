@@ -181,6 +181,32 @@ export class VersioningController {
     }
   }
 
+  async getProgressSyncStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      if (!projectId || typeof projectId !== "string") {
+        res.status(400).json({ error: "projectId required" });
+        return;
+      }
+      res.status(200).json({ success: true, data: await versioningService.getProgressSyncStatus(projectId) });
+    } catch (error: any) {
+      res.status(error.message === "Project not found" ? 404 : 400).json({ error: error.message || "Failed to load progress sync status" });
+    }
+  }
+
+  async syncProgressFromParent(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectId } = req.params;
+      if (!projectId || typeof projectId !== "string") {
+        res.status(400).json({ error: "projectId required" });
+        return;
+      }
+      res.status(200).json({ success: true, data: await versioningService.syncProgressFromParent(projectId) });
+    } catch (error: any) {
+      res.status(error.message === "Project not found" ? 404 : 400).json({ error: error.message || "Failed to sync progress" });
+    }
+  }
+
   /**
    * DELETE /api/versioning/:projectId/delete-draft
    * Delete a draft version (before submission for approval)

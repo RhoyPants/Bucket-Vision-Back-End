@@ -58,18 +58,22 @@ export async function getSCurve(projectId: string) {
     if (isWorkingDay(day, project, holidayKeys)) dates.push(day);
   }
 
-  const subtasks = await prisma.subtask.findMany({
-    where: { task: { scope: { projectId } } },
-    include: { task: { include: { scope: true } }, progressLogs: true },
+  const scopes = await prisma.scope.findMany({
+    where: { projectId },
+    include: {
+      tasks: {
+        include: { subtasks: { include: { progressLogs: true } } },
+      },
+    },
   });
+  const subtasks = scopes.flatMap((scope) => scope.tasks.flatMap((task) =>
+    task.subtasks.map((subtask) => ({ ...subtask, task: { ...task, scope } })),
+  ));
 
   const result: Array<{ date: string; planned: number; actual: number }> = [];
-  let lastActual = 0;
   for (const day of dates) {
     let plannedTotal = 0;
     let plannedWeightSum = 0;
-    let actualTotal = 0;
-    let actualWeightSum = 0;
     // End of the Manila business day, despite `day` being represented at UTC midnight.
     const cutoff = new Date(day.getTime() + DAY_MS - MANILA_OFFSET_MS - 1);
 
@@ -81,22 +85,17 @@ export async function getSCurve(projectId: string) {
         plannedTotal += planned * weight;
       }
 
-      actualWeightSum += weight;
-      const latest = subtask.progressLogs.reduce<any | null>(
-        (current, log) =>
-          log.date <= cutoff && (!current || log.date > current.date) ? log : current,
-        null,
-      );
-      actualTotal += Number(latest?.cumulativePercent || 0) * weight;
     }
 
     const planned = plannedWeightSum ? plannedTotal / plannedWeightSum : 0;
-    const actual = actualWeightSum ? actualTotal / actualWeightSum : 0;
-    lastActual = Math.max(lastActual, actual);
+    // Match the persisted hierarchy exactly:
+    // subtask -> task -> scope -> project. A flat subtask calculation would
+    // ignore task weights and can apply a scope weight multiple times.
+    const actual = weightedActualAt(scopes, cutoff);
     result.push({
       date: day.toISOString().slice(0, 10),
       planned: Number(planned.toFixed(2)),
-      actual: Number(lastActual.toFixed(2)),
+      actual: Number(actual.toFixed(2)),
     });
   }
 
@@ -107,4 +106,35 @@ export async function getSCurve(projectId: string) {
       ? "AHEAD"
       : "ON_TRACK";
   return { data: result, status };
+}
+
+function weightedActualAt(scopes: any[], cutoff: Date): number {
+  const weightedAverage = (rows: Array<{ progress: number; weight: number | null }>) => {
+    if (!rows.length) return 0;
+    let totalWeight = 0;
+    let total = 0;
+    for (const row of rows) {
+      // This deliberately uses ??, not ||. A configured 0 weight stays zero.
+      const weight = row.weight ?? 1;
+      totalWeight += weight;
+      total += row.progress * weight;
+    }
+    return totalWeight > 0 ? total / totalWeight : 0;
+  };
+
+  const scopeValues = scopes.map((scope) => ({
+    weight: scope.budgetPercent,
+    progress: weightedAverage(scope.tasks.map((task: any) => ({
+      weight: task.budgetPercent,
+      progress: weightedAverage(task.subtasks.map((subtask: any) => {
+        const latest = subtask.progressLogs.reduce(
+          (current: any, log: any) =>
+            log.date <= cutoff && (!current || log.date > current.date) ? log : current,
+          null,
+        );
+        return { weight: subtask.budgetPercent, progress: Number(latest?.cumulativePercent || 0) };
+      })),
+    }))),
+  }));
+  return weightedAverage(scopeValues);
 }
