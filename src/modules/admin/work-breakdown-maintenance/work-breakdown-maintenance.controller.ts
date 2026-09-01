@@ -35,14 +35,11 @@ export class WorkBreakdownMaintenanceController {
     const tables = await (prisma as any).maintenanceTable.findMany({
       where: {
         isActive: true,
-        OR: [
-          { isGlobal: true },
-          { businessUnits: { some: { businessUnitId: String(project.businessUnit || "").trim() } } },
-        ],
+        businessUnits: { some: { businessUnitId: String(project.businessUnit || "").trim() } },
       },
       select: { id: true },
     });
-    return { OR: [{ maintenanceTableId: null }, { maintenanceTableId: { in: tables.map((table: any) => table.id) } }] };
+    return { maintenanceTableId: { in: tables.map((table: any) => table.id) } };
   }
 
   static async listTables(_req: Request, res: Response) {
@@ -104,9 +101,22 @@ export class WorkBreakdownMaintenanceController {
   static async hierarchy(req: Request, res: Response) {
     try {
       const activeOnly = req.query.active !== "false";
-      const tableFilter = await WorkBreakdownMaintenanceController.tableFilter(
-        typeof req.query.projectId === "string" ? req.query.projectId : undefined,
-      );
+      const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
+      const tableFilter = await WorkBreakdownMaintenanceController.tableFilter(projectId);
+      const assignedTemplateCount = projectId
+        ? await (prisma as any).maintenanceTable.count({
+            where: {
+              isActive: true,
+              businessUnits: {
+                some: {
+                  businessUnitId: (await prisma.project.findUnique({
+                    where: { id: projectId }, select: { businessUnit: true },
+                  }))?.businessUnit || "__NO_BUSINESS_UNIT__",
+                },
+              },
+            },
+          })
+        : undefined;
       const scopes = await (prisma as any).scopeMaintenance.findMany({
         where: { ...(activeOnly ? { isActive: true } : {}), ...tableFilter },
         include: {
@@ -140,31 +150,59 @@ export class WorkBreakdownMaintenanceController {
         orderBy: [{ order: "asc" }, { name: "asc" }],
       });
 
+      const data = scopes.map((scope: any) => ({
+        ...scope,
+        tasks: scope.taskLinks.map((link: any) => ({
+          ...link.taskMaintenance,
+          order: link.order,
+          scopeMaintenanceIds: link.taskMaintenance.scopeLinks.map(
+            (scopeLink: any) => scopeLink.scopeMaintenanceId,
+          ),
+          subtasks: link.taskMaintenance.subtaskLinks.map(
+            (subtaskLink: any) => ({
+              ...subtaskLink.subtaskMaintenance,
+              order: subtaskLink.order,
+              taskMaintenanceIds: subtaskLink.subtaskMaintenance.taskLinks.map(
+                (taskLink: any) => taskLink.taskMaintenanceId,
+              ),
+              taskLinks: undefined,
+            }),
+          ),
+          scopeLinks: undefined,
+          subtaskLinks: undefined,
+        })),
+        taskLinks: undefined,
+      }));
+      const taskCount = data.reduce((count: number, scope: any) => count + scope.tasks.length, 0);
+      const subtaskCount = data.reduce(
+        (count: number, scope: any) => count + scope.tasks.reduce((sum: number, task: any) => sum + task.subtasks.length, 0),
+        0,
+      );
+
       return res.json({
         success: true,
-        data: scopes.map((scope: any) => ({
-          ...scope,
-          tasks: scope.taskLinks.map((link: any) => ({
-            ...link.taskMaintenance,
-            order: link.order,
-            scopeMaintenanceIds: link.taskMaintenance.scopeLinks.map(
-              (scopeLink: any) => scopeLink.scopeMaintenanceId,
-            ),
-            subtasks: link.taskMaintenance.subtaskLinks.map(
-              (subtaskLink: any) => ({
-                ...subtaskLink.subtaskMaintenance,
-                order: subtaskLink.order,
-                taskMaintenanceIds: subtaskLink.subtaskMaintenance.taskLinks.map(
-                  (taskLink: any) => taskLink.taskMaintenanceId,
-                ),
-                taskLinks: undefined,
-              }),
-            ),
-            scopeLinks: undefined,
-            subtaskLinks: undefined,
-          })),
-          taskLinks: undefined,
-        })),
+        data,
+        ...(projectId
+          ? {
+              meta: assignedTemplateCount === 0
+                ? {
+                    status: "NO_ASSIGNED_WBS",
+                    message: "No WBS template is assigned to this project's Business Unit. Contact an administrator to assign one.",
+                    counts: { templates: 0, scopes: 0, tasks: 0, subtasks: 0 },
+                  }
+                : data.length === 0
+                  ? {
+                      status: "EMPTY_ASSIGNED_WBS",
+                      message: "A WBS template is assigned to this project's Business Unit, but it has no active scope, task, or subtask entries.",
+                      counts: { templates: assignedTemplateCount, scopes: 0, tasks: 0, subtasks: 0 },
+                    }
+                  : {
+                      status: "AVAILABLE",
+                      message: null,
+                      counts: { templates: assignedTemplateCount, scopes: data.length, tasks: taskCount, subtasks: subtaskCount },
+                    },
+            }
+          : {}),
       });
     } catch (error: any) {
       return res.status(500).json({ success: false, message: error.message });

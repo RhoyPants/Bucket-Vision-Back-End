@@ -10,9 +10,8 @@ export function normalizeSourceType(value: unknown): MaintenanceSourceType {
   return normalized;
 }
 
-// Old records have no table and intentionally remain global, preserving all
-// current projects after this feature is deployed. New tables are available
-// only when assigned to the project's Business Unit.
+// A maintenance item is available only through an active template assigned
+// to the project's Business Unit. No global or unowned-record fallback.
 async function availableMaintenanceWhere(projectId?: string) {
   if (!projectId) return {};
   const project = await prisma.project.findUnique({
@@ -22,18 +21,12 @@ async function availableMaintenanceWhere(projectId?: string) {
   if (!project) throw new Error("Project not found");
   const businessUnitId = String(project.businessUnit || "").trim();
   return {
-    OR: [
-      { maintenanceTableId: null },
-      {
-        maintenanceTable: {
-          isActive: true,
-          OR: [
-            { isGlobal: true },
-            { businessUnits: { some: { businessUnitId } } },
-          ],
-        },
+    maintenanceTable: {
+      isActive: true,
+      businessUnits: {
+        some: { businessUnitId },
       },
-    ],
+    },
   };
 }
 
