@@ -17,11 +17,32 @@ const result = calculateCpm(
 );
 
 assert.equal(result.projectDurationDays, 12);
-assert.deepEqual(result.values.get("A"), { earlyStart: 1, earlyFinish: 3, lateStart: 1, lateFinish: 3, slackDays: 0, isCritical: true });
-assert.deepEqual(result.values.get("B"), { earlyStart: 4, earlyFinish: 8, lateStart: 4, lateFinish: 8, slackDays: 0, isCritical: true });
-assert.deepEqual(result.values.get("C"), { earlyStart: 4, earlyFinish: 5, lateStart: 7, lateFinish: 8, slackDays: 3, isCritical: false });
-assert.deepEqual(result.values.get("D"), { earlyStart: 9, earlyFinish: 12, lateStart: 9, lateFinish: 12, slackDays: 0, isCritical: true });
+assert.deepEqual(result.values.get("A"), { earlyStart: 0, earlyFinish: 3, lateStart: 0, lateFinish: 3, slackDays: 0, isCritical: true });
+assert.deepEqual(result.values.get("B"), { earlyStart: 3, earlyFinish: 8, lateStart: 3, lateFinish: 8, slackDays: 0, isCritical: true });
+assert.deepEqual(result.values.get("C"), { earlyStart: 3, earlyFinish: 5, lateStart: 6, lateFinish: 8, slackDays: 3, isCritical: false });
+assert.deepEqual(result.values.get("D"), { earlyStart: 8, earlyFinish: 12, lateStart: 8, lateFinish: 12, slackDays: 0, isCritical: true });
 assert.deepEqual(result.criticalPaths, [["A", "B", "D"]]);
+
+// Standard forward/backward-pass example: A(3) -> B(4) -> D(5) -> G(4) -> H(3).
+const reference = calculateCpm(
+  [
+    { id: "A", duration: 3 }, { id: "B", duration: 4 },
+    { id: "C", duration: 2 }, { id: "D", duration: 5 },
+    { id: "E", duration: 1 }, { id: "F", duration: 2 },
+    { id: "G", duration: 4 }, { id: "H", duration: 3 },
+  ],
+  [
+    { predecessorId: "A", successorId: "B" }, { predecessorId: "A", successorId: "C" },
+    { predecessorId: "B", successorId: "D" }, { predecessorId: "C", successorId: "E" },
+    { predecessorId: "C", successorId: "F" }, { predecessorId: "D", successorId: "G" },
+    { predecessorId: "E", successorId: "G" }, { predecessorId: "F", successorId: "H" },
+    { predecessorId: "G", successorId: "H" },
+  ],
+);
+assert.equal(reference.projectDurationDays, 19);
+assert.deepEqual(reference.values.get("A"), { earlyStart: 0, earlyFinish: 3, lateStart: 0, lateFinish: 3, slackDays: 0, isCritical: true });
+assert.deepEqual(reference.values.get("H"), { earlyStart: 16, earlyFinish: 19, lateStart: 16, lateFinish: 19, slackDays: 0, isCritical: true });
+assert.deepEqual(reference.criticalPaths, [["A", "B", "D", "G", "H"]]);
 
 const emptyGraph = calculateCpm(
   [{ id: "A", duration: 2 }, { id: "B", duration: 5 }],

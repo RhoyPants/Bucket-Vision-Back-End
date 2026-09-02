@@ -61,8 +61,8 @@ export function calculateCpm(nodes: CpmNodeInput[], edges: CpmEdgeInput[]): CpmC
 
   const values = new Map<string, CpmValues>();
   for (const id of order) {
-    const earlyStart = Math.max(1, ...predecessors.get(id)!.map((pred) => values.get(pred)!.earlyFinish + 1));
-    const earlyFinish = earlyStart + nodeById.get(id)!.duration - 1;
+    const earlyStart = Math.max(0, ...predecessors.get(id)!.map((pred) => values.get(pred)!.earlyFinish));
+    const earlyFinish = earlyStart + nodeById.get(id)!.duration;
     values.set(id, { earlyStart, earlyFinish, lateStart: 0, lateFinish: 0, slackDays: 0, isCritical: false });
   }
 
@@ -70,11 +70,11 @@ export function calculateCpm(nodes: CpmNodeInput[], edges: CpmEdgeInput[]): CpmC
   for (const id of [...order].reverse()) {
     const successorIds = successors.get(id)!;
     const lateFinish = successorIds.length
-      ? Math.min(...successorIds.map((successorId) => values.get(successorId)!.lateStart - 1))
+      ? Math.min(...successorIds.map((successorId) => values.get(successorId)!.lateStart))
       : projectDurationDays;
     const value = values.get(id)!;
     value.lateFinish = lateFinish;
-    value.lateStart = lateFinish - nodeById.get(id)!.duration + 1;
+    value.lateStart = lateFinish - nodeById.get(id)!.duration;
     value.slackDays = value.lateStart - value.earlyStart;
     value.isCritical = value.slackDays === 0;
   }
@@ -82,10 +82,10 @@ export function calculateCpm(nodes: CpmNodeInput[], edges: CpmEdgeInput[]): CpmC
   const criticalSuccessors = (id: string) => successors.get(id)!.filter((next) => {
     const currentValue = values.get(id)!;
     const nextValue = values.get(next)!;
-    return currentValue.isCritical && nextValue.isCritical && nextValue.earlyStart === currentValue.earlyFinish + 1;
+    return currentValue.isCritical && nextValue.isCritical && nextValue.earlyStart === currentValue.earlyFinish;
   });
   const criticalStarts = order.filter((id) => values.get(id)!.isCritical &&
-    !predecessors.get(id)!.some((pred) => values.get(pred)!.isCritical && values.get(id)!.earlyStart === values.get(pred)!.earlyFinish + 1));
+    !predecessors.get(id)!.some((pred) => values.get(pred)!.isCritical && values.get(id)!.earlyStart === values.get(pred)!.earlyFinish));
   const criticalPaths: string[][] = [];
   const walk = (id: string, path: string[]): void => {
     const next = criticalSuccessors(id);

@@ -66,7 +66,7 @@ function firstWorkingDay(date: Date, calendar: Calendar): Date {
 
 function dateForCpmDay(start: Date, day: number, calendar: Calendar): Date {
   let current = firstWorkingDay(start, calendar);
-  let index = 1;
+  let index = 0;
   while (index < day) {
     current = moveDate(current, 1);
     if (isWorkingDay(current, calendar)) index++;
@@ -171,7 +171,9 @@ async function buildResult(
   const anchor = project.startDate || subtasks.reduce<Date | null>((earliest, subtask) =>
     subtask.projectedStartDate && (!earliest || subtask.projectedStartDate < earliest) ? subtask.projectedStartDate : earliest, null);
   const calculatedStart = calculation && calculation.projectDurationDays > 0 && anchor ? firstWorkingDay(anchor, calendar) : null;
-  const calculatedFinish = calculation && calculation.projectDurationDays > 0 && anchor ? dateForCpmDay(anchor, calculation.projectDurationDays, calendar) : null;
+  const calculatedFinish = calculation && calculation.projectDurationDays > 0 && anchor
+    ? dateForCpmDay(anchor, calculation.projectDurationDays - 1, calendar)
+    : null;
   const warnings: Array<{ code: string; message: string; details?: unknown }> = [];
   if (!dependencies.length && !calculateEmptyGraph) warnings.push({ code: "CPM_NO_DEPENDENCIES", message: "No subtask dependencies have been configured." });
   if (missing.length) warnings.push({ code: "CPM_MISSING_DATES", message: "All scheduled subtasks must have projected start and end dates.", details: { subtasks: missing } });
@@ -193,7 +195,7 @@ async function buildResult(
         lateStart: value?.lateStart ?? null, lateFinish: value?.lateFinish ?? null,
         slackDays: value?.slackDays ?? null, isCritical: value?.isCritical ?? false,
         calculatedStartDate: value && anchor ? dateKey(dateForCpmDay(anchor, value.earlyStart, calendar)) : null,
-        calculatedFinishDate: value && anchor ? dateKey(dateForCpmDay(anchor, value.earlyFinish, calendar)) : null,
+        calculatedFinishDate: value && anchor ? dateKey(dateForCpmDay(anchor, value.earlyFinish - 1, calendar)) : null,
       };
     }),
     summary: {
