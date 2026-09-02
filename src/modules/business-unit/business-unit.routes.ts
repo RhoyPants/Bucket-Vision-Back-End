@@ -15,14 +15,12 @@ const router = Router();
 // GET /dropdown/:entity - with entity filter
 router.get(
   "/dropdown/:entity",
-  authenticate,
   (req: Request, res: Response) => businessUnitController.getBusinessUnitsForDropdown(req, res)
 );
 
 // GET /dropdown - all business units for dropdown
 router.get(
   "/dropdown",
-  authenticate,
   (req: Request, res: Response) => businessUnitController.getBusinessUnitsForDropdown(req, res)
 );
 
