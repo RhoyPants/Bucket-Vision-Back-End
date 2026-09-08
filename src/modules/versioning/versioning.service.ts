@@ -46,6 +46,7 @@ export class VersioningService {
         attachments: true,
         timelines: true,
         cpmDependencies: true,
+        wbsBusinessUnits: true,
         orgChart: { include: { nodes: true } },
         approvals: true,
       },
@@ -116,6 +117,13 @@ export class VersioningService {
         isLatestVersion: true, // Only this is latest until approved
         isLocked: false,
         requiresApproval: true,
+        wbsBusinessUnits: source.wbsBusinessUnits.length
+          ? {
+              create: source.wbsBusinessUnits.map((selection: any) => ({
+                businessUnitId: selection.businessUnitId,
+              })),
+            }
+          : undefined,
       },
     });
 

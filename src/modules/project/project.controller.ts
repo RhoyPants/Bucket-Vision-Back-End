@@ -15,6 +15,36 @@ import {
 } from "../../services/sharepoint-upload.service";
 import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
 
+const normalizeWbsBusinessUnitIds = (value: unknown): string[] => {
+  let values: unknown[] = [];
+  if (Array.isArray(value)) values = value;
+  else if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      values = Array.isArray(parsed) ? parsed : value.split(",");
+    } catch {
+      values = value.split(",");
+    }
+  }
+  return Array.from(new Set(values.map(String).map((id) => id.trim()).filter(Boolean)));
+};
+
+async function validateWbsBusinessUnits(ids: string[]) {
+  if (!ids.length) return;
+  const count = await prisma.businessUnit.count({ where: { id: { in: ids }, isActive: true } });
+  if (count !== ids.length) throw new Error("One or more WBS Business Units are invalid or inactive");
+}
+
+function serializeProjectWbsBusinessUnits(project: any) {
+  if (!project || !Array.isArray(project.wbsBusinessUnits)) return project;
+  const links = project.wbsBusinessUnits;
+  return {
+    ...project,
+    wbsBusinessUnitIds: links.map((link: any) => link.businessUnitId),
+    wbsBusinessUnits: links.map((link: any) => link.businessUnit).filter(Boolean),
+  };
+}
+
 export class ProjectController {
   private static readonly DIRECTORY_LIMITS = new Set([6, 12, 24, 48]);
   private static readonly DIRECTORY_SORT_FIELDS = new Set([
@@ -725,9 +755,13 @@ export class ProjectController {
 
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: includeOwner
-        ? { owner: { select: { id: true, name: true, email: true } } }
-        : undefined,
+      include: {
+        ...(includeOwner ? { owner: { select: { id: true, name: true, email: true } } } : {}),
+        wbsBusinessUnits: {
+          include: { businessUnit: { select: { id: true, code: true, name: true } } },
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
 
     if (!project) return null;
@@ -854,6 +888,7 @@ export class ProjectController {
         priority,
         pin,
         businessUnit,
+        wbsBusinessUnitIds,
         entity,
         monday,
         tuesday,
@@ -874,6 +909,8 @@ export class ProjectController {
           ];
 
       const userId = (req as any).user.id;
+      const normalizedWbsBusinessUnitIds = normalizeWbsBusinessUnitIds(wbsBusinessUnitIds);
+      await validateWbsBusinessUnits(normalizedWbsBusinessUnitIds);
 
       const project = await prisma.project.create({
         data: {
@@ -897,6 +934,9 @@ export class ProjectController {
           // 🔥 NEW FIELDS
           businessUnit,
           entity,
+          wbsBusinessUnits: normalizedWbsBusinessUnitIds.length
+            ? { create: normalizedWbsBusinessUnitIds.map((businessUnitId) => ({ businessUnitId })) }
+            : undefined,
 
           monday: monday ?? undefined,
           tuesday: tuesday ?? undefined,
@@ -957,6 +997,10 @@ export class ProjectController {
         where: { id: project.id },
         include: {
           attachments: true,
+          wbsBusinessUnits: {
+            include: { businessUnit: { select: { id: true, code: true, name: true } } },
+            orderBy: { createdAt: "asc" },
+          },
         },
       });
 
@@ -965,7 +1009,7 @@ export class ProjectController {
           projectWithAttachments ? [projectWithAttachments] : [],
         );
 
-      res.json(enrichedProject ?? projectWithAttachments);
+      res.json(serializeProjectWbsBusinessUnits(enrichedProject ?? projectWithAttachments));
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -1263,8 +1307,15 @@ export class ProjectController {
         sortOrder,
       } = ProjectController.parseListQuery(req);
 
-      const projects =
-        await approvalService.getPendingProjectsForApproval(userId);
+      const [projects, progressUpdates] = await Promise.all([
+        approvalService.getPendingProjectsForApproval(userId),
+        prisma.progressUpdateRequest.count({
+          where: {
+            status: "PENDING",
+            assignedApproverId: userId,
+          },
+        }),
+      ]);
       const enriched =
         await ProjectController.enrichBusinessUnitDetails(projects);
 
@@ -1311,6 +1362,11 @@ export class ProjectController {
         success: true,
         data: pageData,
         meta: ProjectController.buildListMeta(page, limit, total),
+        approvalCounts: {
+          projectApprovals: total,
+          progressUpdates,
+          total: total + progressUpdates,
+        },
       });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
@@ -1526,6 +1582,10 @@ export class ProjectController {
               },
             },
           },
+          wbsBusinessUnits: {
+            include: { businessUnit: { select: { id: true, code: true, name: true } } },
+            orderBy: { createdAt: "asc" },
+          },
         },
       });
 
@@ -1536,7 +1596,7 @@ export class ProjectController {
       const [enrichedProject] =
         await ProjectController.enrichBusinessUnitDetails([project]);
 
-      res.json(enrichedProject);
+      res.json(serializeProjectWbsBusinessUnits(enrichedProject));
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -1559,7 +1619,7 @@ export class ProjectController {
       const [enrichedProject] =
         await ProjectController.enrichBusinessUnitDetails([project]);
 
-      res.json(enrichedProject);
+      res.json(serializeProjectWbsBusinessUnits(enrichedProject));
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -1598,7 +1658,7 @@ export class ProjectController {
 
       res.json({
         success: true,
-        data: enrichedProject,
+        data: serializeProjectWbsBusinessUnits(enrichedProject),
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -1624,6 +1684,7 @@ export class ProjectController {
         priority,
         pin,
         businessUnit,
+        wbsBusinessUnitIds,
         entity,
         monday,
         tuesday,
@@ -1672,6 +1733,11 @@ export class ProjectController {
         }
       }
 
+      const normalizedWbsBusinessUnitIds = wbsBusinessUnitIds === undefined
+        ? undefined
+        : normalizeWbsBusinessUnitIds(wbsBusinessUnitIds);
+      if (normalizedWbsBusinessUnitIds) await validateWbsBusinessUnits(normalizedWbsBusinessUnitIds);
+
       const updated = await prisma.project.update({
         where: { id },
         data: {
@@ -1692,6 +1758,14 @@ export class ProjectController {
           // 🔥 NEW
           businessUnit,
           entity,
+          ...(normalizedWbsBusinessUnitIds
+            ? {
+                wbsBusinessUnits: {
+                  deleteMany: {},
+                  create: normalizedWbsBusinessUnitIds.map((businessUnitId) => ({ businessUnitId })),
+                },
+              }
+            : {}),
 
           monday: monday ?? undefined,
           tuesday: tuesday ?? undefined,
@@ -1702,6 +1776,12 @@ export class ProjectController {
           sunday: sunday ?? undefined,
           includeHolidays: includeHolidays ?? undefined,
           status: status ?? undefined,
+        },
+        include: {
+          wbsBusinessUnits: {
+            include: { businessUnit: { select: { id: true, code: true, name: true } } },
+            orderBy: { createdAt: "asc" },
+          },
         },
       });
 
@@ -1725,7 +1805,7 @@ export class ProjectController {
       const [enrichedProject] =
         await ProjectController.enrichBusinessUnitDetails([updated]);
 
-      res.json(enrichedProject);
+      res.json(serializeProjectWbsBusinessUnits(enrichedProject));
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

@@ -15,6 +15,7 @@ export interface CreateProjectDTO {
   priority?: string;
   pin?: string;
   businessUnit?: string;
+  wbsBusinessUnitIds?: string[];
   entity?: string;
 
   monday?: boolean;
@@ -41,6 +42,7 @@ export interface UpdateProjectDTO {
   name?: string;
   description?: string;
   businessUnit?: string;
+  wbsBusinessUnitIds?: string[];
   entity?: string;
 
   location?: string;

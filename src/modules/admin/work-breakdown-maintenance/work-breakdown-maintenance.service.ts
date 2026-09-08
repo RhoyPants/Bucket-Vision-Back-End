@@ -11,20 +11,20 @@ export function normalizeSourceType(value: unknown): MaintenanceSourceType {
 }
 
 // A maintenance item is available only through an active template assigned
-// to the project's Business Unit. No global or unowned-record fallback.
+// to one of the WBS Business Units explicitly selected on the project.
 async function availableMaintenanceWhere(projectId?: string) {
   if (!projectId) return {};
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { businessUnit: true },
+    select: { wbsBusinessUnits: { select: { businessUnitId: true } } },
   });
   if (!project) throw new Error("Project not found");
-  const businessUnitId = String(project.businessUnit || "").trim();
+  const businessUnitIds = project.wbsBusinessUnits.map((selection) => selection.businessUnitId);
   return {
     maintenanceTable: {
       isActive: true,
       businessUnits: {
-        some: { businessUnitId },
+        some: { businessUnitId: { in: businessUnitIds } },
       },
     },
   };

@@ -6,6 +6,14 @@ const cleanName = (value: unknown) => String(value || "").trim();
 const uniqueIds = (value: unknown) =>
   Array.from(new Set(Array.isArray(value) ? value.map(String).filter(Boolean) : []));
 
+const queryIds = (value: unknown) =>
+  Array.from(new Set(
+    (Array.isArray(value) ? value : [value])
+      .flatMap((item) => String(item || "").split(","))
+      .map((item) => item.trim())
+      .filter(Boolean),
+  ));
+
 const duplicateCodeResponse = (
   res: Response,
   entity: "Scope" | "Task" | "Subtask",
@@ -101,6 +109,97 @@ export class WorkBreakdownMaintenanceController {
   static async hierarchy(req: Request, res: Response) {
     try {
       const activeOnly = req.query.active !== "false";
+      const businessUnitIds = queryIds(req.query.businessUnitIds);
+
+      if (businessUnitIds.length > 0) {
+        const selectedBusinessUnits = await prisma.businessUnit.findMany({
+          where: { id: { in: businessUnitIds }, isActive: true },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            maintenanceTables: {
+              where: { maintenanceTable: { isActive: true } },
+              select: { maintenanceTableId: true },
+            },
+          },
+          orderBy: [{ name: "asc" }, { id: "asc" }],
+        });
+        if (selectedBusinessUnits.length !== businessUnitIds.length) {
+          return res.status(400).json({
+            success: false,
+            message: "One or more WBS Business Units are invalid or inactive.",
+          });
+        }
+
+        const templates = await (prisma as any).maintenanceTable.findMany({
+          where: {
+            isActive: true,
+            businessUnits: { some: { businessUnitId: { in: businessUnitIds } } },
+          },
+          include: {
+            businessUnits: {
+              where: { businessUnitId: { in: businessUnitIds } },
+              include: { businessUnit: { select: { id: true, code: true, name: true } } },
+              orderBy: { businessUnit: { name: "asc" } },
+            },
+            scopes: {
+              where: activeOnly ? { isActive: true } : undefined,
+              include: {
+                taskLinks: {
+                  where: activeOnly ? { taskMaintenance: { isActive: true } } : undefined,
+                  include: {
+                    taskMaintenance: {
+                      include: {
+                        subtaskLinks: {
+                          where: activeOnly ? { subtaskMaintenance: { isActive: true } } : undefined,
+                          include: { subtaskMaintenance: true },
+                          orderBy: [{ order: "asc" }, { subtaskMaintenance: { name: "asc" } }],
+                        },
+                      },
+                    },
+                  },
+                  orderBy: [{ order: "asc" }, { taskMaintenance: { name: "asc" } }],
+                },
+              },
+              orderBy: [{ order: "asc" }, { name: "asc" }],
+            },
+          },
+          orderBy: [{ name: "asc" }, { id: "asc" }],
+        });
+
+        const data = templates.map((template: any) => ({
+          templateId: template.id,
+          templateName: template.name,
+          templateCode: template.code,
+          businessUnits: template.businessUnits.map((link: any) => link.businessUnit),
+          scopes: template.scopes.map((scope: any) => ({
+            ...scope,
+            tasks: scope.taskLinks.map((taskLink: any) => ({
+              ...taskLink.taskMaintenance,
+              order: taskLink.order,
+              subtasks: taskLink.taskMaintenance.subtaskLinks.map((subtaskLink: any) => ({
+                ...subtaskLink.subtaskMaintenance,
+                order: subtaskLink.order,
+              })),
+              subtaskLinks: undefined,
+            })),
+            taskLinks: undefined,
+          })),
+        }));
+        const unassignedBusinessUnits = selectedBusinessUnits
+          .filter((unit) => unit.maintenanceTables.length === 0)
+          .map(({ maintenanceTables: _links, ...unit }) => unit);
+
+        return res.json({ success: true, data, unassignedBusinessUnits });
+      }
+
+      // Project Business Unit is no longer an implicit WBS filter. Legacy
+      // projectId-only calls return no LOV until the user selects WBS BUs.
+      if (typeof req.query.projectId === "string") {
+        return res.json({ success: true, data: [], unassignedBusinessUnits: [] });
+      }
+
       const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
       const tableFilter = await WorkBreakdownMaintenanceController.tableFilter(projectId);
       const assignedTemplateCount = projectId

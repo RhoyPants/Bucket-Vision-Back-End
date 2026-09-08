@@ -1,6 +1,14 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { addProgressLog, deleteProgressLog, ProgressRuleError, updateProgressLog } from "./progress.service";
+import {
+  addProgressLog,
+  cancelProgressUpdateRequest,
+  changeProgressValue,
+  deleteProgressLog,
+  ProgressRuleError,
+  reviewProgressUpdateRequest,
+  updateProgressLog,
+} from "./progress.service";
 import { parseDailyPercent, roundProgress } from "./progress-precision";
 import { getSCurve as getSCurveData } from "./scurve.service";
 import {
@@ -21,8 +29,6 @@ import {
 } from "./porogress.dto";
 
 const prisma = new PrismaClient();
-const MAX_PROGRESS_UPDATE_ATTEMPTS = 2;
-
 function sendProgressError(res: Response, error: any) {
   const status = error instanceof ProgressRuleError ? error.httpStatus : 400;
   return res.status(status).json({
@@ -340,16 +346,12 @@ export async function updateProgress(req: Request, res: Response) {
       throw new Error("Progress log not found");
     }
 
-    const currentUpdateAttempts = existingLog.dayNumber ?? 0;
-    if (currentUpdateAttempts >= MAX_PROGRESS_UPDATE_ATTEMPTS) {
-      return res.status(400).json({
-        success: false,
-        message: `Update limit reached. You can only update/resubmit this progress ${MAX_PROGRESS_UPDATE_ATTEMPTS} times.`,
-        error: "UPDATE_LIMIT_REACHED",
-      });
-    }
-
     const body = req.body ?? {};
+    const userId = (req as any).user?.id;
+    if (!userId) throw new ProgressRuleError("Unauthorized", 401, "UNAUTHORIZED");
+    if (existingLog.userId !== userId) {
+      throw new ProgressRuleError("You can only update your own progress entry.", 403, "PROGRESS_NOT_OWNED");
+    }
 
     const updateData: UpdateProgressDTO = {};
 
@@ -389,10 +391,39 @@ export async function updateProgress(req: Request, res: Response) {
           ...((rawFiles?.photo as Express.Multer.File[]) ?? []),
         ];
 
-    const log = await updateProgressLog(id, {
-        ...updateData,
-        dayNumber: currentUpdateAttempts + 1,
-    });
+    let log: any;
+    let progressAudit: any = null;
+    if (updateData.dailyPercent !== undefined) {
+      if (
+        updateData.dailyPercent < Number(existingLog.dailyPercent) &&
+        (files.length > 0 || body.attachmentUpdates || body.removeAttachmentIds)
+      ) {
+        throw new ProgressRuleError(
+          "Attachments cannot be changed as part of a pending progress decrease request.",
+          400,
+          "PENDING_UPDATE_ATTACHMENTS_NOT_ALLOWED",
+        );
+      }
+      const { dailyPercent: requestedPercent, ...immediateData } = updateData;
+      const result = await changeProgressValue({
+        progressLogId: id,
+        requestedById: userId,
+        requestedPercent,
+        remarks: body.remarks,
+        immediateData,
+      });
+      if (result.requiresApproval) {
+        return res.status(202).json({
+          success: true,
+          message: "Progress decrease submitted for BU Head approval",
+          data: { request: result.request, progressLog: serializeProgressLog(existingLog as any) },
+        });
+      }
+      log = result.log;
+      progressAudit = result.request;
+    } else {
+      log = await updateProgressLog(id, { ...updateData });
+    }
 
     // Optional metadata updates for existing attachments.
     // Accepts either JSON string or parsed array in multipart/form-data.
@@ -537,10 +568,210 @@ export async function updateProgress(req: Request, res: Response) {
       success: true,
       message: "Progress updated",
       data: serializeProgressLog(updatedLog),
+      audit: progressAudit,
     } as ProgressResponseDTO);
   } catch (error: any) {
     sendProgressError(res, error);
   }
+}
+
+const progressUpdateRequestInclude = {
+  requestedBy: { select: { id: true, name: true, email: true } },
+  assignedApprover: { select: { id: true, name: true, email: true } },
+  reviewedBy: { select: { id: true, name: true, email: true } },
+  businessUnit: { select: { id: true, name: true } },
+  progressLog: {
+    select: {
+      id: true,
+      subtaskId: true,
+      date: true,
+      dailyPercent: true,
+      cumulativePercent: true,
+      subtask: {
+        select: {
+          id: true,
+          title: true,
+          task: {
+            select: {
+              id: true,
+              title: true,
+              scope: { select: { id: true, name: true, project: { select: { id: true, name: true } } } },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+const progressUpdateStatuses = ["PENDING", "APPLIED", "APPROVED", "REJECTED", "CANCELLED"];
+
+function parseUpdateRequestStatus(value: unknown, fallback?: string) {
+  const status = value ? String(value).trim().toUpperCase() : fallback;
+  if (status && !progressUpdateStatuses.includes(status)) {
+    throw new ProgressRuleError("Invalid progress update request status.", 400, "INVALID_UPDATE_REQUEST_STATUS");
+  }
+  return status;
+}
+
+function parsePagination(query: Request["query"]) {
+  const requestedPage = Number(query.page || 1);
+  const requestedLimit = Number(query.limit || 20);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const limit = Number.isInteger(requestedLimit) && requestedLimit > 0
+    ? Math.min(requestedLimit, 100)
+    : 20;
+  return { page, limit };
+}
+
+function formatProgressDate(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function progressUpdateSearchWhere(search: unknown) {
+  const term = String(search || "").trim();
+  if (!term) return {};
+  const contains = { contains: term, mode: "insensitive" as const };
+  return {
+    OR: [
+      { requestedBy: { name: contains } },
+      { progressLog: { subtask: { title: contains } } },
+      { progressLog: { subtask: { task: { title: contains } } } },
+      { progressLog: { subtask: { task: { scope: { name: contains } } } } },
+      { progressLog: { subtask: { task: { scope: { project: { name: contains } } } } } },
+    ],
+  };
+}
+
+function serializeProgressUpdateRequest(request: any, userId: string) {
+  const subtask = request.progressLog.subtask;
+  const task = subtask.task;
+  const scope = task.scope;
+  const project = scope.project;
+  return {
+    id: request.id,
+    status: request.status,
+    currentPercent: request.currentPercent,
+    requestedPercent: request.requestedPercent,
+    difference: request.difference,
+    remarks: request.remarks,
+    reviewRemarks: request.reviewRemarks,
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
+    reviewedAt: request.reviewedAt,
+    cancelledAt: request.cancelledAt,
+    appliedAt: request.appliedAt,
+    canCancel: request.status === "PENDING" && request.requestedById === userId,
+    canReview: request.status === "PENDING" && request.assignedApproverId === userId,
+    requestedBy: request.requestedBy,
+    assignedApprover: request.assignedApprover,
+    reviewedBy: request.reviewedBy,
+    progressLog: {
+      id: request.progressLog.id,
+      subtaskId: request.progressLog.subtaskId,
+      date: formatProgressDate(request.progressLog.date),
+      dailyPercent: request.progressLog.dailyPercent,
+      cumulativePercent: request.progressLog.cumulativePercent,
+    },
+    subtask: { id: subtask.id, title: subtask.title },
+    task: { id: task.id, title: task.title },
+    scope: { id: scope.id, name: scope.name },
+    project: { id: project.id, name: project.name },
+    businessUnit: request.businessUnit,
+  };
+}
+
+async function listProgressUpdateRequests(req: Request, res: Response, mode: "mine" | "inbox") {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) throw new ProgressRuleError("Unauthorized", 401, "UNAUTHORIZED");
+    const status = parseUpdateRequestStatus(req.query.status);
+    const { page, limit } = parsePagination(req.query);
+    const where: any = {
+      ...(mode === "mine" ? { requestedById: userId } : { assignedApproverId: userId }),
+      ...(status ? { status } : {}),
+      ...progressUpdateSearchWhere(req.query.search),
+    };
+    const [total, requests] = await prisma.$transaction([
+      prisma.progressUpdateRequest.count({ where }),
+      prisma.progressUpdateRequest.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+        include: progressUpdateRequestInclude,
+      }),
+    ]);
+    res.json({
+      success: true,
+      data: requests.map((request) => serializeProgressUpdateRequest(request, userId)),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error: any) {
+    sendProgressError(res, error);
+  }
+}
+
+export async function getMyProgressUpdateRequests(req: Request, res: Response) {
+  return listProgressUpdateRequests(req, res, "mine");
+}
+
+export async function getProgressUpdateInbox(req: Request, res: Response) {
+  return listProgressUpdateRequests(req, res, "inbox");
+}
+
+export async function getSubtaskProgressUpdateRequests(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) throw new ProgressRuleError("Unauthorized", 401, "UNAUTHORIZED");
+    const subtaskId = String(req.params.subtaskId || "");
+    const status = parseUpdateRequestStatus(req.query.status, "PENDING");
+    const requests = await prisma.progressUpdateRequest.findMany({
+      where: {
+        progressLog: { subtaskId },
+        status: status as any,
+        OR: [{ requestedById: userId }, { assignedApproverId: userId }],
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: progressUpdateRequestInclude,
+    });
+    res.json({
+      success: true,
+      data: requests.map((request) => serializeProgressUpdateRequest(request, userId)),
+    });
+  } catch (error: any) {
+    sendProgressError(res, error);
+  }
+}
+
+export async function approveProgressUpdate(req: Request, res: Response) {
+  try {
+    const request = await reviewProgressUpdateRequest({
+      requestId: String(req.params.id), reviewerId: (req as any).user?.id,
+      decision: "APPROVED", reviewRemarks: req.body?.remarks,
+    });
+    res.json({ success: true, message: "Progress decrease approved and applied", data: request });
+  } catch (error: any) { sendProgressError(res, error); }
+}
+
+export async function rejectProgressUpdate(req: Request, res: Response) {
+  try {
+    const request = await reviewProgressUpdateRequest({
+      requestId: String(req.params.id), reviewerId: (req as any).user?.id,
+      decision: "REJECTED", reviewRemarks: req.body?.remarks,
+    });
+    res.json({ success: true, message: "Progress decrease rejected; current progress was retained", data: request });
+  } catch (error: any) { sendProgressError(res, error); }
+}
+
+export async function cancelProgressUpdate(req: Request, res: Response) {
+  try {
+    const request = await cancelProgressUpdateRequest(String(req.params.id), (req as any).user?.id);
+    res.json({ success: true, message: "Progress update request cancelled", data: request });
+  } catch (error: any) { sendProgressError(res, error); }
 }
 
 // ========================================
@@ -678,5 +909,146 @@ export async function streamProgressAttachment(req: Request, res: Response) {
       success: false,
       message: error.message,
     });
+  }
+}
+
+// ========================================
+// UNIFIED PROGRESS HISTORY (COMBINED LOGS + UPDATE REQUESTS)
+// ========================================
+export async function getSubtaskProgressHistory(req: Request, res: Response) {
+  try {
+    const subtaskId = String(req.params.subtaskId || "");
+    const { page, limit } = parsePagination(req.query);
+
+    if (!subtaskId) {
+      throw new ProgressRuleError("subtaskId is required", 400, "MISSING_SUBTASK_ID");
+    }
+
+    // Fetch all progress logs for this subtask
+    const logs = await prisma.progressLog.findMany({
+      where: { subtaskId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        updateRequests: {
+          include: {
+            requestedBy: { select: { id: true, name: true, email: true } },
+            assignedApprover: { select: { id: true, name: true, email: true } },
+            reviewedBy: { select: { id: true, name: true, email: true } },
+            businessUnit: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    });
+
+    // Build unified timeline by combining logs and their update requests
+    const events: any[] = [];
+
+    for (const log of logs) {
+      // Add PROGRESS_CREATED event
+      events.push({
+        type: "PROGRESS_CREATED",
+        timestamp: log.createdAt,
+        date: log.date,
+        id: `log-${log.id}`,
+        logId: log.id,
+        value: roundProgress(log.dailyPercent),
+        cumulativePercent: roundProgress(log.cumulativePercent),
+        performedBy: log.user,
+        remarks: log.remarks,
+        attachmentsCount: log.updateRequests?.length ?? 0,
+      });
+
+      // Add events for each update request associated with this log
+      if (log.updateRequests && log.updateRequests.length > 0) {
+        for (const request of log.updateRequests) {
+          const baseEvent = {
+            timestamp: request.createdAt,
+            id: request.id,
+            requestId: request.id,
+            logId: log.id,
+            date: log.date,
+            currentPercent: roundProgress(request.currentPercent),
+            requestedPercent: roundProgress(request.requestedPercent),
+            difference: roundProgress(request.difference),
+            remarks: request.remarks,
+            businessUnit: request.businessUnit,
+            requestedBy: request.requestedBy,
+          };
+
+          if (request.status === "APPLIED") {
+            events.push({
+              ...baseEvent,
+              type: "PROGRESS_UPDATED",
+              appliedAt: request.appliedAt,
+            });
+          } else if (request.status === "PENDING") {
+            events.push({
+              ...baseEvent,
+              type: "DECREASE_REQUESTED",
+              assignedApprover: request.assignedApprover,
+            });
+          } else if (request.status === "APPROVED") {
+            events.push({
+              ...baseEvent,
+              type: "DECREASE_APPROVED",
+              approvedBy: request.reviewedBy,
+              approvedAt: request.reviewedAt,
+              reviewRemarks: request.reviewRemarks,
+            });
+          } else if (request.status === "REJECTED") {
+            events.push({
+              ...baseEvent,
+              type: "DECREASE_REJECTED",
+              rejectedBy: request.reviewedBy,
+              rejectedAt: request.reviewedAt,
+              rejectionRemarks: request.reviewRemarks,
+            });
+          } else if (request.status === "CANCELLED") {
+            events.push({
+              ...baseEvent,
+              type: "DECREASE_CANCELLED",
+              cancelledAt: request.cancelledAt,
+              cancelledBy: request.requestedBy,
+            });
+          }
+        }
+      }
+    }
+
+    // Sort all events chronologically (newest first)
+    events.sort((a, b) => {
+      const timeA = a.timestamp.getTime();
+      const timeB = b.timestamp.getTime();
+      if (timeA !== timeB) return timeB - timeA; // Reverse for newest first
+      // If same timestamp, order by type priority (reverse)
+      const typePriority: Record<string, number> = {
+        PROGRESS_CREATED: 1,
+        PROGRESS_UPDATED: 2,
+        DECREASE_REQUESTED: 3,
+        DECREASE_APPROVED: 4,
+        DECREASE_REJECTED: 5,
+        DECREASE_CANCELLED: 6,
+      };
+      return (typePriority[b.type] || 99) - (typePriority[a.type] || 99);
+    });
+
+    // Apply pagination
+    const total = events.length;
+    const skip = (page - 1) * limit;
+    const paginatedEvents = events.slice(skip, skip + limit);
+
+    res.json({
+      success: true,
+      data: paginatedEvents,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error: any) {
+    sendProgressError(res, error);
   }
 }

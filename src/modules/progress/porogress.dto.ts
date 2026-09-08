@@ -57,5 +57,6 @@ export interface ProgressResponseDTO {
   success: boolean;
   message?: string;
   data?: any;
+  audit?: any;
   status?: string;
 }
