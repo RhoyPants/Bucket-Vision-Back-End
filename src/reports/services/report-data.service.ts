@@ -66,7 +66,7 @@ export class ReportDataService {
       id: scope.id,
       name: scope.name,
       description: scope.description,
-      metrics: this.metrics(scope.tasks.flatMap((task: any) => task.subtasks), period, schedule, kpiConfig),
+      metrics: this.metrics(scope.tasks.flatMap((task: any) => task.subtasks.map((subtask: any) => ({...subtask, isBudgeted: project.isBudgeted}))), period, schedule, kpiConfig),
       tasks: scope.tasks.map((task: any) => ({
         id: task.id,
         title: task.title,
@@ -136,7 +136,7 @@ export class ReportDataService {
         expected:
           "Linear planned progress across configured working days and holidays for each dated subtask.",
         aggregation:
-          "First positive available weight: subtask budget %, subtask budget, task budget %, task budget, scope budget %, scope budget; otherwise equal weight.",
+          project.isBudgeted === false ? "Equal weight per subtask; missing planned dates contribute zero." : "First positive available weight: subtask budget %, subtask budget, task budget %, task budget, scope budget %, scope budget; otherwise equal weight.",
         healthThresholds: {
           delayedBelowVariance: kpiConfig.criticalBelow,
           healthyAtOrAboveVariance: kpiConfig.healthyAtOrAbove,
@@ -307,6 +307,11 @@ export class ReportDataService {
       },
     });
     if (!project) throw httpError("Project not found", 404);
+    for (const scope of project.scopes) {
+      for (const task of scope.tasks) {
+        for (const subtask of task.subtasks) Object.assign(subtask, { isBudgeted: project.isBudgeted });
+      }
+    }
     return project;
   }
 

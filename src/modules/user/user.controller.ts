@@ -63,7 +63,11 @@ const deleteProjectCascade = async (tx: any, projectId: string) => {
 };
 
 export const getUsers = async (req: Request, res: Response) => {
+  if (req.query.active !== undefined && !["true", "false"].includes(String(req.query.active))) {
+    res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message: "active must be true or false." } }); return;
+  }
   const users = await prisma.user.findMany({
+    where: req.query.active === undefined ? undefined : { isActive: req.query.active === "true", ...(req.query.active === "true" ? { role: { isActive: true } } : {}) },
     include: {
       role: true,
       businessUnit: {
@@ -78,7 +82,7 @@ export const getUsers = async (req: Request, res: Response) => {
     },
   });
 
-  res.json(users);
+  res.json(users.map(({ password, refreshToken, ...user }) => user));
 };
 
 export const getUserById = async (req: Request, res: Response) => {

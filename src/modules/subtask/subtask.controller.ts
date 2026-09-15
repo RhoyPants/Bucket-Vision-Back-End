@@ -1,3 +1,4 @@
+import { recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { SubtaskService } from "./subtask.service";
@@ -18,6 +19,8 @@ import {
 } from "./subtask.dto";
 
 async function recomputeTask(taskId: string) {
+  const parent = await prisma.task.findUniqueOrThrow({ where: { id: taskId }, select: { scope: { select: { projectId: true } } } });
+  if (await prisma.$transaction(tx => recomputeNonBudgetedProject(tx, parent.scope.projectId))) return;
   const subtasks = await prisma.subtask.findMany({
     where: { taskId },
   });

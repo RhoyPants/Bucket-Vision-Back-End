@@ -15,6 +15,7 @@ export interface WorkSchedule {
 }
 
 export interface CalculableSubtask {
+  isBudgeted?: boolean;
   id: string;
   budgetPercent: number | null;
   budgetAllocated: number | null;
@@ -69,7 +70,7 @@ export class ReportCalculationService {
     value: (subtask: CalculableSubtask) => number | null
   ): number | null {
     const values = subtasks
-      .map((subtask) => ({ subtask, value: value(subtask) }))
+      .map((subtask) => ({ subtask, value: value(subtask) ?? (subtask.isBudgeted === false ? 0 : null) }))
       .filter((item): item is { subtask: CalculableSubtask; value: number } =>
         item.value !== null && Number.isFinite(item.value)
       );
@@ -100,6 +101,7 @@ export class ReportCalculationService {
   }
 
   private weight(subtask: CalculableSubtask): number {
+    if (subtask.isBudgeted === false) return 1;
     const candidates = [
       subtask.budgetPercent,
       subtask.budgetAllocated,

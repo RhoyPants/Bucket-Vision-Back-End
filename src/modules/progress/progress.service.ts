@@ -1,5 +1,7 @@
+import { recomputeNonBudgetedProject } from "./non-budgeted-progress";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { fromProgressUnits, roundProgress, toProgressUnits } from "./progress-precision";
+import { notificationService } from "../notification/notification.service";
 
 const prisma = new PrismaClient();
 type Tx = Prisma.TransactionClient;
@@ -27,6 +29,8 @@ async function lockSubtask(tx: Tx, subtaskId: string) {
 }
 
 async function recomputeProjectHierarchy(tx: Tx, taskId: string) {
+  const parent = await tx.task.findUniqueOrThrow({ where: { id: taskId }, select: { scope: { select: { projectId: true } } } });
+  if (await recomputeNonBudgetedProject(tx, parent.scope.projectId)) return;
   const subtasks = await tx.subtask.findMany({ where: { taskId }, select: { progress: true, budgetPercent: true } });
   const taskUnits = weightedProgressUnits(subtasks);
   const task = await tx.task.update({ where: { id: taskId }, data: { progress: decimal(fromProgressUnits(taskUnits)) }, select: { scopeId: true } });
@@ -265,6 +269,21 @@ export async function changeProgressValue(params: {
           status: "PENDING",
         },
       });
+      const target = { resourceType: "PROGRESS_UPDATE", projectId: assignment.project.id, progressUpdateId: request.id, progressLogId: existing.id };
+      const metadata = { requesterId: params.requestedById, projectName: assignment.project.name, currentPercent: current, requestedPercent: requested, difference, remarks };
+      await notificationService.create(tx, {
+        recipientId: assignment.assignedApprover.id,
+        type: "PROGRESS_UPDATE_APPROVAL_ASSIGNED",
+        category: "PROGRESS_UPDATE",
+        priority: "HIGH",
+        title: "Progress update approval assigned",
+        message: `A progress correction request for ${assignment.project.name} requires your review.`,
+        requiresAcknowledgement: true,
+        actorId: params.requestedById,
+        target,
+        metadata,
+        eventKey: `PROGRESS_UPDATE_APPROVAL_ASSIGNED:${assignment.assignedApprover.id}:${request.id}`,
+      });
       return {
         requiresApproval: true as const,
         request: {
@@ -304,7 +323,7 @@ export async function reviewProgressUpdateRequest(params: {
   return prisma.$transaction(async (tx) => {
     const request = await tx.progressUpdateRequest.findUnique({
       where: { id: params.requestId },
-      include: { progressLog: { select: { id: true, subtaskId: true, dailyPercent: true } } },
+      include: { progressLog: { select: { id: true, subtaskId: true, dailyPercent: true, subtask: { select: { task: { select: { scope: { select: { project: { select: { id: true, name: true } } } } } } } } } } },
     });
     if (!request) throw new ProgressRuleError("Progress update request not found", 404, "UPDATE_REQUEST_NOT_FOUND");
     if (request.status !== "PENDING") throw new ProgressRuleError("This request is no longer pending.", 409, "UPDATE_REQUEST_RESOLVED");
@@ -332,7 +351,7 @@ export async function reviewProgressUpdateRequest(params: {
       await recomputeSubtaskProgressInTx(tx, request.progressLog.subtaskId);
     }
 
-    return tx.progressUpdateRequest.update({
+    const updated = await tx.progressUpdateRequest.update({
       where: { id: request.id },
       data: {
         status: params.decision,
@@ -347,19 +366,65 @@ export async function reviewProgressUpdateRequest(params: {
         reviewedBy: { select: { id: true, name: true, email: true } },
       },
     });
+    const project = request.progressLog.subtask.task.scope.project;
+    const type = params.decision === "APPROVED" ? "PROGRESS_UPDATE_APPROVED" : "PROGRESS_UPDATE_REJECTED";
+    await notificationService.create(tx, {
+      recipientId: request.requestedById,
+      type,
+      category: "PROGRESS_UPDATE",
+      priority: params.decision === "APPROVED" ? "NORMAL" : "HIGH",
+      title: params.decision === "APPROVED" ? "Progress update approved" : "Progress update rejected",
+      message: params.decision === "APPROVED" ? `Your progress correction request for ${project.name} was approved.` : `Your progress correction request for ${project.name} was rejected.`,
+      actorId: params.reviewerId,
+      target: { resourceType: "PROGRESS_UPDATE", projectId: project.id, progressUpdateId: request.id, progressLogId: request.progressLogId },
+      metadata: { projectName: project.name, currentPercent: Number(request.currentPercent), requestedPercent: Number(request.requestedPercent), reviewRemarks: reviewRemarks || null },
+      eventKey: `${type}:${request.requestedById}:${request.id}`,
+    });
+    return updated;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 export async function cancelProgressUpdateRequest(requestId: string, userId: string) {
   return prisma.$transaction(async (tx) => {
-    const request = await tx.progressUpdateRequest.findUnique({ where: { id: requestId } });
+    const request = await tx.progressUpdateRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        progressLog: {
+          select: {
+            id: true,
+            subtask: { select: { task: { select: { scope: { select: { project: { select: { id: true, name: true } } } } } } } },
+          },
+        },
+      },
+    });
     if (!request) throw new ProgressRuleError("Progress update request not found", 404, "UPDATE_REQUEST_NOT_FOUND");
     if (request.requestedById !== userId) throw new ProgressRuleError("Only the requester can cancel this request.", 403, "NOT_UPDATE_REQUEST_OWNER");
     if (request.status !== "PENDING") throw new ProgressRuleError("Only a pending request can be cancelled.", 409, "UPDATE_REQUEST_RESOLVED");
-    return tx.progressUpdateRequest.update({
+    const cancelled = await tx.progressUpdateRequest.update({
       where: { id: requestId },
       data: { status: "CANCELLED", cancelledAt: new Date() },
     });
+    const notificationTime = new Date();
+    await tx.notification.updateMany({
+      where: { eventKey: `PROGRESS_UPDATE_APPROVAL_ASSIGNED:${request.assignedApproverId}:${request.id}`, archivedAt: null },
+      data: { archivedAt: notificationTime, readAt: notificationTime, isRead: true },
+    });
+    if (request.assignedApproverId && request.assignedApproverId !== userId) {
+      const project = request.progressLog.subtask.task.scope.project;
+      await notificationService.create(tx, {
+        recipientId: request.assignedApproverId,
+        type: "PROGRESS_UPDATE_CANCELLED",
+        category: "PROGRESS_UPDATE",
+        priority: "NORMAL",
+        title: "Progress update request cancelled",
+        message: `The progress correction request for ${project.name} was cancelled by the requester.`,
+        actorId: userId,
+        target: { resourceType: "PROGRESS_UPDATE", projectId: project.id, progressUpdateId: request.id, progressLogId: request.progressLogId },
+        metadata: { requesterId: request.requestedById, projectName: project.name },
+        eventKey: `PROGRESS_UPDATE_CANCELLED:${request.assignedApproverId}:${request.id}`,
+      });
+    }
+    return cancelled;
   });
 }
 

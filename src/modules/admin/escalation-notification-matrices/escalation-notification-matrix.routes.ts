@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { authenticate } from "../../../middleware/auth.middleware";
+import { authorize } from "../../../middleware/rbac.middleware";
+import { escalationNotificationMatrixController as controller } from "./escalation-notification-matrix.controller";
+const router = Router();
+router.use(authenticate);
+router.get("/", authorize("settings_incident_management", "READ"), controller.list);
+router.get("/:id", authorize("settings_incident_management", "READ"), controller.get);
+router.post("/", authorize("settings_incident_management", "CREATE"), controller.create);
+router.patch("/:id", authorize("settings_incident_management", "UPDATE"), controller.update);
+router.delete("/:id", authorize("settings_incident_management", "DELETE"), controller.delete);
+export default router;

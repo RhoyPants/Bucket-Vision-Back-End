@@ -206,7 +206,9 @@ export const deleteRole = async (req: any, res: any) => {
 
 export const getRoles = async (req: any, res: any) => {
   try {
+    if (req.query.active !== undefined && !["true", "false"].includes(String(req.query.active))) return res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message: "active must be true or false." } });
     const roles = await prisma.role.findMany({
+      where: req.query.active === undefined ? undefined : { isActive: req.query.active === "true" },
       orderBy: { name: "desc" },
       include: {
         _count: {

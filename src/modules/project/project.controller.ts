@@ -1,3 +1,4 @@
+import { parseIsBudgeted, recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import { Prisma, ProjectStatus } from "@prisma/client";
 import prisma from "../../config/prisma";
@@ -884,6 +885,7 @@ export class ProjectController {
         location,
         startDate,
         expectedEndDate,
+        isBudgeted: rawIsBudgeted,
         totalBudget,
         priority,
         pin,
@@ -900,6 +902,7 @@ export class ProjectController {
         includeHolidays,
       } = req.body;
 
+      const isBudgeted = parseIsBudgeted(rawIsBudgeted) ?? true;
       const rawFiles = (req as any).files;
       const files: Express.Multer.File[] = Array.isArray(rawFiles)
         ? rawFiles
@@ -927,7 +930,8 @@ export class ProjectController {
             ? new Date(expectedEndDate)
             : undefined,
 
-          totalBudget,
+          isBudgeted,
+          totalBudget: isBudgeted === false ? null : totalBudget,
           priority,
           pin,
 
@@ -1211,6 +1215,7 @@ export class ProjectController {
             actualStartDate: true,
             businessUnit: true,
             location: true,
+            isBudgeted: true,
             versionLabel: true,
             versionNumber: true,
             progress: true,
@@ -1275,6 +1280,7 @@ export class ProjectController {
                 provinceName: rawLocation.provinceName ?? null,
               }
             : null,
+          isBudgeted: project.isBudgeted,
           versionLabel: `Version ${normalizedVersionNumber}`,
           overallProgress: Number.isFinite(progress)
             ? Math.min(100, Math.max(0, progress))
@@ -1680,6 +1686,7 @@ export class ProjectController {
         managerId,
         startDate,
         expectedEndDate,
+        isBudgeted: rawIsBudgeted,
         totalBudget,
         priority,
         pin,
@@ -1696,6 +1703,14 @@ export class ProjectController {
         includeHolidays,
         status,
       } = req.body;
+
+      const requestedIsBudgeted = parseIsBudgeted(rawIsBudgeted);
+      const existingProject = await prisma.project.findUnique({ where: { id }, select: { isBudgeted: true, status: true } });
+      if (!existingProject) return res.status(404).json({ message: "Project not found" });
+      const isBudgeted = requestedIsBudgeted ?? existingProject.isBudgeted;
+      if (isBudgeted !== existingProject.isBudgeted && existingProject.status !== "DRAFT") {
+        return res.status(409).json({ message: "Project budget type can only be changed in DRAFT." });
+      }
 
       if (status !== undefined) {
         if (!Object.values(ProjectStatus).includes(status)) {
@@ -1738,56 +1753,64 @@ export class ProjectController {
         : normalizeWbsBusinessUnitIds(wbsBusinessUnitIds);
       if (normalizedWbsBusinessUnitIds) await validateWbsBusinessUnits(normalizedWbsBusinessUnitIds);
 
-      const updated = await prisma.project.update({
-        where: { id },
-        data: {
-          name,
-          description,
+      const updated = await prisma.$transaction(async tx => {
+        const result = await tx.project.update({
+          where: { id },
+          data: {
+            name,
+            description,
 
-          // 🔥 FIX JSON
-          location: location || undefined,
-          startDate: startDate ? new Date(startDate) : undefined,
-          expectedEndDate: expectedEndDate
-            ? new Date(expectedEndDate)
-            : undefined,
+            // 🔥 FIX JSON
+            location: location || undefined,
+            startDate: startDate ? new Date(startDate) : undefined,
+            expectedEndDate: expectedEndDate
+              ? new Date(expectedEndDate)
+              : undefined,
 
-          totalBudget,
-          priority,
-          pin,
+            isBudgeted,
+            totalBudget: isBudgeted === false ? null : totalBudget,
+            priority,
+            pin,
 
-          // 🔥 NEW
-          businessUnit,
-          entity,
-          ...(normalizedWbsBusinessUnitIds
-            ? {
-                wbsBusinessUnits: {
-                  deleteMany: {},
-                  create: normalizedWbsBusinessUnitIds.map((businessUnitId) => ({ businessUnitId })),
-                },
-              }
-            : {}),
+            // 🔥 NEW
+            businessUnit,
+            entity,
+            ...(normalizedWbsBusinessUnitIds
+              ? {
+                  wbsBusinessUnits: {
+                    deleteMany: {},
+                    create: normalizedWbsBusinessUnitIds.map((businessUnitId) => ({ businessUnitId })),
+                  },
+                }
+              : {}),
 
-          monday: monday ?? undefined,
-          tuesday: tuesday ?? undefined,
-          wednesday: wednesday ?? undefined,
-          thursday: thursday ?? undefined,
-          friday: friday ?? undefined,
-          saturday: saturday ?? undefined,
-          sunday: sunday ?? undefined,
-          includeHolidays: includeHolidays ?? undefined,
-          status: status ?? undefined,
-        },
-        include: {
-          wbsBusinessUnits: {
-            include: { businessUnit: { select: { id: true, code: true, name: true } } },
-            orderBy: { createdAt: "asc" },
+            monday: monday ?? undefined,
+            tuesday: tuesday ?? undefined,
+            wednesday: wednesday ?? undefined,
+            thursday: thursday ?? undefined,
+            friday: friday ?? undefined,
+            saturday: saturday ?? undefined,
+            sunday: sunday ?? undefined,
+            includeHolidays: includeHolidays ?? undefined,
+            status: status ?? undefined,
           },
-        },
+          include: {
+            wbsBusinessUnits: {
+              include: { businessUnit: { select: { id: true, code: true, name: true } } },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+          });
+        if (isBudgeted !== existingProject.isBudgeted) {
+          await recomputeNonBudgetedProject(tx, id, true);
+          result.progress = (await tx.project.findUniqueOrThrow({where: {id}})).progress;
+        }
+        return result;
       });
 
       // 🔥 REGENERATE TIMELINE if dates changed
       if (
-        (startDate || expectedEndDate) &&
+        (startDate || expectedEndDate || isBudgeted !== existingProject.isBudgeted) &&
         updated.startDate &&
         updated.expectedEndDate
       ) {

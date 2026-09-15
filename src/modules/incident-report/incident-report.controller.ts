@@ -4,8 +4,10 @@ import {
   uploadBufferToSharePoint,
 } from "../../services/sharepoint-upload.service";
 import { incidentReportService } from "./incident-report.service";
+import { incidentWorkflowService } from "./workflow/incident-workflow.service";
 
 const errorStatus = (error: any) => {
+  if (error.status) return error.status;
   if (
     ["Incident report not found", "Attachment not found", "Project not found or access denied"]
       .includes(error.message)
@@ -54,6 +56,32 @@ const bearerToken = (req: Request) => {
 };
 
 export class IncidentReportController {
+  async completeWorkflowLevel(req: Request, res: Response) {
+    try {
+      await incidentWorkflowService.completeLevel(String(req.params.id), (req as any).user.id, req.body);
+      const data = await incidentReportService.getById(String(req.params.id), (req as any).user.id);
+      res.json({ success: true, data: withAttachmentProxy(data, bearerToken(req)) });
+    } catch (error: any) {
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || "VALIDATION_ERROR", message: error.message, fields: error.fields } });
+    }
+  }
+  async workflowHistory(req: Request, res: Response) {
+    try { await incidentReportService.getById(String(req.params.id), (req as any).user.id); res.json({ success: true, ...await incidentWorkflowService.history(String(req.params.id), req.query, "WORKFLOW") }); }
+    catch (error: any) { res.status(errorStatus(error)).json({ success: false, error: { code: error.code || "VALIDATION_ERROR", message: error.message } }); }
+  }
+  async notificationEscalationHistory(req: Request, res: Response) {
+    try { await incidentReportService.getById(String(req.params.id), (req as any).user.id); res.json({ success: true, ...await incidentWorkflowService.history(String(req.params.id), req.query, "NOTIFICATION") }); }
+    catch (error: any) { res.status(errorStatus(error)).json({ success: false, error: { code: error.code || "VALIDATION_ERROR", message: error.message } }); }
+  }
+  async escalationHistory(req: Request, res: Response) {
+    try {
+      await incidentReportService.getById(String(req.params.id), (req as any).user.id);
+      const result = await incidentWorkflowService.history(String(req.params.id), req.query);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || "VALIDATION_ERROR", message: error.message, fields: error.fields } });
+    }
+  }
   async list(req: Request, res: Response) {
     try {
       const result = await incidentReportService.list((req as any).user.id, req.query);
@@ -63,7 +91,7 @@ export class IncidentReportController {
         pagination: result.pagination,
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -78,7 +106,7 @@ export class IncidentReportController {
         data: withAttachmentProxy(data, bearerToken(req)),
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -101,6 +129,9 @@ export class IncidentReportController {
           fileName: file.originalname,
           mimeType: file.mimetype,
           size: file.size,
+          section: req.body.section,
+          actionId: req.body.actionId,
+          caption: req.body.caption,
         });
       }
 
@@ -114,7 +145,7 @@ export class IncidentReportController {
         data: withAttachmentProxy(incident, bearerToken(req)),
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -131,7 +162,7 @@ export class IncidentReportController {
         data: withAttachmentProxy(data, bearerToken(req)),
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -144,11 +175,11 @@ export class IncidentReportController {
       );
       res.json({
         success: true,
-        message: "Incident report resolved successfully",
+        message: data.status === "RESOLVED" ? "Incident report resolved successfully" : "Resolution confirmation recorded",
         data: withAttachmentProxy(data, bearerToken(req)),
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -165,7 +196,7 @@ export class IncidentReportController {
         data: withAttachmentProxy(data, bearerToken(req)),
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -181,7 +212,7 @@ export class IncidentReportController {
         data,
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -197,7 +228,7 @@ export class IncidentReportController {
         count: data.length,
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -208,6 +239,7 @@ export class IncidentReportController {
       const files = filesFromRequest(req);
       if (!files.length) throw new Error("No files provided");
       if (files.length > 10) throw new Error("A maximum of 10 attachments is allowed");
+      await incidentReportService.assertCanUploadAttachment(incidentId, userId, req.body.section, req.body.actionId);
 
       const created = [];
       for (const file of files) {
@@ -223,6 +255,9 @@ export class IncidentReportController {
             fileName: file.originalname,
             mimeType: file.mimetype,
             size: file.size,
+            section: req.body.section,
+            actionId: req.body.actionId,
+            caption: req.body.caption,
           })
         );
       }
@@ -233,7 +268,7 @@ export class IncidentReportController {
         data: withAttachmentProxy(created, bearerToken(req)),
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 
@@ -252,9 +287,11 @@ export class IncidentReportController {
       res.setHeader("Cache-Control", "private, max-age=300");
       res.send(file.buffer);
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
+
+  async updateAttachment(req:Request,res:Response){try{res.json({success:true,data:await incidentReportService.updateAttachment(String(req.params.attachmentId),(req as any).user.id,req.body)});}catch(error:any){res.status(errorStatus(error)).json({success:false,error:{code:error.code||"VALIDATION_ERROR",message:error.message,fields:error.fields}});}}
 
   async deleteAttachment(req: Request, res: Response) {
     try {
@@ -268,10 +305,9 @@ export class IncidentReportController {
         data,
       });
     } catch (error: any) {
-      res.status(errorStatus(error)).json({ success: false, message: error.message });
+      res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
   }
 }
 
 export const incidentReportController = new IncidentReportController();
-

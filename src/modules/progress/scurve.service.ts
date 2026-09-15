@@ -1,44 +1,10 @@
+import { plannedProgressAt, manilaCalendarDay, isWorkingDay } from "./planned-progress";
 import { PrismaClient } from "@prisma/client";
 import { HolidayService } from "../admin/holidays/holiday.service";
 
 const prisma = new PrismaClient();
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
-
-/** Converts a stored timestamp to its business calendar date (Asia/Manila). */
-function manilaCalendarDay(date: Date): Date {
-  const key = new Date(date.getTime() + MANILA_OFFSET_MS).toISOString().slice(0, 10);
-  return new Date(`${key}T00:00:00.000Z`);
-}
-
-function isWorkingDay(date: Date, project: any, holidayKeys: Set<string>): boolean {
-  const enabled = [
-    project.sunday, project.monday, project.tuesday, project.wednesday,
-    project.thursday, project.friday, project.saturday,
-  ][date.getUTCDay()];
-  return Boolean(enabled) && !(project.includeHolidays && holidayKeys.has(date.toISOString().slice(0, 10)));
-}
-
-function countWorkingDays(start: Date, end: Date, project: any, holidayKeys: Set<string>): number {
-  let count = 0;
-  for (let day = start; day <= end; day = new Date(day.getTime() + DAY_MS)) {
-    if (isWorkingDay(day, project, holidayKeys)) count++;
-  }
-  return count;
-}
-
-function plannedProgressAt(subtask: any, day: Date, project: any, holidayKeys: Set<string>): number | null {
-  if (!subtask.projectedStartDate || !subtask.projectedEndDate) return null;
-  const start = manilaCalendarDay(subtask.projectedStartDate);
-  const end = manilaCalendarDay(subtask.projectedEndDate);
-  if (day < start) return 0;
-  // A same-day milestone is due in full on that calendar date.
-  if (day >= end) return 100;
-
-  const total = countWorkingDays(start, end, project, holidayKeys);
-  if (total === 0) return 0;
-  return Math.min(100, (countWorkingDays(start, day, project, holidayKeys) / total) * 100);
-}
 
 export async function getSCurve(projectId: string) {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
@@ -59,10 +25,11 @@ export async function getSCurve(projectId: string) {
   }
 
   const scopes = await prisma.scope.findMany({
-    where: { projectId },
+    where: { projectId, ...(!project.isBudgeted ? { deletedAt: null } : {}) },
     include: {
       tasks: {
-        include: { subtasks: { include: { progressLogs: true } } },
+        where: !project.isBudgeted ? { deletedAt: null } : {},
+        include: { subtasks: { where: !project.isBudgeted ? { deletedAt: null } : {}, include: { progressLogs: true } } },
       },
     },
   });
@@ -78,8 +45,8 @@ export async function getSCurve(projectId: string) {
     const cutoff = new Date(day.getTime() + DAY_MS - MANILA_OFFSET_MS - 1);
 
     for (const subtask of subtasks) {
-      const weight = (subtask.budgetPercent || subtask.task.scope.budgetPercent || 1) / 100;
-      const planned = plannedProgressAt(subtask, day, project, holidayKeys);
+      const weight = project.isBudgeted ? (subtask.budgetPercent || subtask.task.scope.budgetPercent || 1) / 100 : 1;
+      const planned = plannedProgressAt(subtask, day, project, holidayKeys) ?? (project.isBudgeted ? null : 0);
       if (planned !== null) {
         plannedWeightSum += weight;
         plannedTotal += planned * weight;
@@ -91,7 +58,10 @@ export async function getSCurve(projectId: string) {
     // Match the persisted hierarchy exactly:
     // subtask -> task -> scope -> project. A flat subtask calculation would
     // ignore task weights and can apply a scope weight multiple times.
-    const actual = weightedActualAt(scopes, cutoff);
+    const actual = project.isBudgeted ? weightedActualAt(scopes, cutoff) : (subtasks.length ? subtasks.reduce((sum, subtask) => {
+      const latest = subtask.progressLogs.filter(log => log.date <= cutoff).sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+      return sum + Number(latest?.cumulativePercent ?? 0);
+    }, 0) / subtasks.length : 0);
     result.push({
       date: day.toISOString().slice(0, 10),
       planned: Number(planned.toFixed(2)),

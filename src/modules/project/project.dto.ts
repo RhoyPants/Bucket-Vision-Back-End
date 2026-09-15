@@ -11,6 +11,7 @@ export interface CreateProjectDTO {
   startDate?: Date | string;
   expectedEndDate?: Date | string;
 
+  isBudgeted?: boolean;
   totalBudget?: number;
   priority?: string;
   pin?: string;
@@ -51,6 +52,7 @@ export interface UpdateProjectDTO {
   startDate?: Date | string;
   expectedEndDate?: Date | string;
 
+  isBudgeted?: boolean;
   totalBudget?: number;
   priority?: string;
   pin?: string;

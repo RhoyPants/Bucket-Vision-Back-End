@@ -10,6 +10,7 @@
     "seed:completed-surevax-local": "ts-node prisma/seed-completed-surevax-sample.ts",
     "seed:work-breakdown": "ts-node prisma/seed-work-breakdown-maintenance.ts",
     "build": "tsc",
+    "test:incidents": "ts-node src/modules/incident-report/workflow/incident-workflow.test.ts",
     "test:progress": "ts-node src/modules/progress/progress-precision.test.ts",
     "test:cpm": "ts-node src/modules/cpm/cpm.calculator.test.ts",
     "test:reports": "ts-node src/reports/tests/report-foundation.test.ts",

@@ -1,3 +1,4 @@
+import { recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { generateProjectTimeline } from "../timeline/timeline.service";
@@ -288,6 +289,7 @@ export class ScopeController {
       await prisma.scope.delete({
         where: { id },
       });
+      await prisma.$transaction(tx => recomputeNonBudgetedProject(tx, projectId));
 
       // 🔥 REGENERATE S-CURVE
       try {

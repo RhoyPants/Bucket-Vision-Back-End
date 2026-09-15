@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma";
 import { ProjectStatus } from "@prisma/client";
+import { notificationService } from "../notification/notification.service";
 
 export class ApprovalService {
   private normalizeStepMode(mode: string | null | undefined): "SEQUENTIAL" | "PARALLEL" {
@@ -998,13 +999,23 @@ export class ApprovalService {
     message: string
   ): Promise<void> {
     try {
-      await prisma.notification.create({
-        data: {
-          userId,
-          type: "APPROVAL_PENDING",
-          message,
-          isRead: false,
-        },
+      const [project, approval] = await Promise.all([
+        prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true, name: true, versionNumber: true } }),
+        prisma.projectApproval.findFirst({ where: { projectId, approverId: userId, status: "PENDING" }, orderBy: { order: "asc" }, select: { id: true, order: true, level: true } }),
+      ]);
+      if (!project || !approval) return;
+      await notificationService.create(prisma, {
+        recipientId: userId,
+        type: "PROJECT_APPROVAL_ASSIGNED",
+        category: "APPROVAL",
+        priority: "HIGH",
+        title: "Project approval assigned",
+        message,
+        requiresAcknowledgement: true,
+        actorId: project.ownerId,
+        target: { resourceType: "PROJECT_APPROVAL", projectId, approvalId: approval.id },
+        metadata: { projectName: project.name, versionNumber: project.versionNumber, levelOrder: approval.order, level: approval.level },
+        eventKey: `PROJECT_APPROVAL_ASSIGNED:${userId}:${approval.id}`,
       });
     } catch (error) {
       console.error("Failed to create notification:", error);
@@ -1026,13 +1037,17 @@ export class ApprovalService {
 
       if (!project) return;
 
-      await prisma.notification.create({
-        data: {
-          userId: project.ownerId,
-          type,
-          message,
-          isRead: false,
-        },
+      const normalizedType = type === "APPROVED" ? "PROJECT_REQUEST_APPROVED" : type === "REJECTED" ? "PROJECT_REQUEST_REJECTED" : type;
+      await notificationService.create(prisma, {
+        recipientId: project.ownerId,
+        type: normalizedType,
+        category: "PROJECT",
+        priority: normalizedType === "PROJECT_REQUEST_REJECTED" ? "HIGH" : "NORMAL",
+        title: normalizedType === "PROJECT_REQUEST_REJECTED" ? "Project request rejected" : "Project request approved",
+        message,
+        target: { resourceType: "PROJECT_REQUEST", projectId },
+        metadata: { projectName: project.name, versionNumber: project.versionNumber },
+        eventKey: `${normalizedType}:${project.ownerId}:${projectId}:${project.versionNumber}`,
       });
     } catch (error) {
       console.error("Failed to create notification:", error);

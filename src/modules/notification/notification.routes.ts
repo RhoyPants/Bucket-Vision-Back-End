@@ -1,0 +1,15 @@
+import { Router } from "express";
+import { authenticate } from "../../middleware/auth.middleware";
+import { notificationController as controller } from "./notification.controller";
+const router=Router();router.use(authenticate);
+router.get("/summary",controller.summary);
+router.get("/acknowledgements",controller.acknowledgements);
+router.patch("/read-all",controller.readAll);
+router.patch("/archive-all",controller.archiveAll);
+router.get("/",controller.list);
+router.get("/:notificationId",controller.get);
+router.patch("/:notificationId/read",controller.read);
+router.patch("/:notificationId/acknowledge",controller.acknowledge);
+router.patch("/:notificationId/archive",controller.archive);
+router.patch("/:notificationId/restore",controller.restore);
+export default router;

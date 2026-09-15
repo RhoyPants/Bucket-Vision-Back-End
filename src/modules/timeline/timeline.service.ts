@@ -1,3 +1,5 @@
+import { HolidayService } from "../admin/holidays/holiday.service";
+import { plannedProgressAt } from "../progress/planned-progress";
 import prisma from "../../config/prisma";
 
 export interface TimelineSnapshot {
@@ -24,6 +26,14 @@ export async function calculatePlannedProgress(
     return 0;
   }
 
+  if (!project.isBudgeted) {
+    const subtasks = await prisma.subtask.findMany({ where: { deletedAt: null, task: { deletedAt: null, scope: { projectId, deletedAt: null } } } });
+    const holidays = await HolidayService.getHolidaysInRange(project.startDate, project.expectedEndDate);
+    const dayKey = (date: Date) => new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const keys = new Set<string>(holidays.map((holiday: any) => dayKey(new Date(holiday.date))));
+    const day = new Date(dayKey(targetDate) + "T00:00:00.000Z");
+    return subtasks.length ? subtasks.reduce((sum, subtask) => sum + (plannedProgressAt(subtask, day, project, keys) ?? 0), 0) / subtasks.length : 0;
+  }
   const start = project.startDate;
   const end = project.expectedEndDate;
   const now = new Date(targetDate);
@@ -53,10 +63,14 @@ export async function calculateActualProgress(
   projectId: string,
   targetDate: Date
 ): Promise<number> {
+  const project = await prisma.project.findUniqueOrThrow({where: {id: projectId}, select: {isBudgeted: true}});
   const subtasks = await prisma.subtask.findMany({
     where: {
+      ...(!project.isBudgeted ? {deletedAt: null} : {}),
       task: {
+        ...(!project.isBudgeted ? {deletedAt: null} : {}),
         scope: {
+          ...(!project.isBudgeted ? {deletedAt: null} : {}),
           projectId,
         },
       },
@@ -84,12 +98,12 @@ export async function calculateActualProgress(
   let totalWeight = 0;
 
   for (const subtask of subtasks) {
-    const weight = subtask.budgetPercent || 1;
+    const weight = project.isBudgeted ? subtask.budgetPercent || 1 : 1;
     let progress = 0;
 
     if (subtask.progressLogs.length > 0) {
       progress = Number(subtask.progressLogs[0].cumulativePercent);
-    } else if (subtask.actualEndDate && subtask.actualEndDate <= targetDate) {
+    } else if (project.isBudgeted && subtask.actualEndDate && subtask.actualEndDate <= targetDate) {
       // If task is completed, assume 100%
       progress = 100;
     }

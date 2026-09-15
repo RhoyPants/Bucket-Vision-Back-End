@@ -97,8 +97,9 @@ export class VersioningService {
         actualEndDate: source.actualEndDate, // PRESERVE actual work
 
         // BUDGET: UPDATE with amendment
-        totalBudget: amendments.totalBudget ?? source.totalBudget,
+        totalBudget: source.isBudgeted ? amendments.totalBudget ?? source.totalBudget : null,
         priority: source.priority,
+        isBudgeted: source.isBudgeted,
         duration: source.duration,
 
         // PROGRESS: Will be recalculated from cloned tasks
@@ -577,6 +578,8 @@ export class VersioningService {
         id: true,
         name: true,
         versionNumber: true,
+        isBudgeted: true,
+
         versionLabel: true,
         status: true,
         isActive: true,
@@ -610,6 +613,8 @@ export class VersioningService {
       select: {
         id: true,
         versionNumber: true,
+        isBudgeted: true,
+
         versionLabel: true,
         status: true,
         isActive: true,
@@ -754,6 +759,8 @@ export class VersioningService {
       id: project.id,
       versionId: project.id,
       versionNumber: project.versionNumber,
+      isBudgeted: project.isBudgeted,
+
       versionLabel: project.versionLabel,
       name: project.name,
       pin: project.pin,

@@ -8,57 +8,62 @@ datasource db {
 }
 
 model User {
-  id                           String                    @id @default(uuid())
-  name                         String
-  firstName                    String?
-  lastName                     String?
-  company                      String?
-  email                        String                    @unique
-  password                     String
-  roleId                       String
-  createdAt                    DateTime                  @default(now())
-  updatedAt                    DateTime                  @updatedAt
-  refreshToken                 String?
-  isActive                     Boolean                   @default(true)
-  departmentId                 String?
-  businessUnitId               String?
-  position                     String?
-  activities                   ActivityLog[]
-  approvalAuditLogs            ApprovalAuditLog[]        @relation("ApprovedBy")
-  approvalStepUsers            ApprovalStepUser[]        @relation("ApprovalStepUsers")
-  attachments                  Attachment[]
-  comments                     Comment[]
-  dailyReports                 DailyReport[]
-  dailyReports_recv            DailyReportReceiver[]
-  notifications                Notification[]
-  progressLogs                 ProgressLog[]
-  requestedProgressUpdates     ProgressUpdateRequest[]   @relation("ProgressUpdateRequestedBy")
-  reviewedProgressUpdates      ProgressUpdateRequest[]   @relation("ProgressUpdateReviewedBy")
-  assignedProgressUpdates      ProgressUpdateRequest[]   @relation("ProgressUpdateAssignedApprover")
-  projects                     Project[]                 @relation("ProjectOwner")
-  approvals                    ProjectApproval[]
-  projectMembers               ProjectMember[]
-  createdSubtasks              Subtask[]                 @relation("SubtaskCreator")
-  assignedSubtasks             SubtaskAssignee[]
-  assignedTasks                TaskAssignee[]
-  role                         Role                      @relation(fields: [roleId], references: [id])
-  businessUnit                 BusinessUnit?             @relation(fields: [businessUnitId], references: [id])
-  headedBusinessUnits          BusinessUnit[]            @relation("BusinessUnitHead")
-  assistantHeadedBusinessUnits BusinessUnit[]            @relation("BusinessUnitAssistantHead")
-  managers                     UserHierarchy[]           @relation("UserMembers")
-  members                      UserHierarchy[]           @relation("UserManagers")
-  dashboardNotes               DashboardNote[]
-  incidentReports              IncidentReport[]          @relation("IncidentReporter")
-  resolvedIncidents            IncidentReport[]          @relation("IncidentResolver")
-  cancelledIncidents           IncidentReport[]          @relation("IncidentCanceller")
-  incidentAttachments          IncidentAttachment[]
-  updatedSubtaskKpiConfigs     ProjectSubtaskKpiConfig[]
-  createdDashboardKpis         DashboardKpi[]            @relation("DashboardKpiCreatedBy")
-  updatedDashboardKpis         DashboardKpi[]            @relation("DashboardKpiUpdatedBy")
-  weeklyReports                WeeklyReport[]
-  weeklyReports_recv           WeeklyReportReceiver[]
-  reviewedSsoRegistrations     SsoRegistration[]         @relation("SsoRegistrationReviewedBy")
-  ssoRegistrationAuditChanges  SsoRegistrationAudit[]
+  id                              String                           @id @default(uuid())
+  name                            String
+  firstName                       String?
+  lastName                        String?
+  company                         String?
+  email                           String                           @unique
+  password                        String
+  roleId                          String
+  createdAt                       DateTime                         @default(now())
+  updatedAt                       DateTime                         @updatedAt
+  refreshToken                    String?
+  isActive                        Boolean                          @default(true)
+  departmentId                    String?
+  businessUnitId                  String?
+  position                        String?
+  activities                      ActivityLog[]
+  approvalAuditLogs               ApprovalAuditLog[]               @relation("ApprovedBy")
+  approvalStepUsers               ApprovalStepUser[]               @relation("ApprovalStepUsers")
+  attachments                     Attachment[]
+  comments                        Comment[]
+  dailyReports                    DailyReport[]
+  dailyReports_recv               DailyReportReceiver[]
+  notifications                   Notification[]
+  progressLogs                    ProgressLog[]
+  requestedProgressUpdates        ProgressUpdateRequest[]          @relation("ProgressUpdateRequestedBy")
+  reviewedProgressUpdates         ProgressUpdateRequest[]          @relation("ProgressUpdateReviewedBy")
+  assignedProgressUpdates         ProgressUpdateRequest[]          @relation("ProgressUpdateAssignedApprover")
+  projects                        Project[]                        @relation("ProjectOwner")
+  approvals                       ProjectApproval[]
+  projectMembers                  ProjectMember[]
+  createdSubtasks                 Subtask[]                        @relation("SubtaskCreator")
+  assignedSubtasks                SubtaskAssignee[]
+  assignedTasks                   TaskAssignee[]
+  role                            Role                             @relation(fields: [roleId], references: [id])
+  businessUnit                    BusinessUnit?                    @relation(fields: [businessUnitId], references: [id])
+  headedBusinessUnits             BusinessUnit[]                   @relation("BusinessUnitHead")
+  assistantHeadedBusinessUnits    BusinessUnit[]                   @relation("BusinessUnitAssistantHead")
+  managers                        UserHierarchy[]                  @relation("UserMembers")
+  members                         UserHierarchy[]                  @relation("UserManagers")
+  dashboardNotes                  DashboardNote[]
+  incidentReports                 IncidentReport[]                 @relation("IncidentReporter")
+  resolvedIncidents               IncidentReport[]                 @relation("IncidentResolver")
+  cancelledIncidents              IncidentReport[]                 @relation("IncidentCanceller")
+  incidentAttachments             IncidentAttachment[]
+  incidentInvestigations          IncidentInvestigation[]          @relation("InvestigationUpdater")
+  ownedIncidentActions            IncidentAction[]                 @relation("IncidentActionOwner")
+  completedIncidentActions        IncidentAction[]                 @relation("IncidentActionCompleter")
+  cancelledIncidentActions        IncidentAction[]                 @relation("IncidentActionCanceller")
+  incidentResolutionConfirmations IncidentResolutionConfirmation[]
+  updatedSubtaskKpiConfigs        ProjectSubtaskKpiConfig[]
+  createdDashboardKpis            DashboardKpi[]                   @relation("DashboardKpiCreatedBy")
+  updatedDashboardKpis            DashboardKpi[]                   @relation("DashboardKpiUpdatedBy")
+  weeklyReports                   WeeklyReport[]
+  weeklyReports_recv              WeeklyReportReceiver[]
+  reviewedSsoRegistrations        SsoRegistration[]                @relation("SsoRegistrationReviewedBy")
+  ssoRegistrationAuditChanges     SsoRegistrationAudit[]
 }
 
 model Role {
@@ -141,6 +146,7 @@ model Project {
   pin                String?
   priority           String?
   startDate          DateTime?
+  isBudgeted         Boolean                    @default(true)
   totalBudget        Float?
   updatedAt          DateTime                   @updatedAt
   businessUnit       String?
@@ -328,7 +334,7 @@ model Subtask {
   status               Int                 @default(0)
   sourceType           String?
   subtaskMaintenanceId String?
-  sourceSubtaskId       String?
+  sourceSubtaskId      String?
   activities           ActivityLog[]       @relation("SubtaskActivity")
   attachments          Attachment[]
   checklists           Checklist[]
@@ -366,18 +372,18 @@ model CpmDependency {
 }
 
 model ScopeMaintenance {
-  id          String                 @id @default(uuid())
-  code        String                 @unique
-  name        String
-  description String?
-  order       Int                    @default(0)
-  isActive    Boolean                @default(true)
+  id                 String                 @id @default(uuid())
+  code               String                 @unique
+  name               String
+  description        String?
+  order              Int                    @default(0)
+  isActive           Boolean                @default(true)
   maintenanceTableId String?
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  taskLinks   ScopeMaintenanceTask[]
-  scopes      Scope[]
-  maintenanceTable MaintenanceTable? @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  taskLinks          ScopeMaintenanceTask[]
+  scopes             Scope[]
+  maintenanceTable   MaintenanceTable?      @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([order])
@@ -385,19 +391,19 @@ model ScopeMaintenance {
 }
 
 model TaskMaintenance {
-  id           String                   @id @default(uuid())
-  code         String                   @unique
-  name         String
-  description  String?
-  order        Int                      @default(0)
-  isActive     Boolean                  @default(true)
+  id                 String                   @id @default(uuid())
+  code               String                   @unique
+  name               String
+  description        String?
+  order              Int                      @default(0)
+  isActive           Boolean                  @default(true)
   maintenanceTableId String?
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  scopeLinks   ScopeMaintenanceTask[]
-  subtaskLinks TaskMaintenanceSubtask[]
-  tasks        Task[]
-  maintenanceTable MaintenanceTable?    @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  scopeLinks         ScopeMaintenanceTask[]
+  subtaskLinks       TaskMaintenanceSubtask[]
+  tasks              Task[]
+  maintenanceTable   MaintenanceTable?        @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([order])
@@ -405,18 +411,18 @@ model TaskMaintenance {
 }
 
 model SubtaskMaintenance {
-  id          String                   @id @default(uuid())
-  code        String                   @unique
-  name        String
-  description String?
-  order       Int                      @default(0)
-  isActive    Boolean                  @default(true)
+  id                 String                   @id @default(uuid())
+  code               String                   @unique
+  name               String
+  description        String?
+  order              Int                      @default(0)
+  isActive           Boolean                  @default(true)
   maintenanceTableId String?
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
-  taskLinks   TaskMaintenanceSubtask[]
-  subtasks    Subtask[]
-  maintenanceTable MaintenanceTable?   @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  taskLinks          TaskMaintenanceSubtask[]
+  subtasks           Subtask[]
+  maintenanceTable   MaintenanceTable?        @relation(fields: [maintenanceTableId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([order])
@@ -558,28 +564,28 @@ model ProgressLog {
 }
 
 model ProgressUpdateRequest {
-  id               String                      @id @default(uuid())
-  progressLogId    String
-  requestedById    String
+  id                 String                      @id @default(uuid())
+  progressLogId      String
+  requestedById      String
   assignedApproverId String?
-  businessUnitId   String?
-  reviewedById     String?
-  currentPercent   Decimal                     @db.Decimal(5, 2)
-  requestedPercent Decimal                     @db.Decimal(5, 2)
-  difference       Decimal                     @db.Decimal(5, 2)
-  remarks          String
-  reviewRemarks    String?
-  status           ProgressUpdateRequestStatus @default(PENDING)
-  createdAt        DateTime                    @default(now())
-  updatedAt        DateTime                    @updatedAt
-  reviewedAt       DateTime?
-  cancelledAt      DateTime?
-  appliedAt        DateTime?
-  progressLog      ProgressLog                 @relation(fields: [progressLogId], references: [id], onDelete: Cascade)
-  requestedBy      User                        @relation("ProgressUpdateRequestedBy", fields: [requestedById], references: [id])
-  assignedApprover User?                       @relation("ProgressUpdateAssignedApprover", fields: [assignedApproverId], references: [id], onDelete: SetNull)
-  businessUnit     BusinessUnit?               @relation(fields: [businessUnitId], references: [id], onDelete: SetNull)
-  reviewedBy       User?                       @relation("ProgressUpdateReviewedBy", fields: [reviewedById], references: [id])
+  businessUnitId     String?
+  reviewedById       String?
+  currentPercent     Decimal                     @db.Decimal(5, 2)
+  requestedPercent   Decimal                     @db.Decimal(5, 2)
+  difference         Decimal                     @db.Decimal(5, 2)
+  remarks            String
+  reviewRemarks      String?
+  status             ProgressUpdateRequestStatus @default(PENDING)
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+  reviewedAt         DateTime?
+  cancelledAt        DateTime?
+  appliedAt          DateTime?
+  progressLog        ProgressLog                 @relation(fields: [progressLogId], references: [id], onDelete: Cascade)
+  requestedBy        User                        @relation("ProgressUpdateRequestedBy", fields: [requestedById], references: [id])
+  assignedApprover   User?                       @relation("ProgressUpdateAssignedApprover", fields: [assignedApproverId], references: [id], onDelete: SetNull)
+  businessUnit       BusinessUnit?               @relation(fields: [businessUnitId], references: [id], onDelete: SetNull)
+  reviewedBy         User?                       @relation("ProgressUpdateReviewedBy", fields: [reviewedById], references: [id])
 
   @@index([progressLogId, status])
   @@index([requestedById, status, createdAt])
@@ -646,34 +652,59 @@ model Attachment {
 }
 
 model IncidentReport {
-  id                 String               @id @default(uuid())
-  incidentNumber     String               @unique
-  projectId          String
-  reportedById       String
-  title              String
-  description        String
-  status             IncidentStatus       @default(PENDING)
-  severity           IncidentSeverity     @default(MEDIUM)
-  dateRaised         DateTime             @default(now())
-  dateAddressed      DateTime?
-  remarks            String?
-  scopeId            String?
-  taskId             String?
-  subtaskId          String?
-  resolvedById       String?
-  cancelledAt        DateTime?
-  cancelledById      String?
-  cancellationReason String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  project            Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  reportedBy         User                 @relation("IncidentReporter", fields: [reportedById], references: [id])
-  resolvedBy         User?                @relation("IncidentResolver", fields: [resolvedById], references: [id])
-  cancelledBy        User?                @relation("IncidentCanceller", fields: [cancelledById], references: [id])
-  scope              Scope?               @relation(fields: [scopeId], references: [id], onDelete: SetNull)
-  task               Task?                @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  subtask            Subtask?             @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
-  attachments        IncidentAttachment[]
+  incidentTypeId             String?
+  incidentType               IncidentType?                    @relation(fields: [incidentTypeId], references: [id], onDelete: Restrict)
+  incidentWorkflowId         String?
+  incidentWorkflow           IncidentWorkflow?                @relation(fields: [incidentWorkflowId], references: [id], onDelete: Restrict)
+  workflowSnapshot           Json?
+  workflow                   Json?
+  levelSlaDeadline           DateTime?
+  workflowRevision           Int                              @default(0)
+  overallSlaSnapshot         Json?
+  overallSlaDeadline         DateTime?
+  overallSlaBreachedAt       DateTime?
+  notificationMatrixId       String?
+  notificationMatrix         EscalationNotificationMatrix?    @relation(fields: [notificationMatrixId], references: [id], onDelete: Restrict)
+  notificationMatrixSnapshot Json?
+  notificationEscalation     Json?
+  nextNotificationAt         DateTime?
+  escalationEvents           IncidentEscalationEvent[]
+  occurredAt                 DateTime?
+  location                   String?
+  immediateActionTaken       String?
+  reportRecipient            String?
+  revision                   Int                              @default(1)
+  investigation              IncidentInvestigation?
+  actions                    IncidentAction[]
+  resolutionConfirmations    IncidentResolutionConfirmation[]
+  id                         String                           @id @default(uuid())
+  incidentNumber             String                           @unique
+  projectId                  String
+  reportedById               String
+  title                      String
+  description                String
+  status                     IncidentStatus                   @default(PENDING)
+  severity                   IncidentSeverity                 @default(MEDIUM)
+  dateRaised                 DateTime                         @default(now())
+  dateAddressed              DateTime?
+  remarks                    String?
+  scopeId                    String?
+  taskId                     String?
+  subtaskId                  String?
+  resolvedById               String?
+  cancelledAt                DateTime?
+  cancelledById              String?
+  cancellationReason         String?
+  createdAt                  DateTime                         @default(now())
+  updatedAt                  DateTime                         @updatedAt
+  project                    Project                          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reportedBy                 User                             @relation("IncidentReporter", fields: [reportedById], references: [id])
+  resolvedBy                 User?                            @relation("IncidentResolver", fields: [resolvedById], references: [id])
+  cancelledBy                User?                            @relation("IncidentCanceller", fields: [cancelledById], references: [id])
+  scope                      Scope?                           @relation(fields: [scopeId], references: [id], onDelete: SetNull)
+  task                       Task?                            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  subtask                    Subtask?                         @relation(fields: [subtaskId], references: [id], onDelete: SetNull)
+  attachments                IncidentAttachment[]
 
   @@index([projectId])
   @@index([reportedById])
@@ -683,22 +714,178 @@ model IncidentReport {
   @@index([scopeId])
   @@index([taskId])
   @@index([subtaskId])
+  @@index([status, levelSlaDeadline])
+  @@index([status, overallSlaDeadline])
+  @@index([status, nextNotificationAt])
+  @@index([incidentTypeId])
+  @@index([incidentWorkflowId])
+  @@index([notificationMatrixId])
+}
+
+model IncidentWorkflow {
+  id                  String           @id @default(uuid())
+  name                String
+  description         String?
+  isActive            Boolean          @default(true)
+  allowPeerResolution Boolean          @default(true)
+  version             Int              @default(1)
+  levels              Json
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  incidentTypes       IncidentType[]
+  incidents           IncidentReport[]
+}
+
+model EscalationNotificationMatrix {
+  id            String           @id @default(uuid())
+  name          String
+  description   String?
+  isActive      Boolean          @default(true)
+  version       Int              @default(1)
+  levels        Json
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  incidentTypes IncidentType[]
+  incidents     IncidentReport[]
+}
+
+model IncidentType {
+  id                   String                        @id @default(uuid())
+  name                 String
+  description          String?
+  defaultCriticality   IncidentSeverity
+  incidentWorkflowId   String
+  incidentWorkflow     IncidentWorkflow              @relation(fields: [incidentWorkflowId], references: [id], onDelete: Restrict)
+  resolutionSlaValue   Float?
+  resolutionSlaUnit    String?
+  notificationMatrixId String?
+  notificationMatrix   EscalationNotificationMatrix? @relation(fields: [notificationMatrixId], references: [id], onDelete: Restrict)
+  isActive             Boolean                       @default(true)
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  incidents            IncidentReport[]
+
+  @@index([incidentWorkflowId])
+  @@index([notificationMatrixId])
+}
+
+model IncidentEscalationEvent {
+  id         String         @id @default(uuid())
+  incidentId String
+  incident   IncidentReport @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  eventType  String
+  timestamp  DateTime       @default(now())
+  levelId    String?
+  actorId    String?
+  details    Json
+
+  @@index([incidentId, timestamp])
 }
 
 model IncidentAttachment {
-  id         String         @id @default(uuid())
-  incidentId String
-  uploadedBy String
-  fileUrl    String
-  fileName   String
-  mimeType   String?
-  size       Int?
-  createdAt  DateTime       @default(now())
-  incident   IncidentReport @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  user       User           @relation(fields: [uploadedBy], references: [id])
+  id           String                  @id @default(uuid())
+  incidentId   String
+  uploadedBy   String
+  fileUrl      String
+  fileName     String
+  mimeType     String?
+  size         Int?
+  actionId     String?
+  section      IncidentEvidenceSection @default(INITIAL_REPORT)
+  caption      String?
+  displayOrder Int                     @default(1)
+  createdAt    DateTime                @default(now())
+  incident     IncidentReport          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  user         User                    @relation(fields: [uploadedBy], references: [id])
+  action       IncidentAction?         @relation(fields: [actionId], references: [id], onDelete: SetNull)
 
   @@index([incidentId])
   @@index([uploadedBy])
+  @@index([actionId])
+}
+
+model IncidentInvestigation {
+  incidentId          String         @id
+  revision            Int            @default(0)
+  siteFindings        String?
+  rootCause           String?
+  contributingFactors String?
+  mitigation          String?
+  recommendations     String?
+  updatedById         String?
+  updatedAt           DateTime       @updatedAt
+  incident            IncidentReport @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  updatedBy           User?          @relation("InvestigationUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model IncidentAction {
+  id                      String               @id @default(uuid())
+  incidentId              String
+  revision                Int                  @default(1)
+  title                   String
+  description             String
+  actionType              IncidentActionType
+  ownerId                 String
+  dueDate                 DateTime             @db.Date
+  status                  IncidentActionStatus @default(PENDING)
+  requiredForResolution   Boolean              @default(true)
+  requirementChangeReason String?
+  completionRemarks       String?
+  completedAt             DateTime?
+  completedById           String?
+  cancellationReason      String?
+  cancelledAt             DateTime?
+  cancelledById           String?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  incident                IncidentReport       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  owner                   User                 @relation("IncidentActionOwner", fields: [ownerId], references: [id])
+  completedBy             User?                @relation("IncidentActionCompleter", fields: [completedById], references: [id])
+  cancelledBy             User?                @relation("IncidentActionCanceller", fields: [cancelledById], references: [id])
+  evidence                IncidentAttachment[]
+
+  @@index([incidentId, status])
+  @@index([ownerId, status])
+}
+
+model IncidentResolutionConfirmation {
+  id             String         @id @default(uuid())
+  incidentId     String
+  levelId        String
+  resolverId     String
+  remarks        String
+  classification String
+  evidenceIds    String[]
+  createdAt      DateTime       @default(now())
+  incident       IncidentReport @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  resolver       User           @relation(fields: [resolverId], references: [id])
+
+  @@unique([incidentId, levelId, resolverId])
+  @@index([incidentId, createdAt])
+}
+
+enum IncidentEvidenceSection {
+  INITIAL_REPORT
+  SITE_FINDINGS
+  IMMEDIATE_ACTION
+  ROOT_CAUSE
+  CONTRIBUTING_FACTORS
+  MITIGATION
+  RECOMMENDATIONS
+  ACTION
+  RESOLUTION
+}
+
+enum IncidentActionType {
+  CORRECTIVE
+  PREVENTIVE
+}
+
+enum IncidentActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 model ActivityLog {
@@ -791,17 +978,30 @@ model ProjectApproval {
 }
 
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String
-  type      String
-  message   String
-  isRead    Boolean   @default(false)
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String    @id @default(uuid())
+  userId                 String
+  type                   String
+  category               String    @default("SYSTEM")
+  priority               String    @default("NORMAL")
+  title                  String?
+  message                String
+  requiresAcknowledgement Boolean  @default(false)
+  isRead                 Boolean   @default(false)
+  readAt                 DateTime?
+  acknowledgedAt         DateTime?
+  acknowledgementRemarks String?
+  archivedAt             DateTime?
+  actorId                String?
+  target                 Json?
+  metadata               Json?
+  eventKey               String?   @unique
+  createdAt              DateTime  @default(now())
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([isRead])
+  @@index([userId, archivedAt, createdAt])
+  @@index([userId, readAt])
+  @@index([userId, acknowledgedAt])
+  @@index([category])
 }
 
 model ApprovalAuditLog {
@@ -980,22 +1180,22 @@ model Barangay {
 }
 
 model BusinessUnit {
-  id                  String            @id @default(uuid())
-  code                String            @unique
-  name                String
-  entity              String
-  buHead              String?
-  buHeadUserId        String?
-  buHeadUser          User?             @relation("BusinessUnitHead", fields: [buHeadUserId], references: [id], onDelete: SetNull)
-  assistantHead       String?
-  assistantHeadUserId String?
-  assistantHeadUser   User?             @relation("BusinessUnitAssistantHead", fields: [assistantHeadUserId], references: [id], onDelete: SetNull)
-  isActive            Boolean           @default(true)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  ssoRegistrations    SsoRegistration[]
-  users               User[]
-  maintenanceTables   MaintenanceTableBusinessUnit[]
+  id                     String                         @id @default(uuid())
+  code                   String                         @unique
+  name                   String
+  entity                 String
+  buHead                 String?
+  buHeadUserId           String?
+  buHeadUser             User?                          @relation("BusinessUnitHead", fields: [buHeadUserId], references: [id], onDelete: SetNull)
+  assistantHead          String?
+  assistantHeadUserId    String?
+  assistantHeadUser      User?                          @relation("BusinessUnitAssistantHead", fields: [assistantHeadUserId], references: [id], onDelete: SetNull)
+  isActive               Boolean                        @default(true)
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+  ssoRegistrations       SsoRegistration[]
+  users                  User[]
+  maintenanceTables      MaintenanceTableBusinessUnit[]
   progressUpdateRequests ProgressUpdateRequest[]
   wbsProjects            ProjectWbsBusinessUnit[]
 

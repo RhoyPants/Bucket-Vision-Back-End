@@ -1,4 +1,7 @@
 import express from "express";
+import incidentWorkflowRoutes from "./modules/admin/incident-workflows/incident-workflow.routes";
+import escalationNotificationMatrixRoutes from "./modules/admin/escalation-notification-matrices/escalation-notification-matrix.routes";
+import incidentTypeRoutes, { incidentTypeLookupRouter } from "./modules/admin/incident-types/incident-type.routes";
 import cors from "cors";
 import userRoutes from "./modules/user/user.routes";
 import authRoutes from "./modules/auth/auth.routes";
@@ -27,6 +30,7 @@ import incidentReportRoutes from "./modules/incident-report/incident-report.rout
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import workBreakdownMaintenanceRoutes from "./modules/admin/work-breakdown-maintenance/work-breakdown-maintenance.routes";
 import reportRoutes from "./reports/routes/report.routes";
+import notificationRoutes from "./modules/notification/notification.routes";
 
 const app = express();
 app.use(cors({
@@ -67,9 +71,14 @@ app.use("/api/geographical", geographicalRoutes);
 app.use("/api/business-units", businessUnitRoutes);
 app.use("/api/project-dashboards", projectDashboardRoutes);
 app.use("/api/incidents", incidentReportRoutes);
+app.use("/api/admin/incident-workflows", incidentWorkflowRoutes);
+app.use("/api/admin/escalation-notification-matrices", escalationNotificationMatrixRoutes);
+app.use("/api/admin/incident-types", incidentTypeRoutes);
+app.use("/api/incident-types", incidentTypeLookupRouter);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin/work-breakdown-maintenance", workBreakdownMaintenanceRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/notifications", notificationRoutes);
     
 
 app.get("/test-auth", authenticate, (req: any, res) => {
