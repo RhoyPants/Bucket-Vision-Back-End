@@ -14,6 +14,25 @@ import {
 
 export class ScopeController {
 
+  private static async validatePhase(projectId: string, phaseId: string | null | undefined) {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { isPhasing: true },
+    });
+    if (!project) throw new Error("Project not found");
+    if (!project.isPhasing) {
+      if (phaseId) throw new Error("A phase cannot be assigned to a non-phased project");
+      return null;
+    }
+    if (!phaseId) throw new Error("phaseId is required for scopes in a phased project");
+    const phase = await prisma.phase.findFirst({
+      where: { id: phaseId, projectId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!phase) throw new Error("Phase not found in this project");
+    return phase.id;
+  }
+
   static async getDropdownByProject(req: Request<{ projectId: string }>, res: Response) {
     try {
       const { projectId } = req.params;
@@ -29,7 +48,7 @@ export class ScopeController {
 
       const scopes = await prisma.scope.findMany({
         where: { projectId, deletedAt: null },
-        select: { id: true, name: true },
+        select: { id: true, name: true, phaseId: true, phase: { select: { id: true, name: true, order: true } } },
         orderBy: [{ order: "asc" }, { name: "asc" }, { id: "asc" }],
       });
       return res.json({ data: scopes });
@@ -50,8 +69,10 @@ export class ScopeController {
         projectId,
         budgetAllocated,
         budgetPercent,
-        order
+        order,
+        phaseId,
       } = req.body;
+      const validatedPhaseId = await ScopeController.validatePhase(projectId, phaseId);
       const selection = await resolveScopeSelection({
         sourceType: req.body.sourceType,
         maintenanceId: req.body.scopeMaintenanceId,
@@ -63,7 +84,7 @@ export class ScopeController {
       let nextOrder = order ?? 0;
       if (order === undefined) {
         const maxOrder = await prisma.scope.findFirst({
-          where: { projectId },
+          where: { projectId, phaseId: validatedPhaseId },
           orderBy: { order: "desc" },
           select: { order: true }
         });
@@ -77,6 +98,7 @@ export class ScopeController {
           scopeMaintenanceId: selection.maintenanceId,
           description,
           projectId,
+          phaseId: validatedPhaseId,
           order: nextOrder,
           budgetAllocated,
           budgetPercent
@@ -108,6 +130,7 @@ export class ScopeController {
       const scopes = await prisma.scope.findMany({
         where: { projectId },
         include: {
+          phase: true,
           tasks: {
             orderBy: { order: "asc" }
           }
@@ -134,6 +157,7 @@ export class ScopeController {
       const scope = await prisma.scope.findUnique({
         where: { id },
         include: {
+          phase: true,
           tasks: {
             include: {
               subtasks: true
@@ -165,10 +189,15 @@ export class ScopeController {
         description,
         budgetAllocated,
         budgetPercent,
-        order
+        order,
+        phaseId,
       } = req.body;
       const existing = await (prisma.scope.findUnique as any)({ where: { id } });
       if (!existing) return res.status(404).json({ message: "Scope not found" });
+      const validatedPhaseId = await ScopeController.validatePhase(
+        existing.projectId,
+        phaseId === undefined ? existing.phaseId : phaseId,
+      );
       const requestedSourceType = req.body.sourceType === undefined
         ? existing.sourceType
         : String(req.body.sourceType).trim().toUpperCase();
@@ -201,6 +230,7 @@ export class ScopeController {
             : {}),
           ...(description !== undefined && { description }),
           ...(order !== undefined && { order }),
+          ...(phaseId !== undefined && { phaseId: validatedPhaseId }),
           ...(budgetAllocated !== undefined && { budgetAllocated }),
           ...(budgetPercent !== undefined && { budgetPercent })
         }

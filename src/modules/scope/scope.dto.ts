@@ -9,6 +9,7 @@ export interface CreateScopeDTO {
   order?: number;
 
   projectId: string;
+  phaseId?: string | null;
 
   budgetAllocated?: number;
   budgetPercent?: number;
@@ -37,6 +38,7 @@ export interface UpdateScopeDTO {
   scopeMaintenanceId?: string | null;
   description?: string;
   order?: number;
+  phaseId?: string | null;
 
   budgetAllocated?: number;
   budgetPercent?: number;

@@ -46,6 +46,13 @@ function serializeProjectWbsBusinessUnits(project: any) {
   };
 }
 
+function parseIsPhasing(value: unknown): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  throw new Error("isPhasing must be true or false");
+}
+
 export class ProjectController {
   private static readonly DIRECTORY_LIMITS = new Set([6, 12, 24, 48]);
   private static readonly DIRECTORY_SORT_FIELDS = new Set([
@@ -767,13 +774,19 @@ export class ProjectController {
 
     if (!project) return null;
 
-    const scopes = await prisma.scope.findMany({
-      where: { projectId },
-      orderBy: { order: "asc" },
-    });
+    const [scopes, phases] = await Promise.all([
+      prisma.scope.findMany({
+        where: { projectId },
+        orderBy: { order: "asc" },
+      }),
+      prisma.phase.findMany({
+        where: { projectId, deletedAt: null },
+        orderBy: [{ order: "asc" }, { id: "asc" }],
+      }),
+    ]);
 
     if (!scopes.length) {
-      return { ...project, scopes: [] };
+      return { ...project, scopes: [], phases: phases.map((phase) => ({ ...phase, scopes: [] })) };
     }
 
     const scopeIds = scopes.map((scope) => scope.id);
@@ -870,9 +883,21 @@ export class ProjectController {
       };
     });
 
+    const scopesByPhaseId = new Map<string, any[]>();
+    for (const scope of scopeTree) {
+      if (!scope.phaseId) continue;
+      const list = scopesByPhaseId.get(scope.phaseId) || [];
+      list.push(scope);
+      scopesByPhaseId.set(scope.phaseId, list);
+    }
+
     return {
       ...project,
       scopes: scopeTree,
+      phases: phases.map((phase) => ({
+        ...phase,
+        scopes: scopesByPhaseId.get(phase.id) || [],
+      })),
     };
   }
 
@@ -886,6 +911,7 @@ export class ProjectController {
         startDate,
         expectedEndDate,
         isBudgeted: rawIsBudgeted,
+        isPhasing: rawIsPhasing,
         totalBudget,
         priority,
         pin,
@@ -903,6 +929,7 @@ export class ProjectController {
       } = req.body;
 
       const isBudgeted = parseIsBudgeted(rawIsBudgeted) ?? true;
+      const isPhasing = parseIsPhasing(rawIsPhasing) ?? false;
       const rawFiles = (req as any).files;
       const files: Express.Multer.File[] = Array.isArray(rawFiles)
         ? rawFiles
@@ -931,6 +958,7 @@ export class ProjectController {
             : undefined,
 
           isBudgeted,
+          isPhasing,
           totalBudget: isBudgeted === false ? null : totalBudget,
           priority,
           pin,
@@ -1216,6 +1244,7 @@ export class ProjectController {
             businessUnit: true,
             location: true,
             isBudgeted: true,
+            isPhasing: true,
             versionLabel: true,
             versionNumber: true,
             progress: true,
@@ -1687,6 +1716,7 @@ export class ProjectController {
         startDate,
         expectedEndDate,
         isBudgeted: rawIsBudgeted,
+        isPhasing: rawIsPhasing,
         totalBudget,
         priority,
         pin,
@@ -1705,9 +1735,22 @@ export class ProjectController {
       } = req.body;
 
       const requestedIsBudgeted = parseIsBudgeted(rawIsBudgeted);
-      const existingProject = await prisma.project.findUnique({ where: { id }, select: { isBudgeted: true, status: true } });
+      const requestedIsPhasing = parseIsPhasing(rawIsPhasing);
+      const existingProject = await prisma.project.findUnique({
+        where: { id },
+        select: { isBudgeted: true, isPhasing: true, status: true, _count: { select: { scopes: true } } },
+      });
       if (!existingProject) return res.status(404).json({ message: "Project not found" });
       const isBudgeted = requestedIsBudgeted ?? existingProject.isBudgeted;
+      const isPhasing = requestedIsPhasing ?? existingProject.isPhasing;
+      if (existingProject.isPhasing && !isPhasing) {
+        return res.status(409).json({ message: "Phasing cannot be disabled after it has been enabled." });
+      }
+      if (!existingProject.isPhasing && isPhasing && existingProject._count.scopes > 0) {
+        return res.status(409).json({
+          message: "Phasing can only be enabled before scopes are created. Existing scopes must be migrated into a phase first.",
+        });
+      }
       if (isBudgeted !== existingProject.isBudgeted && existingProject.status !== "DRAFT") {
         return res.status(409).json({ message: "Project budget type can only be changed in DRAFT." });
       }
@@ -1768,6 +1811,7 @@ export class ProjectController {
               : undefined,
 
             isBudgeted,
+            isPhasing,
             totalBudget: isBudgeted === false ? null : totalBudget,
             priority,
             pin,

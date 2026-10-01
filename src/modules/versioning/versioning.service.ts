@@ -25,6 +25,7 @@ export class VersioningService {
     const source = await (prisma.project.findUnique as any)({
       where: { id: projectId },
       include: {
+        phases: { where: { deletedAt: null } },
         scopes: {
           include: {
             tasks: {
@@ -100,6 +101,7 @@ export class VersioningService {
         totalBudget: source.isBudgeted ? amendments.totalBudget ?? source.totalBudget : null,
         priority: source.priority,
         isBudgeted: source.isBudgeted,
+        isPhasing: source.isPhasing,
         duration: source.duration,
 
         // PROGRESS: Will be recalculated from cloned tasks
@@ -167,8 +169,25 @@ export class VersioningService {
     // Direct-parent ID -> new-version ID. CPM dependencies must use only the
     // new IDs, keeping every version's network independent.
     const clonedSubtaskIds = new Map<string, string>();
+    const clonedPhaseIds = new Map<string, string>();
+
+    for (const phase of source.phases) {
+      const newPhase = await prisma.phase.create({
+        data: {
+          projectId: newProject.id,
+          name: phase.name,
+          description: phase.description,
+          order: phase.order,
+        },
+      });
+      clonedPhaseIds.set(phase.id, newPhase.id);
+    }
 
     for (const scope of source.scopes) {
+      const phaseId = scope.phaseId ? clonedPhaseIds.get(scope.phaseId) : undefined;
+      if (source.isPhasing && !phaseId) {
+        throw new Error(`Cannot clone phased scope ${scope.id}: source phase is missing`);
+      }
       const newScope = await prisma.scope.create({
         data: {
           name: scope.name,
@@ -179,6 +198,8 @@ export class VersioningService {
           budgetAllocated: scope.budgetAllocated,
           budgetPercent: scope.budgetPercent,
           projectId: newProject.id,
+          phaseId,
+          order: scope.order,
         },
       });
 
@@ -386,6 +407,7 @@ export class VersioningService {
     return {
       newProject,
       summary: {
+        phasesCloned: source.phases.length,
         scopesCloned: source.scopes.length,
         tasksCloned: source.scopes.reduce((sum: number, s: any) => sum + s.tasks.length, 0),
         subtasksCloned: source.scopes.reduce(
@@ -499,12 +521,14 @@ export class VersioningService {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
+        phases: { where: { deletedAt: null }, orderBy: [{ order: "asc" }, { id: "asc" }] },
         owner: {
           select: { id: true, name: true, email: true },
         },
         scopes: {
           orderBy: { order: "asc" },
           include: {
+            phase: true,
             tasks: {
               orderBy: { order: "asc" },
               include: {
@@ -579,6 +603,7 @@ export class VersioningService {
         name: true,
         versionNumber: true,
         isBudgeted: true,
+        isPhasing: true,
 
         versionLabel: true,
         status: true,
@@ -614,6 +639,7 @@ export class VersioningService {
         id: true,
         versionNumber: true,
         isBudgeted: true,
+        isPhasing: true,
 
         versionLabel: true,
         status: true,
@@ -760,6 +786,7 @@ export class VersioningService {
       versionId: project.id,
       versionNumber: project.versionNumber,
       isBudgeted: project.isBudgeted,
+      isPhasing: project.isPhasing,
 
       versionLabel: project.versionLabel,
       name: project.name,
