@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
-import upload from "../../middleware/upload.middleware";
 import { incidentReportController } from "./incident-report.controller";
 import { incidentCaseManagementController } from "./case-management/incident-case-management.controller";
 import { incidentInboxController } from "./inbox/incident-inbox.controller";
@@ -26,11 +25,6 @@ router.get("/:id/report.pdf", authenticate, authorize("incident_reports", "READ"
 router.get("/:id/workflow/history", authenticate, authorize("incident_reports", "READ"), incidentReportController.workflowHistory);
 router.get("/:id/notification-escalation/history", authenticate, authorize("incident_reports", "READ"), incidentReportController.notificationEscalationHistory);
 router.patch("/:id/workflow/complete-level", authenticate, authorize("incident_reports", "UPDATE"), incidentReportController.completeWorkflowLevel);
-const incidentFiles = upload.fields([
-  { name: "attachments", maxCount: 10 },
-  { name: "files", maxCount: 10 },
-]);
-
 router.get(
   "/",
   authenticate,
@@ -41,7 +35,6 @@ router.post(
   "/",
   authenticate,
   authorize("incident_reports", "CREATE"),
-  incidentFiles,
   incidentReportController.create
 );
 router.get(
@@ -97,7 +90,6 @@ router.post(
   "/:id/attachments",
   authenticate,
   authorize("incident_reports", "CREATE"),
-  incidentFiles,
   incidentReportController.uploadAttachments
 );
 

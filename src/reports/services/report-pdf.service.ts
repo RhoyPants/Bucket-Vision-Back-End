@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import Handlebars from "handlebars";
 import puppeteer, { Browser } from "puppeteer";
-import { fetchSharePointFile } from "../../services/sharepoint-upload.service";
+import { buildAssetUrl, fileKeyFromStoredValue } from "../../services/s3-assets.service";
 import { reportChartService } from "./report-chart.service";
 
 let browserPromise: Promise<Browser> | null = null;
@@ -140,7 +140,12 @@ export class ReportPdfService {
           return { ...photo, embeddedUrl: photo.url };
         }
         try {
-          const file = await fetchSharePointFile(photo.url);
+          const key = fileKeyFromStoredValue(photo.url);
+          if (!key) throw new Error("Unsupported legacy photo reference");
+          const file = await fetch(buildAssetUrl(key)).then(async (response) => {
+            if (!response.ok) throw new Error(`Asset fetch failed (${response.status})`);
+            return { contentType: response.headers.get("content-type") || "application/octet-stream", buffer: Buffer.from(await response.arrayBuffer()) };
+          });
           const contentType = file.contentType.split(";", 1)[0].trim().toLowerCase();
           if (!contentType.startsWith("image/")) {
             throw new Error(`Unsupported photo content type: ${contentType}`);

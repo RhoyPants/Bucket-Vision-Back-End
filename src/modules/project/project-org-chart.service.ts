@@ -1,6 +1,6 @@
 import prisma from "../../config/prisma";
 import { buildAccessibleProjectWhere } from "./project-access";
-import { uploadBufferToSharePoint } from "../../services/sharepoint-upload.service";
+import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, isManagedFileKey, validateStoredFileReference } from "../../services/s3-assets.service";
 
 const ANCHORS = [
   "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "RIGHT_TOP", "RIGHT_CENTER", "RIGHT_BOTTOM",
@@ -45,8 +45,9 @@ function normalize(input: ChartInput): { title: string; nodes: NodeInput[] } {
     const y = node.y === undefined || node.y === null ? null : Number(node.y);
     if (x !== null && !Number.isFinite(x)) throw new Error(`nodes[${index}].x must be a number`);
     if (y !== null && !Number.isFinite(y)) throw new Error(`nodes[${index}].y must be a number`);
-    const photoUrl = node.photoUrl?.trim() || null;
-    if (photoUrl && !/^https?:\/\//i.test(photoUrl)) throw new Error(`nodes[${index}].photoUrl must be an HTTP(S) URL`);
+    const photoValue = node.photoUrl?.trim() || null;
+    const photoUrl = photoValue ? (fileKeyFromStoredValue(photoValue) || photoValue) : null;
+    if (photoUrl && !isManagedFileKey(photoUrl) && !/^https?:\/\//i.test(photoUrl)) throw new Error(`nodes[${index}].photoUrl must be a managed asset key or HTTP(S) URL`);
     const parentAnchor = (node.parentAnchor || "BOTTOM_CENTER") as Anchor;
     const childAnchor = (node.childAnchor || "TOP_CENTER") as Anchor;
     if (!ANCHORS.includes(parentAnchor)) throw new Error(`nodes[${index}].parentAnchor is invalid`);
@@ -127,18 +128,14 @@ export class ProjectOrgChartService {
     return chart;
   }
 
-  async uploadPhoto(projectId: string, userId: string, roleId: string, file: Express.Multer.File | undefined) {
+  async uploadPhoto(projectId: string, userId: string, roleId: string, file: unknown) {
     await this.requireAccess(projectId, userId, roleId);
     if (!file) throw new Error("photo file is required");
-    if (!/^image\/(jpeg|png|webp)$/i.test(file.mimetype)) throw new Error("Only JPG, PNG, and WebP images are allowed");
-    if (file.size > 5 * 1024 * 1024) throw new Error("Photo must not exceed 5 MB");
-    const uploaded = await uploadBufferToSharePoint({
-      buffer: file.buffer, originalName: file.originalname, mimeType: file.mimetype,
-      folder: `org-chart-photos/${projectId}`,
-    });
-    const url = uploaded.downloadUrl || uploaded.webUrl;
-    if (!url) throw new Error("SharePoint did not return a photo URL");
-    return { photoUrl: url, fileName: uploaded.name || file.originalname, mimeType: file.mimetype, size: file.size };
+    const reference = validateStoredFileReference(file, "org-chart-photos", projectId);
+    if (!/^image\/(jpeg|png|webp)$/i.test(reference.contentType)) throw new Error("Only JPG, PNG, and WebP images are allowed");
+    if (reference.fileSize > 5 * 1024 * 1024) throw new Error("Photo must not exceed 5 MB");
+    await assertUploadedObject(reference);
+    return { photoUrl: reference.fileKey, fileUrl: buildAssetUrl(reference.fileKey), fileName: reference.fileName, mimeType: reference.contentType, size: reference.fileSize };
   }
 
   async listCopySources(userId: string, roleId: string, query?: unknown, cursor?: unknown, limit?: unknown) {
@@ -205,6 +202,10 @@ export class ProjectOrgChartService {
     await this.requireAccess(projectId, userId, roleId);
     const { title, nodes } = normalize(input);
     const db: any = prisma;
+    const previous = await db.projectOrgChart.findUnique({
+      where: { projectId },
+      select: { nodes: { select: { photoUrl: true } } },
+    });
     const chart = await db.$transaction(async (tx: any) => {
       const saved = await tx.projectOrgChart.upsert({
         where: { projectId }, create: { projectId, title }, update: { title },
@@ -226,14 +227,25 @@ export class ProjectOrgChartService {
         where: { id: saved.id }, include: { nodes: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
       });
     });
+    const retainedPhotos = new Set(nodes.map((node) => node.photoUrl).filter(Boolean));
+    const replacedPhotos = (previous?.nodes || [])
+      .map((node: any) => node.photoUrl)
+      .filter((photoUrl: string | null) => photoUrl && !retainedPhotos.has(photoUrl));
+    for (const photoUrl of new Set<string>(replacedPhotos)) await deleteManagedAsset(photoUrl);
     return chart;
   }
 
   async remove(projectId: string, userId: string, roleId: string) {
     await this.requireAccess(projectId, userId, roleId);
     const db: any = prisma;
-    const chart = await db.projectOrgChart.findUnique({ where: { projectId }, select: { id: true } });
+    const chart = await db.projectOrgChart.findUnique({
+      where: { projectId },
+      select: { id: true, nodes: { select: { photoUrl: true } } },
+    });
     if (!chart) return { deleted: false };
+    for (const photoUrl of new Set<string>(chart.nodes.map((node: any) => node.photoUrl).filter(Boolean))) {
+      await deleteManagedAsset(photoUrl);
+    }
     await db.projectOrgChart.delete({ where: { id: chart.id } });
     return { deleted: true };
   }

@@ -7,8 +7,7 @@ export class ProjectOrgChartController {
   async uploadPhoto(req: Request, res: Response) {
     try {
       const p = params(req);
-      const file = (req as any).file as Express.Multer.File | undefined;
-      res.status(201).json({ success: true, data: await projectOrgChartService.uploadPhoto(p.projectId, p.userId, p.roleId, file) });
+      res.status(201).json({ success: true, data: await projectOrgChartService.uploadPhoto(p.projectId, p.userId, p.roleId, req.body) });
     } catch (error: any) { res.status(error.message === "Project not found or access denied" ? 404 : 400).json({ success: false, message: error.message }); }
   }
 

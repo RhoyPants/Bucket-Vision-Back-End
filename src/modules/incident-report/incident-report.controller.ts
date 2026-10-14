@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
-import {
-  fetchSharePointFile,
-  uploadBufferToSharePoint,
-} from "../../services/sharepoint-upload.service";
+import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 import { incidentReportService } from "./incident-report.service";
 import { incidentWorkflowService } from "./workflow/incident-workflow.service";
 
@@ -24,14 +21,8 @@ const errorStatus = (error: any) => {
   return 400;
 };
 
-const filesFromRequest = (req: any): Express.Multer.File[] => {
-  const rawFiles = req.files;
-  if (Array.isArray(rawFiles)) return rawFiles;
-  return [
-    ...((rawFiles?.attachments as Express.Multer.File[]) || []),
-    ...((rawFiles?.files as Express.Multer.File[]) || []),
-  ];
-};
+const filesFromRequest = (req: any): any[] =>
+  Array.isArray(req.body?.attachments) ? req.body.attachments : [];
 
 const withAttachmentProxy = (value: any, token?: string): any => {
   if (Array.isArray(value)) {
@@ -118,20 +109,16 @@ export class IncidentReportController {
 
       let incident = await incidentReportService.create(userId, req.body);
       for (const file of files) {
-        const uploaded = await uploadBufferToSharePoint({
-          buffer: file.buffer,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          folder: `incidents/${incident.id}`,
-        });
+        const reference = validateStoredFileReference(file, "incidents");
+        await assertUploadedObject(reference);
         await incidentReportService.addAttachment(incident.id, userId, {
-          fileUrl: uploaded.downloadUrl || uploaded.webUrl || "",
-          fileName: file.originalname,
-          mimeType: file.mimetype,
-          size: file.size,
-          section: req.body.section,
-          actionId: req.body.actionId,
-          caption: req.body.caption,
+          fileUrl: reference.fileKey,
+          fileName: reference.fileName,
+          mimeType: reference.contentType,
+          size: reference.fileSize,
+          section: file.section || req.body.section,
+          actionId: file.actionId || req.body.actionId,
+          caption: file.caption || req.body.caption,
         });
       }
 
@@ -243,21 +230,17 @@ export class IncidentReportController {
 
       const created = [];
       for (const file of files) {
-        const uploaded = await uploadBufferToSharePoint({
-          buffer: file.buffer,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          folder: `incidents/${incidentId}`,
-        });
+        const reference = validateStoredFileReference(file, "incidents", incidentId);
+        await assertUploadedObject(reference);
         created.push(
           await incidentReportService.addAttachment(incidentId, userId, {
-            fileUrl: uploaded.downloadUrl || uploaded.webUrl || "",
-            fileName: file.originalname,
-            mimeType: file.mimetype,
-            size: file.size,
-            section: req.body.section,
-            actionId: req.body.actionId,
-            caption: req.body.caption,
+            fileUrl: reference.fileKey,
+            fileName: reference.fileName,
+            mimeType: reference.contentType,
+            size: reference.fileSize,
+            section: file.section || req.body.section,
+            actionId: file.actionId || req.body.actionId,
+            caption: file.caption || req.body.caption,
           })
         );
       }
@@ -274,18 +257,13 @@ export class IncidentReportController {
 
   async streamAttachment(req: Request, res: Response) {
     try {
-      const attachment = await incidentReportService.getAttachment(
+      const attachment = await incidentReportService.authorizeAttachmentDeletion(
         String(req.params.attachmentId),
         (req as any).user.id
       );
-      const file = await fetchSharePointFile(attachment.fileUrl);
-      res.setHeader("Content-Type", attachment.mimeType || file.contentType);
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${encodeURIComponent(attachment.fileName)}"`
-      );
-      res.setHeader("Cache-Control", "private, max-age=300");
-      res.send(file.buffer);
+      const fileKey = fileKeyFromStoredValue(attachment.fileUrl);
+      if (fileKey) return res.redirect(buildAssetUrl(fileKey));
+      return res.status(410).json({ success: false, message: "Legacy attachment is no longer available" });
     } catch (error: any) {
       res.status(errorStatus(error)).json({ success: false, error: { code: error.code || (errorStatus(error) === 404 ? "NOT_FOUND" : errorStatus(error) === 403 ? "FORBIDDEN" : errorStatus(error) === 409 ? "CONFLICT" : "VALIDATION_ERROR"), message: error.message, ...(error.fields ? { fields: error.fields } : {}) } });
     }
@@ -295,6 +273,11 @@ export class IncidentReportController {
 
   async deleteAttachment(req: Request, res: Response) {
     try {
+      const attachment = await incidentReportService.getAttachment(
+        String(req.params.attachmentId),
+        (req as any).user.id
+      );
+      await deleteManagedAsset(attachment.fileUrl);
       const data = await incidentReportService.deleteAttachment(
         String(req.params.attachmentId),
         (req as any).user.id

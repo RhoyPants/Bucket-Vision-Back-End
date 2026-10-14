@@ -3,7 +3,6 @@ import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
 import * as ProgressController from "./progress.controller";
-import upload from "../../middleware/upload.middleware";
 
 const router = Router();
 
@@ -41,10 +40,6 @@ router.post(
   "/",
   authenticate,
   authorize("progress", "UPDATE"),
-  upload.fields([
-    { name: "attachments", maxCount: 10 },
-    { name: "photo", maxCount: 1 },
-  ]),
   ProgressController.addProgress
 );
 
@@ -55,10 +50,6 @@ router.put(
   "/:id",
   authenticate,
   authorize("progress", "UPDATE"),
-  upload.fields([
-    { name: "attachments", maxCount: 10 },
-    { name: "photo", maxCount: 1 },
-  ]),
   ProgressController.updateProgress
 );
 

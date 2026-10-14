@@ -16,6 +16,7 @@ export interface CreateProjectDTO {
   totalBudget?: number;
   priority?: string;
   pin?: string;
+  pinMasterId?: string;
   businessUnit?: string;
   wbsBusinessUnitIds?: string[];
   entity?: string;

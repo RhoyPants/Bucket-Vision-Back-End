@@ -86,6 +86,7 @@ export class VersioningService {
             : source.description,
 
         pin: source.pin, // SAME PIN
+        pinMasterId: source.pinMasterId,
         ownerId: source.ownerId,
         location: source.location ? source.location : undefined,
         businessUnit: source.businessUnit,

@@ -28,20 +28,22 @@ import geographicalRoutes from "./modules/geographical/geographical.routes";
 import businessUnitRoutes from "./modules/business-unit/business-unit.routes";
 import projectDashboardRoutes from "./modules/project-dashboard/project-dashboard.routes";
 import incidentReportRoutes from "./modules/incident-report/incident-report.routes";
+import uploadRoutes from "./modules/uploads/upload.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import workBreakdownMaintenanceRoutes from "./modules/admin/work-breakdown-maintenance/work-breakdown-maintenance.routes";
 import reportRoutes from "./reports/routes/report.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
+import pinMasterRoutes from "./modules/pin-master/pin-master.routes";
 
 const app = express();
 app.use(cors({
   origin: [
     "http://localhost:3000",
-    "https://bucket-vision-exp.vercel.app"
+    "https://bucket-vision-exp.vercel.app",
+    "https://vision.globalvisionsinc.com.ph"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
 }));
 
 app.use(express.json());
@@ -73,6 +75,7 @@ app.use("/api/geographical", geographicalRoutes);
 app.use("/api/business-units", businessUnitRoutes);
 app.use("/api/project-dashboards", projectDashboardRoutes);
 app.use("/api/incidents", incidentReportRoutes);
+app.use("/api/uploads", uploadRoutes);
 app.use("/api/admin/incident-workflows", incidentWorkflowRoutes);
 app.use("/api/admin/escalation-notification-matrices", escalationNotificationMatrixRoutes);
 app.use("/api/admin/incident-types", incidentTypeRoutes);
@@ -81,6 +84,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin/work-breakdown-maintenance", workBreakdownMaintenanceRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/pin-masters", pinMasterRoutes);
     
 
 app.get("/test-auth", authenticate, (req: any, res) => {

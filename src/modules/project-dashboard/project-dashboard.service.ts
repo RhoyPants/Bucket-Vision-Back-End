@@ -19,16 +19,17 @@ import {
 export class ProjectDashboardService {
   async get(projectId: string, userId: string) {
     const project = await this.ensureProjectAccess(projectId, userId);
-    const [kpis, defaultSubtaskKpi] = await Promise.all([
+    const [kpis, defaultSubtaskKpi, membership] = await Promise.all([
       (prisma as any).dashboardKpi.findMany({
         where: { projectId },
         include: { targets: { orderBy: { sortOrder: "asc" } } },
         orderBy: { createdAt: "asc" },
       }),
       this.getSubtaskKpi(projectId, userId),
+      prisma.projectMember.findUnique({ where: { projectId_userId: { projectId, userId } }, select: { role: true } }),
     ]);
 
-    return this.enrichDashboard({ project, kpis, defaultSubtaskKpi });
+    return this.enrichDashboard({ project: { ...project, currentUserProjectRole: membership?.role || null }, kpis, defaultSubtaskKpi });
   }
 
   async getSourceOptions(projectId: string, userId: string) {
@@ -751,7 +752,7 @@ export class ProjectDashboardService {
       where: { projectId_userId: { projectId, userId } },
       select: { role: true },
     });
-    if (membership?.role !== "SUB_OWNER") {
+    if (!membership || !["CO_OWNER", "SUB_OWNER"].includes(membership.role)) {
       throw new Error(
         "Only the project owner, sub-owner, or superadmin can update Subtask KPI thresholds"
       );

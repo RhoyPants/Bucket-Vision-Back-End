@@ -2,7 +2,6 @@ import { Router } from "express";
 import { WeeklyReportController, uploadWeeklyReportAttachment, deleteWeeklyReportAttachment, streamWeeklyReportAttachment } from "./weekly-report.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
-import upload from "../../middleware/upload.middleware";
 
 const router = Router();
 
@@ -101,7 +100,6 @@ router.post(
   "/:id/attachments",
   authenticate,
   authorize("weekly_reports", "UPDATE"),
-  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   uploadWeeklyReportAttachment
 );
 

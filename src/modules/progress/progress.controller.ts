@@ -11,10 +11,7 @@ import {
 } from "./progress.service";
 import { parseDailyPercent, roundProgress } from "./progress-precision";
 import { getSCurve as getSCurveData } from "./scurve.service";
-import {
-  fetchSharePointFile,
-  uploadBufferToSharePoint,
-} from "../../services/sharepoint-upload.service";
+import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 
 import {
   GetBySubtaskParamsDTO,
@@ -257,13 +254,7 @@ export async function addProgress(req: Request, res: Response) {
   try {
     const { subtaskId, date, dailyPercent, remarks } = req.body;
 
-    const rawFiles = (req as any).files;
-    const files: Express.Multer.File[] = Array.isArray(rawFiles)
-      ? rawFiles
-      : [
-          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
-          ...((rawFiles?.photo as Express.Multer.File[]) ?? []),
-        ];
+    const files = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
     const userId = (req as any).user?.id;
 
     if (!userId) {
@@ -282,20 +273,16 @@ export async function addProgress(req: Request, res: Response) {
       throw new Error(eligibility.message);
     }
 
-    // Upload all files to SharePoint in parallel
+    // Verify all browser-uploaded S3 objects before saving their references.
     const uploadedAttachments = await Promise.all(
-      files.map(async (file, i) => {
-        const result = await uploadBufferToSharePoint({
-          buffer: file.buffer,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          folder: "progress",
-        });
+      files.map(async (file: any, i: number) => {
+        const reference = validateStoredFileReference(file, "progress", subtaskId);
+        await assertUploadedObject(reference);
         return {
-          url: result.downloadUrl || result.webUrl || "",
-          name: file.originalname,
-          mimeType: file.mimetype,
-          size: file.size,
+          url: reference.fileKey,
+          name: reference.fileName,
+          mimeType: reference.contentType,
+          size: reference.fileSize,
           sortOrder: i,
         };
       })
@@ -383,13 +370,7 @@ export async function updateProgress(req: Request, res: Response) {
       }
     }
 
-    const rawFiles = (req as any).files;
-    const files: Express.Multer.File[] = Array.isArray(rawFiles)
-      ? rawFiles
-      : [
-          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
-          ...((rawFiles?.photo as Express.Multer.File[]) ?? []),
-        ];
+    const files = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
 
     let log: any;
     let progressAudit: any = null;
@@ -433,6 +414,7 @@ export async function updateProgress(req: Request, res: Response) {
     let removeAttachmentIds: string[] = [];
 
     const attachmentPayload: UpdateProgressAttachmentsDTO = {};
+    let attachmentsToRemove: typeof existingLog.attachments = [];
 
     if (attachmentUpdatesRaw) {
       if (typeof attachmentUpdatesRaw === "string") {
@@ -476,14 +458,9 @@ export async function updateProgress(req: Request, res: Response) {
         throw new Error("One or more removeAttachmentIds are invalid for this progress log");
       }
 
-      await prisma.progressLogAttachment.deleteMany({
-        where: {
-          progressLogId: id,
-          id: {
-            in: attachmentPayload.removeAttachmentIds,
-          },
-        },
-      });
+      attachmentsToRemove = existingLog.attachments.filter((attachment) =>
+        attachmentPayload.removeAttachmentIds!.includes(attachment.id)
+      );
     }
 
     if (attachmentPayload.attachmentUpdates && attachmentPayload.attachmentUpdates.length > 0) {
@@ -527,19 +504,15 @@ export async function updateProgress(req: Request, res: Response) {
       const baseSortOrder = latestAttachments[0]?.sortOrder ?? -1;
 
       const uploadedAttachments = await Promise.all(
-        files.map(async (file, i) => {
-          const result = await uploadBufferToSharePoint({
-            buffer: file.buffer,
-            originalName: file.originalname,
-            mimeType: file.mimetype,
-            folder: "progress",
-          });
+        files.map(async (file: any, i: number) => {
+          const reference = validateStoredFileReference(file, "progress", existingLog.subtaskId);
+          await assertUploadedObject(reference);
           return {
             progressLogId: id,
-            url: result.downloadUrl || result.webUrl || "",
-            name: file.originalname,
-            mimeType: file.mimetype,
-            size: file.size,
+            url: reference.fileKey,
+            name: reference.fileName,
+            mimeType: reference.contentType,
+            size: reference.fileSize,
             sortOrder: baseSortOrder + i + 1,
           };
         })
@@ -548,6 +521,12 @@ export async function updateProgress(req: Request, res: Response) {
       await prisma.progressLogAttachment.createMany({
         data: uploadedAttachments,
       });
+    }
+
+    // Replacement safety: new uploaded references are persisted before old objects are removed.
+    for (const attachment of attachmentsToRemove) {
+      await deleteManagedAsset(attachment.url);
+      await prisma.progressLogAttachment.delete({ where: { id: attachment.id } });
     }
 
     const updatedLog = await prisma.progressLog.findUnique({
@@ -864,9 +843,10 @@ export async function deleteProgressAttachment(req: Request, res: Response) {
     let { attachmentId } = req.params;
     if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
 
-    await prisma.progressLogAttachment.delete({
-      where: { id: attachmentId },
-    });
+    const attachment = await prisma.progressLogAttachment.findUnique({ where: { id: attachmentId } });
+    if (!attachment) return res.status(404).json({ success: false, message: "Attachment not found" });
+    await deleteManagedAsset(attachment.url);
+    await prisma.progressLogAttachment.delete({ where: { id: attachmentId } });
 
     res.json({ success: true, message: "Attachment deleted" });
   } catch (error: any) {
@@ -893,17 +873,9 @@ export async function streamProgressAttachment(req: Request, res: Response) {
       });
     }
 
-    const file = await fetchSharePointFile(attachment.url);
-    const contentType = attachment.mimeType || file.contentType;
-
-    res.setHeader("Content-Type", contentType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${encodeURIComponent(attachment.name)}"`
-    );
-    res.setHeader("Cache-Control", "private, max-age=300");
-
-    res.send(file.buffer);
+    const fileKey = fileKeyFromStoredValue(attachment.url);
+    if (fileKey) return res.redirect(buildAssetUrl(fileKey));
+    return res.status(410).json({ success: false, message: "Legacy attachment is no longer available" });
   } catch (error: any) {
     res.status(400).json({
       success: false,

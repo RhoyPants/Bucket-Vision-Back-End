@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import prisma from "../../config/prisma";
+import { deleteManagedAsset } from "../../services/s3-assets.service";
 import { incidentWorkflowService, audit, lockIncident } from "./workflow/incident-workflow.service";
 import { conflict, invalid, IncidentApiError } from "./workflow/incident-workflow.contract";
 import {
@@ -236,6 +237,10 @@ export class IncidentReportService {
     await this.assertCanManage(incident, userId);
     this.assertPending(incident);
     if (incident.workflowSnapshot) conflict("HISTORY_PROTECTED", "Cancel this incident to preserve its workflow audit history.");
+    for (const attachment of incident.attachments || []) {
+      await deleteManagedAsset(attachment.fileUrl);
+      await (prisma as any).incidentAttachment.delete({ where: { id: attachment.id } });
+    }
     await (prisma as any).incidentReport.delete({ where: { id } });
     return { id };
   }
@@ -301,6 +306,13 @@ export class IncidentReportService {
   }
 
   async deleteAttachment(attachmentId: string, userId: string) {
+    const attachment = await this.authorizeAttachmentDeletion(attachmentId, userId);
+    await (prisma as any).incidentAttachment.delete({ where: { id: attachmentId } });
+    await audit(prisma, attachment.incidentId, "EVIDENCE_DELETED", { attachmentId, section: attachment.section }, attachment.incident.workflow?.activeLevelId, userId);
+    return { id: attachmentId };
+  }
+
+  async authorizeAttachmentDeletion(attachmentId: string, userId: string) {
     const attachment = await (prisma as any).incidentAttachment.findUnique({
       where: { id: attachmentId },
       include: { incident: true },
@@ -308,9 +320,7 @@ export class IncidentReportService {
     if (!attachment) throw new Error("Attachment not found");
     if (attachment.uploadedBy !== userId) await this.assertCanManageEvidence(attachment.incident, userId, attachment.section, attachment.actionId);
     this.assertPending(attachment.incident);
-    await (prisma as any).incidentAttachment.delete({ where: { id: attachmentId } });
-    await audit(prisma, attachment.incidentId, "EVIDENCE_DELETED", { attachmentId, section: attachment.section }, attachment.incident.workflow?.activeLevelId, userId);
-    return { id: attachmentId };
+    return attachment;
   }
 
   private async findIncident(id: string) {
@@ -331,7 +341,7 @@ export class IncidentReportService {
 
   async assertCanUploadAttachment(incidentId:string,userId:string,sectionValue:any,actionIdValue:any){const incident=await this.findIncident(incidentId);this.assertPending(incident);const section=String(sectionValue||"INITIAL_REPORT");const actionId=actionIdValue?String(actionIdValue):null;const valid=["INITIAL_REPORT","SITE_FINDINGS","IMMEDIATE_ACTION","ROOT_CAUSE","CONTRIBUTING_FACTORS","MITIGATION","RECOMMENDATIONS","ACTION","RESOLUTION"];if(!valid.includes(section))invalid("section","Select a valid evidence section.");if((section==="ACTION")!==!!actionId)invalid("actionId","actionId is required only for ACTION evidence.");await this.assertCanManageEvidence(incident,userId,section,actionId);return incident;}
 
-  private async assertCanManageEvidence(incident:any,userId:string,section:string,actionId:string|null){const user=await this.getUser(userId);const currentResolver=incident.status==="PENDING"&&incident.reportedById!==userId&&incident.workflow?.eligibleResolvers?.some((entry:any)=>entry.id===userId);const project=await prisma.project.findUnique({where:{id:incident.projectId},select:{ownerId:true}});const membership=await prisma.projectMember.findUnique({where:{projectId_userId:{projectId:incident.projectId,userId}},select:{role:true}});const manager=user.role.name==="SUPERADMIN"||incident.reportedById===userId||project?.ownerId===userId||membership?.role==="SUB_OWNER";if(section==="ACTION"){const action=actionId?await prisma.incidentAction.findFirst({where:{id:actionId,incidentId:incident.id},select:{ownerId:true}}):null;if(!action)invalid("actionId","Action must belong to this incident.");if(manager||currentResolver||action!.ownerId===userId)return;}else if(manager||currentResolver)return;throw new IncidentApiError(403,"FORBIDDEN","You do not have permission to manage evidence in this section.");}
+  private async assertCanManageEvidence(incident:any,userId:string,section:string,actionId:string|null){const user=await this.getUser(userId);const currentResolver=incident.status==="PENDING"&&incident.reportedById!==userId&&incident.workflow?.eligibleResolvers?.some((entry:any)=>entry.id===userId);const project=await prisma.project.findUnique({where:{id:incident.projectId},select:{ownerId:true}});const membership=await prisma.projectMember.findUnique({where:{projectId_userId:{projectId:incident.projectId,userId}},select:{role:true}});const manager=user.role.name==="SUPERADMIN"||incident.reportedById===userId||project?.ownerId===userId||["CO_OWNER","SUB_OWNER"].includes(membership?.role||"");if(section==="ACTION"){const action=actionId?await prisma.incidentAction.findFirst({where:{id:actionId,incidentId:incident.id},select:{ownerId:true}}):null;if(!action)invalid("actionId","Action must belong to this incident.");if(manager||currentResolver||action!.ownerId===userId)return;}else if(manager||currentResolver)return;throw new IncidentApiError(403,"FORBIDDEN","You do not have permission to manage evidence in this section.");}
 
   async ensureProjectAccess(projectId: string, userId: string) {
     const user = await this.getUser(userId);
@@ -368,8 +378,8 @@ export class IncidentReportService {
       where: { projectId_userId: { projectId: incident.projectId, userId } },
       select: { role: true },
     });
-    if (membership?.role !== "SUB_OWNER") {
-      throw new Error("Only the reporter, project owner, or sub-owner can modify this incident");
+    if (!membership || !["CO_OWNER", "SUB_OWNER"].includes(membership.role)) {
+      throw new Error("Only the reporter, project owner, co-owner, or sub-owner can modify this incident");
     }
   }
 

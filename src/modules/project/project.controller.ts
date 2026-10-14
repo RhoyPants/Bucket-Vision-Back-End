@@ -10,10 +10,7 @@ import {
 } from "./project.dto";
 import { generateProjectTimeline } from "../timeline/timeline.service";
 import { approvalService } from "../approval/approval.service";
-import {
-  fetchSharePointFile,
-  uploadBufferToSharePoint,
-} from "../../services/sharepoint-upload.service";
+import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
 
 const normalizeWbsBusinessUnitIds = (value: unknown): string[] => {
@@ -915,6 +912,7 @@ export class ProjectController {
         totalBudget,
         priority,
         pin,
+        pinMasterId,
         businessUnit,
         wbsBusinessUnitIds,
         entity,
@@ -930,42 +928,54 @@ export class ProjectController {
 
       const isBudgeted = parseIsBudgeted(rawIsBudgeted) ?? true;
       const isPhasing = parseIsPhasing(rawIsPhasing) ?? false;
-      const rawFiles = (req as any).files;
-      const files: Express.Multer.File[] = Array.isArray(rawFiles)
-        ? rawFiles
-        : [
-            ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
-            ...((rawFiles?.files as Express.Multer.File[]) ?? []),
-          ];
+      const files = Array.isArray((req.body as any).attachments)
+        ? (req.body as any).attachments
+        : [];
 
       const userId = (req as any).user.id;
+      const selectedPin = pinMasterId || pin
+        ? await prisma.pinMaster.findFirst({
+            where: pinMasterId
+              ? { id: pinMasterId, isActive: true }
+              : { pin, isActive: true },
+          })
+        : null;
+      if ((pinMasterId || pin) && !selectedPin) {
+        return res.status(400).json({
+          success: false,
+          error: "The selected PIN is not available in the PIN master or is inactive",
+        });
+      }
       const normalizedWbsBusinessUnitIds = normalizeWbsBusinessUnitIds(wbsBusinessUnitIds);
       await validateWbsBusinessUnits(normalizedWbsBusinessUnitIds);
 
       const project = await prisma.project.create({
         data: {
-          name,
-          description,
+          name: selectedPin?.projectName || name,
+          description: selectedPin?.description ?? description,
 
           // 🔥 FIX (JSON SAFE)
-          location: location || undefined,
+          location: selectedPin?.location ?? location ?? undefined,
 
           ownerId: userId,
 
-          startDate: startDate ? new Date(startDate) : undefined,
-          expectedEndDate: expectedEndDate
+          startDate: selectedPin?.startDate ?? (startDate ? new Date(startDate) : undefined),
+          expectedEndDate: selectedPin?.expectedEndDate
+            ? selectedPin.expectedEndDate
+            : expectedEndDate
             ? new Date(expectedEndDate)
             : undefined,
 
           isBudgeted,
           isPhasing,
-          totalBudget: isBudgeted === false ? null : totalBudget,
+          totalBudget: isBudgeted === false ? null : (selectedPin?.totalBudget ?? totalBudget),
           priority,
-          pin,
+          pin: selectedPin?.pin ?? pin,
+          pinMasterId: selectedPin?.id,
 
           // 🔥 NEW FIELDS
-          businessUnit,
-          entity,
+          businessUnit: selectedPin?.businessUnit ?? businessUnit,
+          entity: selectedPin?.entity ?? entity,
           wbsBusinessUnits: normalizedWbsBusinessUnitIds.length
             ? { create: normalizedWbsBusinessUnitIds.map((businessUnitId) => ({ businessUnitId })) }
             : undefined,
@@ -1003,22 +1013,17 @@ export class ProjectController {
       // Optional create-time attachments: same submit request as project creation.
       if (files.length > 0) {
         await Promise.all(
-          files.map(async (file) => {
-            const uploaded = await uploadBufferToSharePoint({
-              buffer: file.buffer,
-              originalName: file.originalname,
-              mimeType: file.mimetype,
-              folder: "projects",
-            });
-
+          files.map(async (file: any) => {
+            const reference = validateStoredFileReference(file, "projects");
+            await assertUploadedObject(reference);
             await prisma.attachment.create({
               data: {
                 projectId: project.id,
                 uploadedBy: userId,
-                fileUrl: uploaded.downloadUrl || uploaded.webUrl || "",
-                fileName: file.originalname,
-                mimeType: file.mimetype,
-                size: file.size,
+                fileUrl: reference.fileKey,
+                fileName: reference.fileName,
+                mimeType: reference.contentType,
+                size: reference.fileSize,
               },
             });
           }),
@@ -1423,7 +1428,10 @@ export class ProjectController {
       } = ProjectController.parseListQuery(req);
 
       const where: Prisma.ProjectWhereInput = {
-        ownerId: userId,
+        OR: [
+          { ownerId: userId },
+          { projectMembers: { some: { userId, role: "CO_OWNER" } } },
+        ],
         AND: [
           { status: { notIn: ["DRAFT", "ARCHIVED"] } },
           ProjectController.buildProjectWhereFilters({
@@ -1479,7 +1487,10 @@ export class ProjectController {
       } = ProjectController.parseListQuery(req);
 
       const where: Prisma.ProjectWhereInput = {
-        ownerId: userId,
+        OR: [
+          { ownerId: userId },
+          { projectMembers: { some: { userId, role: "CO_OWNER" } } },
+        ],
         status: "DRAFT",
         ...ProjectController.buildProjectWhereFilters({
           search,
@@ -2079,13 +2090,7 @@ export async function uploadProjectAttachment(req: any, res: Response) {
   try {
     const { id: projectId } = req.params;
     const userId = req.user?.id;
-    const rawFiles = req.files;
-    const files: Express.Multer.File[] = Array.isArray(rawFiles)
-      ? rawFiles
-      : [
-          ...((rawFiles?.attachments as Express.Multer.File[]) ?? []),
-          ...((rawFiles?.files as Express.Multer.File[]) ?? []),
-        ];
+    const files = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
 
     if (!files.length) {
       return res
@@ -2102,21 +2107,17 @@ export async function uploadProjectAttachment(req: any, res: Response) {
         .json({ success: false, message: "Project not found" });
 
     const created = await Promise.all(
-      files.map(async (file) => {
-        const result = await uploadBufferToSharePoint({
-          buffer: file.buffer,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          folder: "projects",
-        });
+      files.map(async (file: any) => {
+        const reference = validateStoredFileReference(file, "projects", projectId);
+        await assertUploadedObject(reference);
         return prisma.attachment.create({
           data: {
             projectId,
             uploadedBy: userId,
-            fileUrl: result.downloadUrl || result.webUrl || "",
-            fileName: file.originalname,
-            mimeType: file.mimetype,
-            size: file.size,
+            fileUrl: reference.fileKey,
+            fileName: reference.fileName,
+            mimeType: reference.contentType,
+            size: reference.fileSize,
           },
         });
       }),
@@ -2169,6 +2170,9 @@ export async function deleteProjectAttachment(req: any, res: Response) {
   try {
     let { attachmentId } = req.params;
     if (Array.isArray(attachmentId)) attachmentId = attachmentId[0];
+    const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
+    if (!attachment) return res.status(404).json({ success: false, message: "Attachment not found" });
+    await deleteManagedAsset(attachment.fileUrl);
     await prisma.attachment.delete({ where: { id: attachmentId } });
     res.json({ success: true, message: "Attachment deleted" });
   } catch (error: any) {
@@ -2189,15 +2193,9 @@ export async function streamProjectAttachment(req: any, res: Response) {
         .status(404)
         .json({ success: false, message: "Attachment not found" });
 
-    const file = await fetchSharePointFile(attachment.fileUrl);
-    const contentType = attachment.mimeType || file.contentType;
-    res.setHeader("Content-Type", contentType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
-    );
-    res.setHeader("Cache-Control", "private, max-age=300");
-    res.send(file.buffer);
+    const fileKey = fileKeyFromStoredValue(attachment.fileUrl);
+    if (fileKey) return res.redirect(buildAssetUrl(fileKey));
+    return res.status(410).json({ success: false, message: "Legacy attachment is no longer available" });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -2219,15 +2217,16 @@ export async function assignProjectMember(req: any, res: any) {
       });
     }
 
-    if (!["SUB_OWNER", "MEMBER"].includes(role)) {
+    if (!["CO_OWNER", "SUB_OWNER", "MEMBER"].includes(role)) {
       return res.status(400).json({
         message: "Invalid role",
       });
     }
 
-    // check project
+    // check project and load the owner's BU for co-owner validation
     const project = await prisma.project.findUnique({
       where: { id: projectId },
+      include: { owner: { select: { businessUnitId: true } } },
     });
 
     if (!project) {
@@ -2245,12 +2244,25 @@ export async function assignProjectMember(req: any, res: any) {
     });
 
     // 🔥 VALIDATE ROLE RULES
+    if (role === "CO_OWNER") {
+      const ownerBusinessUnitId = project.owner.businessUnitId;
+      const invalid = users.find(
+        (u) => !ownerBusinessUnitId || u.businessUnitId !== ownerBusinessUnitId,
+      );
+
+      if (invalid) {
+        return res.status(403).json({
+          message: `User ${invalid.name} is not in the project owner's business unit`,
+        });
+      }
+    }
+
     if (role === "SUB_OWNER") {
       const invalid = users.find((u) => u.role?.name !== "BU_HEAD");
 
       if (invalid) {
         return res.status(403).json({
-          message: `User ${invalid.name} is not BU_HEAD`,
+          message: `User ${invalid.name} is not BU_HEAD and cannot be assigned as sub-owner`,
         });
       }
     }
@@ -2313,6 +2325,7 @@ export async function getProjectMembers(req: any, res: any) {
     // Check project exists
     const project = await prisma.project.findUnique({
       where: { id: projectId },
+      include: { owner: { select: { businessUnitId: true } } },
     });
 
     if (!project) {
@@ -2332,6 +2345,7 @@ export async function getProjectMembers(req: any, res: any) {
     // 🔥 GROUP BY ROLE
     const grouped = {
       owner: members.filter((m: any) => m.role === "OWNER"),
+      coOwners: members.filter((m: any) => m.role === "CO_OWNER"),
       subOwners: members.filter((m: any) => m.role === "SUB_OWNER"),
       members: members.filter((m: any) => m.role === "MEMBER"),
     };
@@ -2385,7 +2399,7 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
       where: {
         projectId,
         userId: { not: project.ownerId },
-        role: { in: ["SUB_OWNER", "MEMBER"] },
+        role: { in: ["CO_OWNER", "SUB_OWNER", "MEMBER"] },
       },
       select: {
         id: true,
@@ -2413,6 +2427,7 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
       where: { projectId, userId: project.ownerId },
       select: { id: true },
     });
+    const coOwners = projectMembers.filter((item) => item.role === "CO_OWNER");
     const subOwners = projectMembers.filter(
       (item) => item.role === "SUB_OWNER",
     );
@@ -2439,7 +2454,7 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
 
     const toNode = (
       user: typeof project.owner,
-      projectRole: "OWNER" | "SUB_OWNER" | "MEMBER",
+      projectRole: "OWNER" | "CO_OWNER" | "SUB_OWNER" | "MEMBER",
       projectMemberId: string | null,
       children: any[] = [],
     ) => ({
@@ -2484,11 +2499,15 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
           name: project.name,
         },
         tree: toNode(project.owner, "OWNER", ownerMembership?.id || null, [
+          ...coOwners.map((item) => toNode(item.user, "CO_OWNER", item.id)),
           ...subOwnerNodes,
           ...directMemberNodes,
         ]),
         levels: {
           owner: [toNode(project.owner, "OWNER", ownerMembership?.id || null)],
+          coOwners: coOwners.map((item) =>
+            toNode(item.user, "CO_OWNER", item.id),
+          ),
           subOwners: subOwners.map((item) =>
             toNode(item.user, "SUB_OWNER", item.id),
           ),
@@ -2496,9 +2515,10 @@ export async function getProjectTeamOrgChart(req: any, res: any) {
         },
         summary: {
           owners: 1,
+          coOwners: coOwners.length,
           subOwners: subOwners.length,
           members: members.length,
-          total: 1 + subOwners.length + members.length,
+          total: 1 + coOwners.length + subOwners.length + members.length,
           membersReportingToSubOwners: assignedMemberIds.size,
           membersReportingDirectlyToOwner: directMemberNodes.length,
         },
@@ -2606,19 +2626,20 @@ export async function updateProjectMemberRole(req: any, res: any) {
     const requesterId = (req as any).user.id;
 
     // VALIDATION: newRole must be valid
-    if (!newRole || !["SUB_OWNER", "MEMBER"].includes(newRole)) {
+    if (!newRole || !["CO_OWNER", "SUB_OWNER", "MEMBER"].includes(newRole)) {
       return res.status(400).json({
         success: false,
         error: {
           code: "INVALID_ROLE",
-          message: "Invalid role. Must be 'SUB_OWNER' or 'MEMBER'",
+          message: "Invalid role. Must be 'CO_OWNER', 'SUB_OWNER', or 'MEMBER'",
         },
       });
     }
 
-    // CHECK: Project exists
+    // CHECK: Project exists and load the owner's BU for co-owner validation
     const project = await prisma.project.findUnique({
       where: { id: projectId },
+      include: { owner: { select: { businessUnitId: true } } },
     });
 
     if (!project) {
@@ -2631,7 +2652,7 @@ export async function updateProjectMemberRole(req: any, res: any) {
       });
     }
 
-    // PERMISSION: Only project owner can modify member roles
+    // Project co-owners have the same team-management capability as the owner.
     const requesterMember = await prisma.projectMember.findFirst({
       where: {
         projectId,
@@ -2639,12 +2660,12 @@ export async function updateProjectMemberRole(req: any, res: any) {
       },
     });
 
-    if (!requesterMember || requesterMember.role !== "OWNER") {
+    if (!requesterMember || !["OWNER", "CO_OWNER"].includes(requesterMember.role)) {
       return res.status(403).json({
         success: false,
         error: {
           code: "INSUFFICIENT_PERMISSIONS",
-          message: "Only project owner can modify member roles",
+          message: "Only the project owner or a co-owner can modify member roles",
         },
       });
     }
@@ -2677,6 +2698,29 @@ export async function updateProjectMemberRole(req: any, res: any) {
         error: {
           code: "CANNOT_MODIFY_OWNER",
           message: "Cannot change role of project owner",
+        },
+      });
+    }
+
+    if (
+      newRole === "CO_OWNER" &&
+      (!project.owner.businessUnitId || member.user.businessUnitId !== project.owner.businessUnitId)
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: "BUSINESS_UNIT_MISMATCH",
+          message: "A co-owner must belong to the project owner's business unit",
+        },
+      });
+    }
+
+    if (newRole === "SUB_OWNER" && member.user.role?.name !== "BU_HEAD") {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: "INVALID_SYSTEM_ROLE",
+          message: "Only a BU_HEAD can be assigned as sub-owner",
         },
       });
     }

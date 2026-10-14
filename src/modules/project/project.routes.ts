@@ -2,7 +2,6 @@ import { Router } from "express";
 import { ProjectController, assignProjectMember, getProjectMembers, getProjectTeamOrgChart, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole, uploadProjectAttachment, getProjectAttachments, deleteProjectAttachment, streamProjectAttachment } from "./project.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
-import upload from "../../middleware/upload.middleware";
 import { CpmController } from "../cpm/cpm.controller";
 import { projectOrgChartController } from "./project-org-chart.controller";
 
@@ -50,7 +49,6 @@ router.post(
   "/:projectId/org-chart-builder/photo",
   authenticate,
   authorize("projects", "UPDATE"),
-  upload.single("photo"),
   projectOrgChartController.uploadPhoto,
 );
 
@@ -90,7 +88,7 @@ router.get(
   ProjectController.getMyApprovals,
 );
 
-// GET MY REQUESTS (owned, non-draft)
+// GET MY REQUESTS (owned or co-owned, non-draft)
 router.get(
   "/my-requests",
   authenticate,
@@ -98,7 +96,7 @@ router.get(
   ProjectController.getMyRequests,
 );
 
-// GET MY DRAFTS (owned drafts)
+// GET MY DRAFTS (owned or co-owned drafts)
 router.get(
   "/my-drafts",
   authenticate,
@@ -143,7 +141,6 @@ router.post(
   "/",
   authenticate,
   authorize("projects", "CREATE"),
-  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   ProjectController.create,
 );
 
@@ -258,7 +255,6 @@ router.post(
   "/:id/attachments",
   authenticate,
   authorize("projects", "UPDATE"),
-  upload.fields([{ name: "attachments", maxCount: 10 }, { name: "files", maxCount: 10 }]),
   uploadProjectAttachment
 );
 

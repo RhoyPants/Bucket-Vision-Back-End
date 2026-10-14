@@ -12,6 +12,7 @@
     "build": "tsc",
     "test:incidents": "ts-node src/modules/incident-report/workflow/incident-workflow.test.ts",
     "test:progress": "ts-node src/modules/progress/progress-precision.test.ts",
+    "test:assets": "ts-node src/services/s3-assets.service.test.ts",
     "test:cpm": "ts-node src/modules/cpm/cpm.calculator.test.ts",
     "test:reports": "ts-node src/reports/tests/report-foundation.test.ts",
     "test:reports:integration": "ts-node src/reports/tests/report-integration.test.ts",
@@ -26,6 +27,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1150.0",
+    "@aws-sdk/s3-request-presigner": "^3.1150.0",
     "@prisma/client": "^5.22.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -36,7 +39,6 @@
     "handlebars": "^4.7.9",
     "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
-    "multer": "^2.1.1",
     "prisma": "^5.22.0",
     "puppeteer": "^25.4.0"
   },
@@ -45,7 +47,6 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/multer": "^2.1.0",
     "@types/node": "^25.5.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

@@ -144,6 +144,7 @@ model Project {
   duration           Int?
   expectedEndDate    DateTime?
   pin                String?
+  pinMasterId        String?
   priority           String?
   startDate          DateTime?
   isBudgeted         Boolean                    @default(true)
@@ -179,6 +180,7 @@ model Project {
   dailyReports       DailyReport[]
   approvalFlow       ApprovalFlow?              @relation(fields: [approvalFlowId], references: [id])
   owner              User                       @relation("ProjectOwner", fields: [ownerId], references: [id])
+  pinMaster          PinMaster?                 @relation(fields: [pinMasterId], references: [id])
   parentProject      Project?                   @relation("ProjectVersion", fields: [parentProjectId], references: [id])
   children           Project[]                  @relation("ProjectVersion")
   rootProject        Project?                   @relation("RootProject", fields: [rootProjectId], references: [id])
@@ -200,9 +202,34 @@ model Project {
   @@index([status])
   @@index([isActive])
   @@index([pin])
+  @@index([pinMasterId])
   @@index([rootProjectId])
   @@index([parentProjectId])
   @@index([approvalFlowId])
+}
+
+model PinMaster {
+  id                   String    @id @default(uuid())
+  sharePointItemId     String    @unique
+  pin                  String    @unique
+  projectName          String?
+  description          String?
+  businessUnit         String?
+  entity               String?
+  location             Json?
+  totalBudget          Float?
+  startDate            DateTime?
+  expectedEndDate      DateTime?
+  isActive             Boolean   @default(true)
+  sharePointModifiedAt DateTime?
+  lastSyncedAt         DateTime  @default(now())
+  rawData              Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  projects             Project[]
+
+  @@index([isActive])
+  @@index([projectName])
 }
 
 model Phase {
