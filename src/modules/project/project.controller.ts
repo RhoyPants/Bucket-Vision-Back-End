@@ -2050,12 +2050,6 @@ export class ProjectController {
           },
         });
 
-        await tx.dailyReport.deleteMany({
-          where: {
-            projectId: id,
-          },
-        });
-
         // ============================
         // Delete Project
         // ============================

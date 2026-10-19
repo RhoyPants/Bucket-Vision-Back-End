@@ -6,8 +6,6 @@ const categoryModule: Record<string, string> = {
   projects: "projects",
   "org-chart-photos": "projects",
   progress: "progress",
-  "daily-reports": "daily_reports",
-  "weekly-reports": "weekly_reports",
   incidents: "incident_reports",
 };
 

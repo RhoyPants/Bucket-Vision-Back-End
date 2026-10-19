@@ -33,6 +33,50 @@ const duplicateCodeResponse = (
   });
 };
 
+const assertBusinessUnitsAreUnassigned = async (
+  client: any,
+  businessUnitIds: string[],
+  excludeTemplateId?: string,
+) => {
+  if (!businessUnitIds.length) return;
+
+  const conflicts = await client.maintenanceTableBusinessUnit.findMany({
+    where: {
+      businessUnitId: { in: businessUnitIds },
+      ...(excludeTemplateId ? { maintenanceTableId: { not: excludeTemplateId } } : {}),
+    },
+    include: {
+      businessUnit: { select: { code: true, name: true } },
+      maintenanceTable: { select: { code: true, name: true } },
+    },
+  });
+  if (!conflicts.length) return;
+
+  const assignments = conflicts.map((conflict: any) =>
+    `${conflict.businessUnit.code || conflict.businessUnit.name} (${conflict.maintenanceTable.code || conflict.maintenanceTable.name})`,
+  );
+  const error: any = new Error(
+    `Each Business Unit can only be assigned to one WBS template. Already assigned: ${assignments.join(", ")}.`,
+  );
+  error.statusCode = 409;
+  throw error;
+};
+
+const tableAssignmentErrorResponse = (res: Response, error: any) => {
+  const target = Array.isArray(error?.meta?.target)
+    ? error.meta.target.map(String)
+    : [String(error?.meta?.target || "")];
+  const isBusinessUnitConflict = error?.code === "P2002"
+    && target.some((field: string) => field.toLowerCase().includes("businessunitid"));
+  if (error?.statusCode !== 409 && !isBusinessUnitConflict) return null;
+
+  return res.status(409).json({
+    success: false,
+    code: "BUSINESS_UNIT_ALREADY_ASSIGNED",
+    message: error.message || "One or more Business Units are already assigned to another WBS template.",
+  });
+};
+
 export class WorkBreakdownMaintenanceController {
   private static async tableFilter(projectId?: string) {
     if (!projectId) return {};
@@ -70,16 +114,22 @@ export class WorkBreakdownMaintenanceController {
         const count = await prisma.businessUnit.count({ where: { id: { in: businessUnitIds } } });
         if (count !== businessUnitIds.length) throw new Error("One or more Business Units are invalid");
       }
-      const data = await prisma.$transaction(async (tx: any) => tx.maintenanceTable.create({
-        data: {
-          code, name, description: req.body.description || null, isActive: req.body.isActive ?? true,
-          isGlobal: req.body.isGlobal ?? false,
-          businessUnits: { create: businessUnitIds.map((businessUnitId) => ({ businessUnitId })) },
-        },
-        include: { businessUnits: { include: { businessUnit: true } } },
-      }));
+      const data = await prisma.$transaction(async (tx: any) => {
+        await assertBusinessUnitsAreUnassigned(tx, businessUnitIds);
+        return tx.maintenanceTable.create({
+          data: {
+            code, name, description: req.body.description || null, isActive: req.body.isActive ?? true,
+            isGlobal: req.body.isGlobal ?? false,
+            businessUnits: { create: businessUnitIds.map((businessUnitId) => ({ businessUnitId })) },
+          },
+          include: { businessUnits: { include: { businessUnit: true } } },
+        });
+      });
       return res.status(201).json({ success: true, data });
-    } catch (error: any) { return res.status(400).json({ success: false, message: error.message }); }
+    } catch (error: any) {
+      return tableAssignmentErrorResponse(res, error)
+        || res.status(400).json({ success: false, message: error.message });
+    }
   }
 
   static async updateTable(req: Request, res: Response) {
@@ -90,20 +140,74 @@ export class WorkBreakdownMaintenanceController {
         const count = await prisma.businessUnit.count({ where: { id: { in: businessUnitIds } } });
         if (count !== businessUnitIds.length) throw new Error("One or more Business Units are invalid");
       }
-      const data = await prisma.$transaction(async (tx: any) => tx.maintenanceTable.update({
-        where: { id },
-        data: {
-          ...(req.body.code !== undefined ? { code: cleanCode(req.body.code) } : {}),
-          ...(req.body.name !== undefined ? { name: cleanName(req.body.name) } : {}),
-          ...(req.body.description !== undefined ? { description: req.body.description || null } : {}),
-          ...(req.body.isActive !== undefined ? { isActive: !!req.body.isActive } : {}),
-          ...(req.body.isGlobal !== undefined ? { isGlobal: !!req.body.isGlobal } : {}),
-          ...(businessUnitIds ? { businessUnits: { deleteMany: {}, create: businessUnitIds.map((businessUnitId) => ({ businessUnitId })) } } : {}),
-        },
-        include: { businessUnits: { include: { businessUnit: true } } },
-      }));
+      const data = await prisma.$transaction(async (tx: any) => {
+        if (businessUnitIds) await assertBusinessUnitsAreUnassigned(tx, businessUnitIds, id);
+        return tx.maintenanceTable.update({
+          where: { id },
+          data: {
+            ...(req.body.code !== undefined ? { code: cleanCode(req.body.code) } : {}),
+            ...(req.body.name !== undefined ? { name: cleanName(req.body.name) } : {}),
+            ...(req.body.description !== undefined ? { description: req.body.description || null } : {}),
+            ...(req.body.isActive !== undefined ? { isActive: !!req.body.isActive } : {}),
+            ...(req.body.isGlobal !== undefined ? { isGlobal: !!req.body.isGlobal } : {}),
+            ...(businessUnitIds ? { businessUnits: { deleteMany: {}, create: businessUnitIds.map((businessUnitId) => ({ businessUnitId })) } } : {}),
+          },
+          include: { businessUnits: { include: { businessUnit: true } } },
+        });
+      });
       return res.json({ success: true, data });
-    } catch (error: any) { return res.status(400).json({ success: false, message: error.message }); }
+    } catch (error: any) {
+      return tableAssignmentErrorResponse(res, error)
+        || res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteTable(req: Request, res: Response) {
+    try {
+      const id = String(req.params.id);
+      const data = await prisma.$transaction(async (tx: any) => {
+        const template = await tx.maintenanceTable.findUnique({
+          where: { id },
+          select: { id: true, code: true, name: true },
+        });
+        if (!template) return null;
+
+        const [projectScopes, projectTasks, projectSubtasks] = await Promise.all([
+          tx.scope.count({ where: { scopeMaintenance: { maintenanceTableId: id } } }),
+          tx.task.count({ where: { taskMaintenance: { maintenanceTableId: id } } }),
+          tx.subtask.count({ where: { subtaskMaintenance: { maintenanceTableId: id } } }),
+        ]);
+
+        // Project WBS rows are retained. Their optional maintenance foreign keys
+        // are set to null by the schema when these template master rows are removed.
+        const scopes = await tx.scopeMaintenance.deleteMany({ where: { maintenanceTableId: id } });
+        const tasks = await tx.taskMaintenance.deleteMany({ where: { maintenanceTableId: id } });
+        const subtasks = await tx.subtaskMaintenance.deleteMany({ where: { maintenanceTableId: id } });
+        await tx.maintenanceTable.delete({ where: { id } });
+
+        return {
+          ...template,
+          deleted: true,
+          deletedTemplateItems: {
+            scopes: scopes.count,
+            tasks: tasks.count,
+            subtasks: subtasks.count,
+          },
+          retainedProjectItems: {
+            scopes: projectScopes,
+            tasks: projectTasks,
+            subtasks: projectSubtasks,
+          },
+        };
+      });
+
+      if (!data) {
+        return res.status(404).json({ success: false, message: "WBS template not found." });
+      }
+      return res.json({ success: true, data });
+    } catch (error: any) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
   }
 
   static async hierarchy(req: Request, res: Response) {

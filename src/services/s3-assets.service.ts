@@ -10,8 +10,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 export const ASSET_CATEGORIES = [
   "projects",
   "progress",
-  "daily-reports",
-  "weekly-reports",
   "incidents",
   "org-chart-photos",
 ] as const;

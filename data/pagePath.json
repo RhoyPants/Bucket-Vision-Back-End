@@ -70,16 +70,6 @@
     "path": "/incidentReports"
   },
   {
-    "name": "Daily Reports",
-    "key": "daily_reports",
-    "path": "/reports/daily"
-  },
-  {
-    "name": "Weekly Reports",
-    "key": "weekly_reports",
-    "path": "/reports/weekly"
-  },
-  {
     "name": "Project Calendar",
     "key": "project_calendar",
     "path": "/projectCalendar"

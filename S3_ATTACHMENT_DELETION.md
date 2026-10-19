@@ -72,8 +72,6 @@ Current attachment delete routes include:
 ```http
 DELETE /api/projects/attachments/:attachmentId
 DELETE /api/progress/attachments/:attachmentId
-DELETE /api/daily-reports/attachments/:attachmentId
-DELETE /api/weekly-reports/attachments/:attachmentId
 DELETE /api/incidents/attachments/:attachmentId
 ```
 
@@ -116,8 +114,6 @@ Progress updates first create their new attachment rows and then clean up attach
 
 Database cascade deletion alone cannot clean S3. Parent delete flows explicitly enumerate persisted files first:
 
-- Daily report: delete each S3 object, delete attachment rows, then delete the report.
-- Weekly report: delete each S3 object, delete attachment rows, then delete the report.
 - Incident report: authorize, delete each S3 object and attachment row, then delete the incident.
 - Organization chart: collect unique node photo references, delete managed S3 objects, then delete the chart.
 

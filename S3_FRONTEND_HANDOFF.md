@@ -50,8 +50,6 @@ Allowed categories:
 
 - `projects`
 - `progress`
-- `daily-reports`
-- `weekly-reports`
 - `incidents`
 - `org-chart-photos`
 
@@ -130,19 +128,6 @@ Presign with category `progress` and `entityId = subtaskId`. Send JSON to the ex
 ```
 
 Existing `attachmentUpdates` and `removeAttachmentIds` remain supported as JSON arrays.
-
-### Daily and weekly reports
-
-For report creation, presign with a client-generated batch UUID and include the reference objects in the existing create request's `attachments` array. The report and its attachment rows are then created in the same database operation.
-
-For an existing report, presign with the report ID and call:
-
-```http
-POST /api/daily-reports/:reportId/attachments
-POST /api/weekly-reports/:reportId/attachments
-```
-
-with `{ "attachments": [...] }`.
 
 ### Incidents
 

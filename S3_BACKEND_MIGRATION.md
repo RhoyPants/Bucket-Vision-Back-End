@@ -111,8 +111,6 @@ Allowed categories:
 
 - `projects`
 - `progress`
-- `daily-reports`
-- `weekly-reports`
 - `incidents`
 - `org-chart-photos`
 

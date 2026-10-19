@@ -42,8 +42,6 @@ export class VersioningService {
           },
         },
         projectMembers: true,
-        dailyReports: true,
-        weeklyReports: true,
         attachments: true,
         timelines: true,
         cpmDependencies: true,
@@ -351,40 +349,6 @@ export class VersioningService {
 
     console.log(`✅ Cloned ${source.timelines.length} timeline snapshots`);
 
-    // CLONE DAILY REPORTS
-    for (const report of source.dailyReports) {
-      await prisma.dailyReport.create({
-        data: {
-          projectId: newProject.id,
-          userId: report.userId,
-          dayNumber: report.dayNumber,
-          date: report.date,
-          location: report.location,
-          remarks: report.remarks,
-          attachments: report.attachments,
-        },
-      });
-    }
-
-    console.log(`✅ Cloned ${source.dailyReports.length} daily reports`);
-
-    // CLONE WEEKLY REPORTS
-    for (const report of source.weeklyReports) {
-      await prisma.weeklyReport.create({
-        data: {
-          projectId: newProject.id,
-          userId: report.userId,
-          title: report.title,
-          dateFrom: report.dateFrom,
-          dateTo: report.dateTo,
-          remarks: report.remarks,
-          attachments: report.attachments,
-        },
-      });
-    }
-
-    console.log(`✅ Cloned ${source.weeklyReports.length} weekly reports`);
-
     // NOTE: Approval records are NOT cloned
     // v2 starts fresh with DRAFT status and will go through approval flow again
 
@@ -417,7 +381,6 @@ export class VersioningService {
         ),
         teamMembersCloned: source.projectMembers.length,
         attachmentsCloned: source.attachments.length,
-        reportsCloned: source.dailyReports.length + source.weeklyReports.length,
         timelinesCloned: source.timelines.length,
       },
     };
@@ -562,12 +525,6 @@ export class VersioningService {
         },
         timelines: {
           orderBy: { date: "asc" },
-        },
-        dailyReports: {
-          orderBy: { date: "asc" },
-        },
-        weeklyReports: {
-          orderBy: { dateFrom: "asc" },
         },
         attachments: {
           orderBy: { id: "asc" },
@@ -1043,14 +1000,6 @@ export class VersioningService {
       });
 
       await tx.projectTimeline.deleteMany({
-        where: { projectId },
-      });
-
-      await tx.dailyReport.deleteMany({
-        where: { projectId },
-      });
-
-      await tx.weeklyReport.deleteMany({
         where: { projectId },
       });
 

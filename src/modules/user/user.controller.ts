@@ -16,8 +16,6 @@ const deleteProjectCascade = async (tx: any, projectId: string) => {
 
   await tx.projectMember.deleteMany({ where: { projectId } });
   await tx.projectTimeline.deleteMany({ where: { projectId } });
-  await tx.dailyReport.deleteMany({ where: { projectId } });
-  await tx.weeklyReport.deleteMany({ where: { projectId } });
   await tx.attachment.deleteMany({ where: { projectId } });
 
   const scopeIds = (
@@ -322,8 +320,6 @@ export const deleteUser = async (req: any, res: any) => {
       await tx.subtaskAssignee.deleteMany({ where: { userId } });
 
       // Cleanup remaining user references that can still block user deletion.
-      await tx.dailyReportReceiver.deleteMany({ where: { userId } });
-      await tx.weeklyReportReceiver.deleteMany({ where: { userId } });
       await tx.projectApproval.deleteMany({ where: { approverId: userId } });
       await tx.approvalAuditLog.deleteMany({ where: { approverId: userId } });
       await tx.approvalStepUser.deleteMany({ where: { userId } });
@@ -347,8 +343,6 @@ export const deleteUser = async (req: any, res: any) => {
         data: { userId: null },
       });
 
-      await tx.dailyReport.deleteMany({ where: { userId } });
-      await tx.weeklyReport.deleteMany({ where: { userId } });
       await tx.comment.deleteMany({ where: { userId } });
       await tx.activityLog.deleteMany({ where: { userId } });
       await tx.attachment.deleteMany({ where: { uploadedBy: userId } });

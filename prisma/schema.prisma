@@ -28,8 +28,6 @@ model User {
   approvalStepUsers               ApprovalStepUser[]               @relation("ApprovalStepUsers")
   attachments                     Attachment[]
   comments                        Comment[]
-  dailyReports                    DailyReport[]
-  dailyReports_recv               DailyReportReceiver[]
   notifications                   Notification[]
   progressLogs                    ProgressLog[]
   requestedProgressUpdates        ProgressUpdateRequest[]          @relation("ProgressUpdateRequestedBy")
@@ -60,8 +58,6 @@ model User {
   updatedSubtaskKpiConfigs        ProjectSubtaskKpiConfig[]
   createdDashboardKpis            DashboardKpi[]                   @relation("DashboardKpiCreatedBy")
   updatedDashboardKpis            DashboardKpi[]                   @relation("DashboardKpiUpdatedBy")
-  weeklyReports                   WeeklyReport[]
-  weeklyReports_recv              WeeklyReportReceiver[]
   reviewedSsoRegistrations        SsoRegistration[]                @relation("SsoRegistrationReviewedBy")
   ssoRegistrationAuditChanges     SsoRegistrationAudit[]
 }
@@ -177,7 +173,6 @@ model Project {
   includeHolidays    Boolean                    @default(true)
   approvalAuditLogs  ApprovalAuditLog[]         @relation("ApprovalAudit")
   attachments        Attachment[]
-  dailyReports       DailyReport[]
   approvalFlow       ApprovalFlow?              @relation(fields: [approvalFlowId], references: [id])
   owner              User                       @relation("ProjectOwner", fields: [ownerId], references: [id])
   pinMaster          PinMaster?                 @relation(fields: [pinMasterId], references: [id])
@@ -195,7 +190,6 @@ model Project {
   scopes             Scope[]
   phases             Phase[]
   wbsBusinessUnits   ProjectWbsBusinessUnit[]
-  weeklyReports      WeeklyReport[]
   cpmDependencies    CpmDependency[]
   orgChart           ProjectOrgChart?
 
@@ -690,12 +684,8 @@ model Attachment {
   subtaskId      String?
   uploadedBy     String
   projectId      String?
-  dailyReportId  String?
-  weeklyReportId String?
   project        Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   subtask        Subtask?      @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
-  dailyReport    DailyReport?  @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
-  weeklyReport   WeeklyReport? @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
   user           User          @relation(fields: [uploadedBy], references: [id])
 }
 
@@ -949,60 +939,6 @@ model ActivityLog {
   user       User     @relation(fields: [userId], references: [id])
 
   @@index([entityType, entityId])
-}
-
-model DailyReport {
-  id            String                @id @default(uuid())
-  userId        String
-  projectId     String
-  dayNumber     Int
-  date          DateTime
-  location      String
-  remarks       String?
-  attachments   String[]
-  createdAt     DateTime              @default(now())
-  project       Project               @relation(fields: [projectId], references: [id])
-  user          User                  @relation(fields: [userId], references: [id])
-  receivers     DailyReportReceiver[]
-  uploadedFiles Attachment[]
-}
-
-model DailyReportReceiver {
-  reportId String
-  userId   String
-  read     Boolean     @default(false)
-  report   DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  user     User        @relation(fields: [userId], references: [id])
-
-  @@id([reportId, userId])
-}
-
-model WeeklyReport {
-  id            String                 @id @default(uuid())
-  userId        String
-  title         String
-  dateFrom      DateTime
-  dateTo        DateTime
-  remarks       String?
-  attachments   String[]
-  createdAt     DateTime               @default(now())
-  projectId     String?
-  project       Project?               @relation(fields: [projectId], references: [id])
-  user          User                   @relation(fields: [userId], references: [id])
-  receivers     WeeklyReportReceiver[]
-  uploadedFiles Attachment[]
-
-  @@index([projectId])
-}
-
-model WeeklyReportReceiver {
-  reportId String
-  userId   String
-  read     Boolean      @default(false)
-  report   WeeklyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  user     User         @relation(fields: [userId], references: [id])
-
-  @@id([reportId, userId])
 }
 
 model ProjectApproval {

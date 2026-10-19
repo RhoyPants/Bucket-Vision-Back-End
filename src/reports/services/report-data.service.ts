@@ -162,7 +162,7 @@ export class ReportDataService {
     const month = parseCalendarMonth(monthValue);
     const project = await this.loadProjectForAccess(projectId, userId);
 
-    const [progressLogs, incidents, dailyReports, weeklyReports] = await Promise.all([
+    const [progressLogs, incidents] = await Promise.all([
       prisma.progressLog.findMany({
         where: {
           date: { gte: month.startUtc, lt: month.endExclusiveUtc },
@@ -182,18 +182,6 @@ export class ReportDataService {
         },
         select: { dateRaised: true },
       }),
-      prisma.dailyReport.findMany({
-        where: { projectId, date: { gte: month.startUtc, lt: month.endExclusiveUtc } },
-        select: { date: true },
-      }),
-      prisma.weeklyReport.findMany({
-        where: {
-          projectId,
-          dateFrom: { lt: month.endExclusiveUtc },
-          dateTo: { gte: month.startUtc },
-        },
-        select: { dateFrom: true, dateTo: true },
-      }),
     ]);
 
     const entries = new Map<string, any>();
@@ -205,7 +193,6 @@ export class ReportDataService {
           progressUpdates: 0,
           photos: 0,
           incidents: 0,
-          reportGenerated: false,
         });
       }
       return entries.get(key);
@@ -222,16 +209,6 @@ export class ReportDataService {
         ).length;
     }
     for (const incident of incidents) ensure(utcToManilaDateKey(incident.dateRaised)).incidents++;
-    for (const report of dailyReports) ensure(utcToManilaDateKey(report.date)).reportGenerated = true;
-    for (const report of weeklyReports) {
-      let cursor = this.manilaCalendarDay(report.dateFrom);
-      const end = this.manilaCalendarDay(report.dateTo);
-      while (cursor <= end) {
-        const key = cursor.toISOString().slice(0, 10);
-        if (key.startsWith(month.month)) ensure(key).reportGenerated = true;
-        cursor = new Date(cursor.getTime() + DAY_MS);
-      }
-    }
 
     return {
       project: { id: project.id, name: project.name, startDate: project.startDate },
