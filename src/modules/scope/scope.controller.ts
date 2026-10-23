@@ -1,7 +1,6 @@
 import { recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
-import { generateProjectTimeline } from "../timeline/timeline.service";
 import { resolveScopeSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 import { buildAccessibleProjectWhere } from "../project/project-access";
 
@@ -104,14 +103,6 @@ export class ScopeController {
           budgetPercent
         }
       });
-
-      // 🔥 REGENERATE S-CURVE AFTER CREATE
-      try {
-        await generateProjectTimeline(projectId, "daily");
-      } catch (timelineError) {
-        console.warn("⚠️ Timeline regeneration failed:", timelineError);
-        // Don't fail the create operation
-      }
 
       res.json(scope);
     } catch (error: any) {
@@ -236,13 +227,6 @@ export class ScopeController {
         }
       });
 
-      // Regenerate s-curve after updating scope
-      try {
-        await generateProjectTimeline(updated.projectId, "daily");
-      } catch (timelineError) {
-        console.warn("⚠️ Timeline regeneration failed:", timelineError);
-      }
-
       res.json(updated);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -321,17 +305,9 @@ export class ScopeController {
       });
       await prisma.$transaction(tx => recomputeNonBudgetedProject(tx, projectId));
 
-      // 🔥 REGENERATE S-CURVE
-      try {
-        await generateProjectTimeline(projectId, "daily");
-      } catch (timelineError) {
-        console.warn("⚠️ Timeline regeneration failed:", timelineError);
-        // Don't fail the delete operation
-      }
-
       res.json({
         success: true,
-        message: "Scope deleted successfully (full cascade cleanup + s-curve updated)",
+        message: "Scope deleted successfully (full cascade cleanup)",
       });
     } catch (error: any) {
       console.error("❌ Scope delete error:", error);

@@ -8,7 +8,7 @@ import {
   ProjectParamsDTO,
   UpdateProjectDTO,
 } from "./project.dto";
-import { generateProjectTimeline } from "../timeline/timeline.service";
+import { durationDaysForRange, loadCpmCalendar } from "../cpm/cpm.service";
 import { approvalService } from "../approval/approval.service";
 import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
@@ -801,6 +801,7 @@ export class ProjectController {
           orderBy: { order: "asc" },
         })
       : [];
+    const cpmCalendar = subtasks.length ? await loadCpmCalendar(project) : null;
 
     const subtaskIds = subtasks.map((subtask) => subtask.id);
 
@@ -862,6 +863,9 @@ export class ProjectController {
         const taskSubtasks = (subtasksByTaskId.get(task.id) || []).map(
           (subtask) => ({
             ...subtask,
+            durationDays: cpmCalendar
+              ? durationDaysForRange(subtask.projectedStartDate, subtask.projectedEndDate, cpmCalendar)
+              : null,
             progressLogs: progressLogsBySubtaskId.get(subtask.id) || [],
             checklists: checklistsBySubtaskId.get(subtask.id) || [],
             assignees: assigneesBySubtaskId.get(subtask.id) || [],
@@ -999,16 +1003,6 @@ export class ProjectController {
           role: "OWNER",
         },
       });
-
-      //  AUTO-GENERATE TIMELINE if dates are provided
-      if (project.startDate && project.expectedEndDate) {
-        try {
-          await generateProjectTimeline(project.id, "daily");
-        } catch (timelineError: any) {
-          console.error("Timeline generation warning:", timelineError.message);
-          // Don't fail project creation if timeline fails
-        }
-      }
 
       // Optional create-time attachments: same submit request as project creation.
       if (files.length > 0) {
@@ -1862,23 +1856,6 @@ export class ProjectController {
         }
         return result;
       });
-
-      // 🔥 REGENERATE TIMELINE if dates changed
-      if (
-        (startDate || expectedEndDate || isBudgeted !== existingProject.isBudgeted) &&
-        updated.startDate &&
-        updated.expectedEndDate
-      ) {
-        try {
-          await generateProjectTimeline(updated.id, "daily");
-        } catch (timelineError: any) {
-          console.error(
-            "Timeline regeneration warning:",
-            timelineError.message,
-          );
-          // Don't fail project update if timeline fails
-        }
-      }
 
       const [enrichedProject] =
         await ProjectController.enrichBusinessUnitDetails([updated]);

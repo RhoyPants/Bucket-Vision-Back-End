@@ -1,7 +1,7 @@
 import { recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
-import { generateProjectTimeline } from "../timeline/timeline.service";
+import { durationDaysForRange, loadCpmCalendar } from "../cpm/cpm.service";
 import { resolveTaskSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 import { buildAccessibleProjectWhere } from "../project/project-access";
 
@@ -130,19 +130,6 @@ export class TaskController {
 
       await recomputeScopeProgress(scopeId);
 
-      // 🔥 REGENERATE S-CURVE AFTER CREATE
-      const scope = await prisma.scope.findUnique({
-        where: { id: scopeId },
-        select: { projectId: true },
-      });
-      if (scope?.projectId) {
-        try {
-          await generateProjectTimeline(scope.projectId, "daily");
-        } catch (timelineError) {
-          console.warn("⚠️ Timeline regeneration failed:", timelineError);
-        }
-      }
-
       res.json(task);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -178,6 +165,11 @@ export class TaskController {
       const task = await prisma.task.findUnique({
         where: { id },
         include: {
+          scope: {
+            include: {
+              project: { select: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true, includeHolidays: true } },
+            },
+          },
           subtasks: {
             include: {
               assignees: { include: { user: true } },
@@ -193,7 +185,17 @@ export class TaskController {
         return res.status(404).json({ message: "Task not found" });
       }
 
-      res.json(task);
+      const { scope, ...taskData } = task;
+      const calendar = task.subtasks.length ? await loadCpmCalendar(scope.project) : null;
+      res.json({
+        ...taskData,
+        subtasks: task.subtasks.map((subtask) => ({
+          ...subtask,
+          durationDays: calendar
+            ? durationDaysForRange(subtask.projectedStartDate, subtask.projectedEndDate, calendar)
+            : null,
+        })),
+      });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -251,21 +253,6 @@ export class TaskController {
         },
       });
 
-      // Get scope and project info for s-curve regeneration
-      const task = await prisma.task.findUnique({
-        where: { id },
-        include: { scope: true }
-      });
-
-      if (task) {
-        // Regenerate s-curve after updating task
-        try {
-          await generateProjectTimeline(task.scope.projectId, "daily");
-        } catch (timelineError) {
-          console.warn("⚠️ Timeline regeneration failed:", timelineError);
-        }
-      }
-
       res.json(updated);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -289,12 +276,6 @@ export class TaskController {
       }
 
       const scopeId = existing.scopeId;
-      
-      // Get projectId for s-curve regeneration
-      const scope = await prisma.scope.findUnique({
-        where: { id: scopeId },
-        select: { projectId: true },
-      });
 
       // 🔥 DELETE BOTTOM → TOP
       for (const subtask of existing.subtasks) {
@@ -336,16 +317,6 @@ export class TaskController {
 
       // 🔥 RECOMPUTE SCOPE PROGRESS
       await recomputeScopeProgress(scopeId);
-
-      // 🔥 REGENERATE S-CURVE
-      if (scope?.projectId) {
-        try {
-          await generateProjectTimeline(scope.projectId, "daily");
-        } catch (timelineError) {
-          console.warn("⚠️ Timeline regeneration failed:", timelineError);
-          // Don't fail the delete operation
-        }
-      }
 
       res.json({
         success: true,

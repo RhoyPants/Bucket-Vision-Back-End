@@ -2,7 +2,7 @@ import { recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
 import { SubtaskService } from "./subtask.service";
-import { generateProjectTimeline } from "../timeline/timeline.service";
+import { durationDaysForRange, loadCpmCalendar } from "../cpm/cpm.service";
 import { resolveSubtaskSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 
 import {
@@ -66,8 +66,22 @@ export class SubtaskController {
       } = req.body as any;
 
       const userId = (req as any).user.id;
-      const parentTask = await (prisma.task.findUnique as any)({ where: { id: taskId }, include: { scope: true } });
+      const parentTask = await (prisma.task.findUnique as any)({
+        where: { id: taskId },
+        include: {
+          scope: {
+            include: {
+              project: { select: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true, includeHolidays: true } },
+            },
+          },
+        },
+      });
       if (!parentTask) return res.status(404).json({ message: "Task not found" });
+      const startDate = projectedStartDate ? new Date(projectedStartDate) : null;
+      const endDate = projectedEndDate ? new Date(projectedEndDate) : null;
+      const durationDays = startDate && endDate
+        ? durationDaysForRange(startDate, endDate, await loadCpmCalendar(parentTask.scope.project))
+        : null;
       const selection = await resolveSubtaskSelection({
         sourceType: req.body.sourceType,
         maintenanceId: req.body.subtaskMaintenanceId,
@@ -155,20 +169,7 @@ export class SubtaskController {
 
       await recomputeTask(taskId);
 
-      // Regenerate s-curve after creating subtask
-      try {
-        const task = await prisma.task.findUnique({
-          where: { id: taskId },
-          include: { scope: true }
-        });
-        if (task?.scope?.projectId) {
-          await generateProjectTimeline(task.scope.projectId, "daily");
-        }
-      } catch (timelineError) {
-        console.warn("⚠️ Timeline regeneration failed:", timelineError);
-      }
-
-      res.json(subtask);
+        res.json({ ...subtask, durationDays });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -180,20 +181,39 @@ export class SubtaskController {
     try {
       const { taskId } = req.params;
 
-      const subtasks = await prisma.subtask.findMany({
-        where: { taskId },
-        include: {
-          assignees: { include: { user: true } },
-          checklists: true,
-          progressLogs: true,
-        },
-        orderBy: [
-          { status: "asc" }, 
-          { order: "asc" },
-        ],
-      });
+      const [subtasks, task] = await Promise.all([
+        prisma.subtask.findMany({
+          where: { taskId },
+          include: {
+            assignees: { include: { user: true } },
+            checklists: true,
+            progressLogs: true,
+          },
+          orderBy: [
+            { status: "asc" },
+            { order: "asc" },
+          ],
+        }),
+        prisma.task.findUnique({
+          where: { id: taskId },
+          select: {
+            scope: {
+              select: {
+                project: { select: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true, includeHolidays: true } },
+              },
+            },
+          },
+        }),
+      ]);
+      if (subtasks.length && !task?.scope?.project) throw new Error("Unable to load the project work schedule for these subtasks.");
+      const calendar = subtasks.length ? await loadCpmCalendar(task!.scope!.project!) : null;
 
-      res.json(subtasks);
+      res.json(subtasks.map((subtask) => ({
+        ...subtask,
+        durationDays: calendar
+          ? durationDaysForRange(subtask.projectedStartDate, subtask.projectedEndDate, calendar)
+          : null,
+      })));
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -223,9 +243,24 @@ export class SubtaskController {
       } = req.body;
       const existing = await (prisma.subtask.findUnique as any)({
         where: { id },
-        include: { task: { include: { scope: true } } },
+        include: {
+          task: {
+            include: {
+              scope: {
+                include: {
+                  project: { select: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true, includeHolidays: true } },
+                },
+              },
+            },
+          },
+        },
       });
       if (!existing) return res.status(404).json({ message: "Subtask not found" });
+      const effectiveStartDate = projectedStartDate ? new Date(projectedStartDate) : existing.projectedStartDate;
+      const effectiveEndDate = projectedEndDate ? new Date(projectedEndDate) : existing.projectedEndDate;
+      const durationDays = effectiveStartDate && effectiveEndDate
+        ? durationDaysForRange(effectiveStartDate, effectiveEndDate, await loadCpmCalendar(existing.task.scope.project))
+        : null;
       const requestedSourceType = req.body.sourceType === undefined
         ? existing.sourceType
         : String(req.body.sourceType).trim().toUpperCase();
@@ -341,50 +376,24 @@ export class SubtaskController {
         }
       }
 
-      // Recompute task progress and regenerate s-curve
-      const subtask = await prisma.subtask.findUnique({
-        where: { id },
-        include: { task: { include: { scope: true } } }
-      });
+      await recomputeTask(existing.taskId);
 
-      if (subtask) {
-        await recomputeTask(subtask.taskId);
-
-        // Regenerate s-curve after updating subtask
-        try {
-          if (subtask.task?.scope?.projectId) {
-            await generateProjectTimeline(subtask.task.scope.projectId, "daily");
-          }
-        } catch (timelineError) {
-          console.warn("⚠️ Timeline regeneration failed:", timelineError);
-        }
-      }
-
-      res.json(updated);
+      res.json({ ...updated, durationDays });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   }
 
   // ========================================
-  // DELETE (FULL CASCADE CLEANUP + S-CURVE)
+  // DELETE (FULL CASCADE CLEANUP)
   // ========================================
   static async delete(req: Request<{ id: string }>, res: Response) {
     try {
       const { id } = req.params;
 
-      // 🔥 1. GET SUBTASK WITH FULL CONTEXT
+      // 🔥 1. GET SUBTASK
       const subtask = await prisma.subtask.findUnique({
         where: { id },
-        include: {
-          task: {
-            include: {
-              scope: {
-                select: { projectId: true },
-              },
-            },
-          },
-        },
       });
 
       if (!subtask) {
@@ -392,7 +401,6 @@ export class SubtaskController {
       }
 
       const taskId = subtask.taskId;
-      const projectId = subtask.task.scope.projectId;
 
       // 🔥 2. DELETE ALL SUBTASK CHILDREN (BOTTOM-UP)
       await prisma.progressLog.deleteMany({
@@ -427,17 +435,9 @@ export class SubtaskController {
       // 🔥 4. RECOMPUTE TASK PROGRESS
       await recomputeTask(taskId);
 
-      // 🔥 5. REGENERATE S-CURVE
-      try {
-        await generateProjectTimeline(projectId, "daily");
-      } catch (timelineError) {
-        console.warn("⚠️ Timeline regeneration failed:", timelineError);
-        // Don't fail the delete operation
-      }
-
       res.json({
         success: true,
-        message: "Subtask deleted successfully (full cascade + s-curve updated)",
+        message: "Subtask deleted successfully (full cascade)",
       });
     } catch (error: any) {
       console.error("❌ Subtask delete error:", error);

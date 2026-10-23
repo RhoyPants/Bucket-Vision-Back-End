@@ -1,5 +1,24 @@
 import { strict as assert } from "assert";
 import { calculateCpm, CpmCycleError } from "./cpm.calculator";
+import { calendarFor, durationDaysForRange } from "./cpm.service";
+
+const weekdays = calendarFor({
+  monday: true, tuesday: true, wednesday: true, thursday: true, friday: true,
+  saturday: false, sunday: false, includeHolidays: true,
+}, []);
+assert.equal(
+  durationDaysForRange(new Date("2026-10-20T00:00:00.000Z"), new Date("2026-10-24T00:00:00.000Z"), weekdays),
+  4,
+);
+const weekdaysWithHoliday = calendarFor({
+  monday: true, tuesday: true, wednesday: true, thursday: true, friday: true,
+  saturday: false, sunday: false, includeHolidays: true,
+}, [new Date("2026-10-22T00:00:00.000Z")]);
+assert.equal(
+  durationDaysForRange(new Date("2026-10-20T00:00:00.000Z"), new Date("2026-10-24T00:00:00.000Z"), weekdaysWithHoliday),
+  3,
+);
+assert.equal(durationDaysForRange(null, null, weekdays), null);
 
 const result = calculateCpm(
   [
@@ -48,10 +67,21 @@ const emptyGraph = calculateCpm(
   [{ id: "A", duration: 2 }, { id: "B", duration: 5 }],
   [],
 );
-assert.equal(emptyGraph.projectDurationDays, 5);
-assert.equal(emptyGraph.values.get("A")?.slackDays, 3);
-assert.equal(emptyGraph.values.get("B")?.isCritical, true);
-assert.deepEqual(emptyGraph.criticalPaths, [["B"]]);
+assert.equal(emptyGraph.projectDurationDays, 0);
+assert.equal(emptyGraph.values.size, 0);
+assert.deepEqual(emptyGraph.criticalPaths, []);
+
+const disconnectedActivity = calculateCpm(
+  [
+    { id: "A", duration: 3 },
+    { id: "B", duration: 4 },
+    { id: "management", duration: 70 },
+  ],
+  [{ predecessorId: "A", successorId: "B" }],
+);
+assert.equal(disconnectedActivity.projectDurationDays, 7);
+assert.equal(disconnectedActivity.values.has("management"), false);
+assert.deepEqual(disconnectedActivity.criticalPaths, [["A", "B"]]);
 
 assert.throws(
   () => calculateCpm(

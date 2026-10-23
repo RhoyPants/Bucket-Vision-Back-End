@@ -30,9 +30,11 @@ export class CpmCycleError extends Error {
 }
 
 export function calculateCpm(nodes: CpmNodeInput[], edges: CpmEdgeInput[]): CpmCalculation {
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const predecessors = new Map(nodes.map((node) => [node.id, [] as string[]]));
-  const successors = new Map(nodes.map((node) => [node.id, [] as string[]]));
+  const connectedIds = new Set(edges.flatMap((edge) => [edge.predecessorId, edge.successorId]));
+  const connectedNodes = nodes.filter((node) => connectedIds.has(node.id));
+  const nodeById = new Map(connectedNodes.map((node) => [node.id, node]));
+  const predecessors = new Map(connectedNodes.map((node) => [node.id, [] as string[]]));
+  const successors = new Map(connectedNodes.map((node) => [node.id, [] as string[]]));
 
   for (const edge of edges) {
     predecessors.get(edge.successorId)!.push(edge.predecessorId);
@@ -56,7 +58,7 @@ export function calculateCpm(nodes: CpmNodeInput[], edges: CpmEdgeInput[]): CpmC
     state.set(id, 2);
     order.push(id);
   };
-  for (const node of nodes) if (!state.has(node.id)) visit(node.id);
+  for (const node of connectedNodes) if (!state.has(node.id)) visit(node.id);
   order.reverse();
 
   const values = new Map<string, CpmValues>();

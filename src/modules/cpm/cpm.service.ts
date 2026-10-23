@@ -3,10 +3,13 @@ import { buildAccessibleProjectWhere, canViewProjectForApproval } from "../proje
 import { calculateCpm, CpmCycleError } from "./cpm.calculator";
 import { CpmHttpError, DependencyInput } from "./cpm.types";
 
-interface ProjectData {
-  id: string; name: string; startDate: Date | null; expectedEndDate: Date | null;
+export interface CpmCalendarSettings {
   monday: boolean; tuesday: boolean; wednesday: boolean; thursday: boolean; friday: boolean;
   saturday: boolean; sunday: boolean; includeHolidays: boolean;
+}
+
+interface ProjectData extends CpmCalendarSettings {
+  id: string; name: string; startDate: Date | null; expectedEndDate: Date | null;
   scopes: Array<{ id: string; name: string; tasks: Array<{ id: string; title: string; subtasks: Array<{
     id: string; title: string; projectedStartDate: Date | null; projectedEndDate: Date | null;
   }> }> }>;
@@ -17,7 +20,14 @@ const dateKey = (date: Date): string => date.toISOString().slice(0, 10);
 const utcDate = (date: Date): Date => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 const moveDate = (date: Date, days: number): Date => new Date(date.getTime() + days * 86_400_000);
 
-function calendarFor(project: ProjectData, holidays: Date[]) {
+export interface CpmCalendar {
+  monday: boolean; tuesday: boolean; wednesday: boolean; thursday: boolean; friday: boolean;
+  saturday: boolean; sunday: boolean; includeGlobalHolidays: boolean; holidayKeys: Set<string>;
+}
+
+type Calendar = CpmCalendar;
+
+export function calendarFor(project: CpmCalendarSettings, holidays: Date[]): CpmCalendar {
   return {
     monday: project.monday,
     tuesday: project.tuesday,
@@ -31,7 +41,17 @@ function calendarFor(project: ProjectData, holidays: Date[]) {
   };
 }
 
-type Calendar = ReturnType<typeof calendarFor>;
+export async function loadCpmCalendar(project: CpmCalendarSettings): Promise<CpmCalendar> {
+  const holidays = project.includeHolidays
+    ? await prisma.holiday.findMany({ select: { date: true } })
+    : [];
+  const calendar = calendarFor(project, holidays.map((holiday) => holiday.date));
+  if (![calendar.monday, calendar.tuesday, calendar.wednesday, calendar.thursday,
+    calendar.friday, calendar.saturday, calendar.sunday].some(Boolean)) {
+    throw new CpmHttpError(422, "CPM_NO_WORKING_DAYS", "The project calendar must include at least one working day.");
+  }
+  return calendar;
+}
 
 function isWorkingDay(date: Date, calendar: Calendar): boolean {
   const enabled = [calendar.sunday, calendar.monday, calendar.tuesday, calendar.wednesday,
@@ -56,6 +76,17 @@ function countWorkingDays(start: Date, end: Date, calendar: Calendar): number {
 export function scheduledDurationDays(start: Date, end: Date, calendar: Calendar): number {
   if (utcDate(start).getTime() === utcDate(end).getTime()) return 1;
   return countWorkingDays(start, end, calendar);
+}
+
+export function durationDaysForRange(
+  start: Date | null | undefined,
+  end: Date | null | undefined,
+  calendar: Calendar,
+): number | null {
+  if (!start || !end || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end < start) {
+    return null;
+  }
+  return scheduledDurationDays(start, end, calendar);
 }
 
 function firstWorkingDay(date: Date, calendar: Calendar): Date {
@@ -149,19 +180,13 @@ async function buildResult(
 ) {
   const subtasks = flattenSubtasks(project);
   const dependencies = dependencyOverride ?? project.cpmDependencies;
-  const holidays = project.includeHolidays ? await prisma.holiday.findMany({ select: { date: true } }) : [];
-  const calendar = calendarFor(project, holidays.map((holiday) => holiday.date));
-  if (![calendar.monday, calendar.tuesday, calendar.wednesday, calendar.thursday,
-    calendar.friday, calendar.saturday, calendar.sunday].some(Boolean)) {
-    throw new CpmHttpError(422, "CPM_NO_WORKING_DAYS", "The project calendar must include at least one working day.");
-  }
+  const calendar = await loadCpmCalendar(project);
   const predecessors = new Map(subtasks.map((subtask) => [subtask.id, [] as string[]]));
   for (const dependency of dependencies) predecessors.get(dependency.successorSubtaskId)?.push(dependency.predecessorSubtaskId);
   const missing = missingDates(subtasks);
   const invalidRanges = subtasks.filter((subtask) => subtask.projectedStartDate && subtask.projectedEndDate && subtask.projectedEndDate < subtask.projectedStartDate);
   const durations = new Map(subtasks.map((subtask) => [subtask.id,
-    subtask.projectedStartDate && subtask.projectedEndDate && subtask.projectedEndDate >= subtask.projectedStartDate
-      ? scheduledDurationDays(subtask.projectedStartDate, subtask.projectedEndDate, calendar) : null]));
+    durationDaysForRange(subtask.projectedStartDate, subtask.projectedEndDate, calendar)]));
   const zeroDurations = subtasks.filter((subtask) => durations.get(subtask.id) === 0);
   const canCalculate = (calculateEmptyGraph || dependencies.length > 0) && !missing.length && !invalidRanges.length && !zeroDurations.length;
   const calculation = canCalculate ? calculateCpm(
