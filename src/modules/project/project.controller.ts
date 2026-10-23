@@ -944,7 +944,9 @@ export class ProjectController {
               : { pin, isActive: true },
           })
         : null;
-      if ((pinMasterId || pin) && !selectedPin) {
+      // Only an explicit master selection requires an active master record.
+      // A manually entered PIN may be absent from the master list.
+      if (pinMasterId && !selectedPin) {
         return res.status(400).json({
           success: false,
           error: "The selected PIN is not available in the PIN master or is inactive",
