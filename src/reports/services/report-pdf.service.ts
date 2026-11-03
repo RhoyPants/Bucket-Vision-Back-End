@@ -4,6 +4,7 @@ import Handlebars from "handlebars";
 import puppeteer, { Browser } from "puppeteer";
 import { buildAssetUrl, fileKeyFromStoredValue } from "../../services/s3-assets.service";
 import { reportChartService } from "./report-chart.service";
+import { reportHealthLabel } from "../types/report-health";
 
 let browserPromise: Promise<Browser> | null = null;
 
@@ -128,6 +129,7 @@ export class ReportPdfService {
     Handlebars.registerHelper("percent", formatPercent);
     Handlebars.registerHelper("date", formatDate);
     Handlebars.registerHelper("upper", (value) => String(value || "").replace(/_/g, " "));
+    Handlebars.registerHelper("healthLabel", reportHealthLabel);
     Handlebars.registerHelper("eq", (left, right) => left === right);
     Handlebars.registerHelper("safe", (value) => new Handlebars.SafeString(String(value || "")));
 

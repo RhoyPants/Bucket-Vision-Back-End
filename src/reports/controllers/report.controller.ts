@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { reportDataService } from "../services/report-data.service";
 import { reportPdfService } from "../services/report-pdf.service";
 import { reportExcelService } from "../services/report-excel.service";
+import { HEALTH_RULES_VERSION } from "../../utils/schedule-health";
 
 function sendError(res: Response, error: any) {
   const status = Number(error?.statusCode) || 500;
@@ -25,6 +26,7 @@ export class ReportController {
         (req as any).user.id,
         req.query
       );
+      res.setHeader("X-Health-Rules-Version", String(HEALTH_RULES_VERSION));
       res.json({ success: true, data });
     } catch (error) {
       sendError(res, error);
@@ -72,6 +74,7 @@ export class ReportController {
         `${download ? "attachment" : "inline"}; filename="${filename}"`
       );
       res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Health-Rules-Version", String(HEALTH_RULES_VERSION));
       res.send(pdf);
     } catch (error) {
       sendError(res, error);
@@ -103,6 +106,7 @@ export class ReportController {
       res.setHeader("Content-Length", String(workbook.length));
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Health-Rules-Version", String(HEALTH_RULES_VERSION));
       res.send(workbook);
     } catch (error) {
       sendError(res, error);

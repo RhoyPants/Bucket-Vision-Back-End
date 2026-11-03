@@ -14,7 +14,11 @@
     "test:progress": "ts-node src/modules/progress/progress-precision.test.ts",
     "test:assets": "ts-node src/services/s3-assets.service.test.ts",
     "test:cpm": "ts-node src/modules/cpm/cpm.calculator.test.ts",
-    "test:reports": "ts-node src/reports/tests/report-foundation.test.ts",
+    "test:project-structure": "ts-node src/modules/project/project-structure.test.ts",
+    "test:project-structure:integration": "ts-node src/modules/project/project-structure.integration.test.ts",
+    "test:health": "ts-node src/utils/schedule-health.test.ts && ts-node src/modules/project-dashboard/project-dashboard.health.test.ts",
+    "test:reports": "ts-node src/reports/tests/report-foundation.test.ts && ts-node src/reports/tests/report-progress.test.ts",
+    "test:reports:progress-records": "ts-node src/reports/tests/report-progress-records.integration.test.ts",
     "test:reports:integration": "ts-node src/reports/tests/report-integration.test.ts",
     "test:reports:pdf": "ts-node src/reports/tests/report-pdf.integration.test.ts",
     "test:reports:excel": "ts-node src/reports/tests/report-excel.integration.test.ts"

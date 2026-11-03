@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { projectDashboardService } from "./project-dashboard.service";
+import { HEALTH_RULES_VERSION } from "../../utils/schedule-health";
 
 const notFoundStatus = (error: any) => {
   if (
@@ -50,7 +51,7 @@ export class ProjectDashboardController {
         includeTargets: req.query.includeTargets !== "false",
         includeComputed: req.query.includeComputed !== "false",
       });
-      res.json({ success: true, data, count: data.length });
+      res.json({ success: true, healthRulesVersion: HEALTH_RULES_VERSION, data, count: data.length });
     } catch (error: any) { res.status(notFoundStatus(error)).json({ success: false, message: error.message }); }
   }
 
@@ -156,7 +157,7 @@ export class ProjectDashboardController {
       );
       res.json({
         success: true,
-        message: "Subtask KPI thresholds updated successfully",
+        message: "Fixed schedule-health rules are active",
         data,
       });
     } catch (error: any) {
@@ -172,7 +173,7 @@ export class ProjectDashboardController {
       );
       res.json({
         success: true,
-        message: "Subtask KPI thresholds restored to defaults",
+        message: "Fixed schedule-health rules are active; legacy settings are unchanged",
         data,
       });
     } catch (error: any) {

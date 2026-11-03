@@ -1,17 +1,29 @@
 import prisma from "../../config/prisma";
 import { projectDashboardService } from "../project-dashboard/project-dashboard.service";
+import {
+  evaluateScheduleHealth, HEALTH_RULES_VERSION, recordedProgressAt, recordedStartAt,
+  rollupHealth, summarizeHealth, HealthSummary, WorkSchedule,
+} from "../../utils/schedule-health";
+import { manilaCalendarDay } from "../progress/planned-progress";
 
 const HEALTH_RANK: Record<string, number> = {
-  CRITICAL: 0,
-  ONFLOW: 1,
+  DANGER: 0,
+  WARNING: 1,
   HEALTHY: 2,
-  UNCLASSIFIED: 3,
+  NOT_STARTED: 3,
+  UNCLASSIFIED: 4,
 };
 
 const INCIDENT_SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
+const DAY_MS = 86400000;
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+const HEALTH_TREND_KEYS = ["danger", "warning", "healthy", "notStarted"] as const;
+type TrendProject = Omit<WorkSchedule, "holidayKeys"> & { id: string; createdAt: Date };
+type TrendCounts = Pick<HealthSummary, typeof HEALTH_TREND_KEYS[number]> & { incidentReports: number };
+type TrendPoint = { date: string; value: number | null };
 
 export class DashboardService {
-  async get(userId: string) {
+  async get(userId: string, asOf = new Date()) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { role: true },
@@ -45,6 +57,14 @@ export class DashboardService {
       location: true,
       createdAt: true,
       updatedAt: true,
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: true,
+      sunday: true,
+      includeHolidays: true,
     } as const;
 
     const [projects, pendingProjects] = await Promise.all([
@@ -86,33 +106,28 @@ export class DashboardService {
     const projectKpiResults = await Promise.all(
       projects.map(async (project) => ({
         projectId: project.id,
-        data: await projectDashboardService.getSubtaskKpi(project.id, userId),
+        data: await projectDashboardService.getSubtaskKpi(project.id, userId, asOf),
       }))
     );
     const kpiByProject = new Map(
       projectKpiResults.map((result) => [result.projectId, result.data])
     );
 
-    const kpiSummary = {
-      total: 0,
-      critical: 0,
-      onflow: 0,
-      healthy: 0,
-      unclassified: 0,
-    };
+    const kpiSummary = summarizeHealth([]);
     for (const result of projectKpiResults) {
       if (!result.data) continue;
       kpiSummary.total += result.data.summary.total;
-      kpiSummary.critical += result.data.summary.critical;
-      kpiSummary.onflow += result.data.summary.onflow;
+      kpiSummary.danger += result.data.summary.danger;
+      kpiSummary.warning += result.data.summary.warning;
       kpiSummary.healthy += result.data.summary.healthy;
+      kpiSummary.notStarted += result.data.summary.notStarted;
       kpiSummary.unclassified += result.data.summary.unclassified;
     }
 
     const rankedProjects = projects
       .map((project) => {
         const kpi = kpiByProject.get(project.id);
-        const healthStatus = this.getHealthStatus(kpi?.summary);
+        const healthStatus = rollupHealth(kpi?.summary || summarizeHealth([]));
         return {
           id: project.id,
           name: project.name,
@@ -130,13 +145,8 @@ export class DashboardService {
             ? businessUnitMap.get(project.businessUnit) || null
             : null,
           location: project.location,
-          kpiSummary: kpi?.summary || {
-            total: 0,
-            critical: 0,
-            onflow: 0,
-            healthy: 0,
-            unclassified: 0,
-          },
+          kpiSummary: kpi?.summary || summarizeHealth([]),
+          subtasks: kpi?.subtasks || [],
           topSubtasks: [...(kpi?.subtasks || [])]
             .sort((a: any, b: any) => {
               const rank = HEALTH_RANK[a.status] - HEALTH_RANK[b.status];
@@ -152,9 +162,11 @@ export class DashboardService {
       .sort((a, b) => {
         const rank = HEALTH_RANK[a.healthStatus] - HEALTH_RANK[b.healthStatus];
         if (rank !== 0) return rank;
-        const criticalDifference =
-          (b.kpiSummary?.critical || 0) - (a.kpiSummary?.critical || 0);
-        if (criticalDifference !== 0) return criticalDifference;
+        const dangerDifference =
+          b.kpiSummary.danger - a.kpiSummary.danger;
+        if (dangerDifference !== 0) return dangerDifference;
+        const warningDifference = b.kpiSummary.warning - a.kpiSummary.warning;
+        if (warningDifference !== 0) return warningDifference;
         return a.progress - b.progress;
       });
 
@@ -198,6 +210,7 @@ export class DashboardService {
       (sum, count) => sum + count,
       0
     );
+    const trends = await this.buildSevenDayTrends(projects, asOf, { ...kpiSummary, incidentReports });
 
     const statusCounts = new Map<string, number>();
     projects.forEach((project) => {
@@ -233,70 +246,6 @@ export class DashboardService {
         )
       : 0;
 
-    const today = this.startOfUtcDay(new Date());
-    await Promise.all(
-      projects.map((project) => {
-        const projectKpi = kpiByProject.get(project.id);
-        const summary = projectKpi?.summary || {
-          total: 0,
-          critical: 0,
-          onflow: 0,
-          healthy: 0,
-          unclassified: 0,
-        };
-        return (prisma as any).projectDashboardSnapshot.upsert({
-          where: {
-            projectId_snapshotDate: {
-              projectId: project.id,
-              snapshotDate: today,
-            },
-          },
-          update: {
-            critical: summary.critical,
-            onflow: summary.onflow,
-            healthy: summary.healthy,
-            unclassified: summary.unclassified,
-            totalKpis: summary.total,
-            incidentReports: incidentCountByProject.get(project.id) || 0,
-            projectProgress: project.progress || 0,
-            projectStatus: project.status,
-          },
-          create: {
-            projectId: project.id,
-            snapshotDate: today,
-            critical: summary.critical,
-            onflow: summary.onflow,
-            healthy: summary.healthy,
-            unclassified: summary.unclassified,
-            totalKpis: summary.total,
-            incidentReports: incidentCountByProject.get(project.id) || 0,
-            projectProgress: project.progress || 0,
-            projectStatus: project.status,
-          },
-        });
-      })
-    );
-
-    const trendStart = new Date(today);
-    trendStart.setUTCDate(trendStart.getUTCDate() - 6);
-    const snapshots = projectIds.length
-      ? await (prisma as any).projectDashboardSnapshot.findMany({
-          where: {
-            projectId: { in: projectIds },
-            snapshotDate: { gte: trendStart, lte: today },
-            projectStatus: "ACTIVE",
-          },
-          orderBy: { snapshotDate: "asc" },
-        })
-      : [];
-    const trends = this.buildSevenDayTrends(snapshots, today, {
-      critical: kpiSummary.critical,
-      onflow: kpiSummary.onflow,
-      healthy: kpiSummary.healthy,
-      incidentReports,
-      activeProjects: totalProjects,
-    });
-
     const pendingReviewAndApproval = pendingProjects
       .map((project) => ({
         id: project.id,
@@ -318,17 +267,21 @@ export class DashboardService {
       }));
 
     return {
+      healthRulesVersion: HEALTH_RULES_VERSION,
       summary: {
-        critical: kpiSummary.critical,
-        onflow: kpiSummary.onflow,
+        danger: kpiSummary.danger,
+        warning: kpiSummary.warning,
         healthy: kpiSummary.healthy,
+        notStarted: kpiSummary.notStarted,
         unclassified: kpiSummary.unclassified,
         totalKpis: kpiSummary.total,
         incidentReports,
         activeProjects: projects.filter((project) => project.status === "ACTIVE").length,
         totalProjects,
       },
+      trends,
       topProjects: rankedProjects.slice(0, 5),
+      breakdownProjects: rankedProjects,
       topIncidents,
       overallProjects: {
         total: totalProjects,
@@ -338,146 +291,136 @@ export class DashboardService {
           distribution: progressDistribution,
         },
       },
-      trends,
       pendingReviewAndApproval,
-      generatedAt: new Date().toISOString(),
+      generatedAt: asOf.toISOString(),
     };
-  }
-
-  private getHealthStatus(summary: any) {
-    if (!summary || summary.total === 0) return "UNCLASSIFIED";
-    if (summary.critical > 0) return "CRITICAL";
-    if (summary.onflow > 0) return "ONFLOW";
-    if (summary.healthy > 0) return "HEALTHY";
-    return "UNCLASSIFIED";
   }
 
   private round(value: number) {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 
-  private startOfUtcDay(date: Date) {
-    const result = new Date(date);
-    result.setUTCHours(0, 0, 0, 0);
-    return result;
-  }
-
-  private buildSevenDayTrends(
-    snapshots: any[],
-    today: Date,
-    current: {
-      critical: number;
-      onflow: number;
-      healthy: number;
-      incidentReports: number;
-      activeProjects: number;
-    }
-  ) {
+  private async buildSevenDayTrends(projects: TrendProject[], asOf: Date, current: TrendCounts) {
+    const today = manilaCalendarDay(asOf);
     const days = Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(today);
-      date.setUTCDate(today.getUTCDate() - (6 - index));
-      return date;
+      return new Date(today.getTime() - (6 - index) * DAY_MS);
     });
-    const grouped = new Map<string, any[]>();
-    snapshots.forEach((snapshot) => {
-      const key = this.dateKey(snapshot.snapshotDate);
-      const values = grouped.get(key) || [];
-      values.push(snapshot);
-      grouped.set(key, values);
-    });
-
-    const metricPoints = {
-      critical: [] as Array<{ date: string; value: number | null }>,
-      onflow: [] as Array<{ date: string; value: number | null }>,
-      healthy: [] as Array<{ date: string; value: number | null }>,
-      incidentReports: [] as Array<{ date: string; value: number | null }>,
-      activeProjects: [] as Array<{ date: string; value: number | null }>,
-      averageProgress: [] as Array<{ date: string; value: number | null }>,
+    const projectIds = projects.map((project) => project.id);
+    const historyStart = new Date(days[0].getTime() - MANILA_OFFSET_MS);
+    const existedDuringPeriod = {
+      createdAt: { lte: asOf },
+      OR: [{ deletedAt: null }, { deletedAt: { gt: historyStart } }],
     };
+    const [subtasks, incidents, holidays] = projectIds.length ? await Promise.all([
+      prisma.subtask.findMany({
+        where: {
+          ...existedDuringPeriod,
+          task: {
+            ...existedDuringPeriod,
+            scope: { ...existedDuringPeriod, projectId: { in: projectIds } },
+          },
+        },
+        select: {
+          createdAt: true, deletedAt: true, progress: true,
+          projectedStartDate: true, projectedEndDate: true, actualStartDate: true,
+          progressLogs: {
+            where: { date: { lte: asOf } },
+            orderBy: [{ date: "asc" }, { updatedAt: "asc" }, { id: "asc" }],
+            select: { date: true, cumulativePercent: true },
+          },
+          task: {
+            select: {
+              createdAt: true, deletedAt: true,
+              scope: { select: { projectId: true, createdAt: true, deletedAt: true } },
+            },
+          },
+        },
+      }),
+      prisma.incidentReport.findMany({
+        where: { projectId: { in: projectIds }, dateRaised: { lte: asOf } },
+        select: { dateRaised: true, projectId: true },
+      }),
+      prisma.holiday.findMany({ select: { date: true } }),
+    ]) : [[], [], []];
+    const holidayKeys = new Set(holidays.map(({ date }) => manilaCalendarDay(date).toISOString().slice(0, 10)));
+    const projectById = new Map(projects.map((project) => [project.id, { ...project, holidayKeys }]));
+    const history = subtasks.map((subtask) => ({
+      ...subtask,
+      progressLogs: subtask.progressLogs.map((log) => ({
+        date: log.date, cumulativePercent: log.cumulativePercent == null ? null : Number(log.cumulativePercent),
+      })),
+    }));
+    const metricPoints = {
+      danger: [] as TrendPoint[], warning: [] as TrendPoint[],
+      healthy: [] as TrendPoint[], notStarted: [] as TrendPoint[],
+      incidentReports: [] as TrendPoint[],
+    };
+    const aliveAt = (item: { createdAt: Date; deletedAt: Date | null }, cutoff: Date) =>
+      item.createdAt <= cutoff && (!item.deletedAt || item.deletedAt > cutoff);
 
-    days.forEach((day) => {
-      const date = this.dateKey(day);
-      const rows = grouped.get(date) || [];
-      const valueOrNull = (field: string) =>
-        rows.length
-          ? rows.reduce((sum, row) => sum + Number(row[field] || 0), 0)
-          : null;
-      metricPoints.critical.push({ date, value: valueOrNull("critical") });
-      metricPoints.onflow.push({ date, value: valueOrNull("onflow") });
-      metricPoints.healthy.push({ date, value: valueOrNull("healthy") });
+    for (const day of days) {
+      const date = day.toISOString().slice(0, 10);
+      if (day.getTime() === today.getTime()) {
+        for (const key of [...HEALTH_TREND_KEYS, "incidentReports"] as const) {
+          metricPoints[key].push({ date, value: current[key] });
+        }
+        continue;
+      }
+      const cutoff = new Date(day.getTime() + DAY_MS - MANILA_OFFSET_MS - 1);
+      let complete = true;
+      const evaluations = [];
+      for (const subtask of history) {
+        const project = projectById.get(subtask.task.scope.projectId);
+        if (!project || project.createdAt > cutoff || !aliveAt(subtask, cutoff) ||
+            !aliveAt(subtask.task, cutoff) || !aliveAt(subtask.task.scope, cutoff)) continue;
+        // Legacy imports with progress but no logs cannot establish historical completion.
+        const actualProgress = !subtask.progressLogs.length && Number(subtask.progress) > 0
+          ? null : recordedProgressAt(subtask.progressLogs, cutoff);
+        const result = evaluateScheduleHealth({
+          actualProgress, startDate: subtask.projectedStartDate, endDate: subtask.projectedEndDate,
+          actualStartDate: recordedStartAt(subtask.progressLogs, subtask.actualStartDate, cutoff),
+          asOf: cutoff, schedule: project,
+        });
+        if (result.status === "UNCLASSIFIED") complete = false;
+        evaluations.push(result);
+      }
+      const summary = summarizeHealth(evaluations);
+      for (const key of HEALTH_TREND_KEYS) metricPoints[key].push({ date, value: complete ? summary[key] : null });
       metricPoints.incidentReports.push({
-        date,
-        value: valueOrNull("incidentReports"),
+        date, value: incidents.filter((incident) => incident.dateRaised <= cutoff &&
+          projectById.get(incident.projectId)!.createdAt <= cutoff).length,
       });
-      metricPoints.activeProjects.push({
-        date,
-        value: rows.length ? rows.length : null,
-      });
-      metricPoints.averageProgress.push({
-        date,
-        value: rows.length
-          ? this.round(
-              rows.reduce(
-                (sum, row) => sum + Number(row.projectProgress || 0),
-                0
-              ) / rows.length
-            )
-          : null,
-      });
-    });
+    }
 
-    const isComplete = days.every((day) => grouped.has(this.dateKey(day)));
+    const isComplete = Object.values(metricPoints).every((points) => points.every((point) => point.value !== null));
     return {
-      period: "LAST_7_DAYS",
-      dateFrom: this.dateKey(days[0]),
-      dateTo: this.dateKey(days[days.length - 1]),
+      healthRulesVersion: HEALTH_RULES_VERSION, period: "LAST_7_DAYS",
+      basis: "RECALCULATED_PROGRESS_LOGS",
+      dateFrom: days[0].toISOString().slice(0, 10),
+      dateTo: today.toISOString().slice(0, 10),
       isComplete,
-      note: isComplete
-        ? null
-        : "Trend history begins when daily dashboard snapshots are first captured.",
-      critical: this.metricTrend(metricPoints.critical, current.critical),
-      onflow: this.metricTrend(metricPoints.onflow, current.onflow),
+      note: "Recalculated from recorded progress using the current approved schedule and currently accessible active projects." +
+        (isComplete ? "" : " Gaps indicate missing or invalid historical inputs."),
+      danger: this.metricTrend(metricPoints.danger, current.danger),
+      warning: this.metricTrend(metricPoints.warning, current.warning),
       healthy: this.metricTrend(metricPoints.healthy, current.healthy),
-      incidentReports: this.metricTrend(
-        metricPoints.incidentReports,
-        current.incidentReports
-      ),
-      activeProjects: this.metricTrend(
-        metricPoints.activeProjects,
-        current.activeProjects
-      ),
-      averageProjectProgress: this.metricTrend(
-        metricPoints.averageProgress,
-        metricPoints.averageProgress[metricPoints.averageProgress.length - 1]
-          ?.value || 0
-      ),
+      notStarted: this.metricTrend(metricPoints.notStarted, current.notStarted),
+      incidentReports: this.metricTrend(metricPoints.incidentReports, current.incidentReports),
     };
   }
 
-  private metricTrend(
-    points: Array<{ date: string; value: number | null }>,
-    currentValue: number
-  ) {
-    const firstAvailable = points.find((point) => point.value !== null)?.value;
-    const baseline = firstAvailable ?? currentValue;
-    const change = this.round(currentValue - baseline);
-    const changePercentage =
-      baseline === 0
-        ? currentValue > 0
-          ? 100
-          : 0
-        : this.round((change / baseline) * 100);
+  private metricTrend(points: TrendPoint[], currentValue: number) {
+    const baseline = points.slice(0, -1).find((point) => point.value !== null);
+    const change = baseline ? this.round(currentValue - baseline.value!) : null;
+    const changePercentage = baseline && change !== null
+      ? baseline.value === 0 ? (currentValue === 0 ? 0 : null) : this.round((change / baseline.value!) * 100)
+      : null;
     return {
-      value: currentValue,
-      change,
-      changePercentage,
-      direction: change > 0 ? "UP" : change < 0 ? "DOWN" : "FLAT",
+      value: currentValue, change, changePercentage,
+      direction: change === null || change === 0 ? "FLAT" : change > 0 ? "UP" : "DOWN",
+      baselineDate: baseline?.date ?? null,
       points,
     };
-  }
-
-  private dateKey(value: Date | string) {
-    return new Date(value).toISOString().slice(0, 10);
   }
 }
 

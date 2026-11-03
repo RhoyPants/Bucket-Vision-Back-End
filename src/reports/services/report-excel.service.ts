@@ -8,6 +8,7 @@ import {
   WorkSchedule,
 } from "./report-calculation.service";
 import { utcToManilaDateKey } from "../validators/report-request.validator";
+import { REPORT_HEALTH_PRESENTATION, reportHealthLabel } from "../types/report-health";
 
 const DEFAULT_TEMPLATE_PATH = path.join(
   process.cwd(),
@@ -38,7 +39,7 @@ function columnName(index: number) {
 
 function cellPattern(address: string) {
   return new RegExp(
-    `<(?:x:)?c(?=[^>]*\\br="${address}")[^>]*(?:\\/>|>[\\s\\S]*?<\\/(?:x:)?c>)`
+    `<(?:x:)?c(?=[^>]*\\br="${address}")[^>]*?(?:\\/>|>[\\s\\S]*?<\\/(?:x:)?c>)`
   );
 }
 
@@ -52,11 +53,11 @@ function setCell(xml: string, address: string, value: CellValue) {
   const prefix = existing.startsWith("<x:c") ? "x:" : "";
   let replacement: string;
 
-  if (value === null || value === undefined || value === "") {
+  if (value === null || value === undefined || value === "" || (typeof value === "number" && !Number.isFinite(value))) {
     replacement = `<${prefix}c r="${address}"${styleAttribute}/>`;
   } else if (typeof value === "number") {
     replacement = `<${prefix}c r="${address}"${styleAttribute} t="n"><${prefix}v>${
-      Number.isFinite(value) ? value : 0
+      value
     }</${prefix}v></${prefix}c>`;
   } else {
     replacement = `<${prefix}c r="${address}"${styleAttribute} t="inlineStr"><${prefix}is><${prefix}t>${xmlEscape(
@@ -85,6 +86,10 @@ function locationText(location: unknown) {
     return values.join(", ");
   }
   return String(location);
+}
+
+function progressCell(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value / 100 : null;
 }
 
 function replaceTokens(xml: string, values: Record<string, CellValue>) {
@@ -122,19 +127,20 @@ export class ReportExcelService {
     if (!zip.file("xl/worksheets/sheet7.xml")) {
       return this.generateLegacyTemplate(zip, projectId, data);
     }
+    const activeAtCutoff = this.activeAtCutoff(this.endOfManilaDate(data.report.periodEnd));
     const project = await prisma.project.findUniqueOrThrow({
       where: { id: projectId },
       include: {
         scopes: {
-          where: { deletedAt: null },
+          where: activeAtCutoff,
           orderBy: { order: "asc" },
           include: {
             tasks: {
-              where: { deletedAt: null },
+              where: activeAtCutoff,
               orderBy: { order: "asc" },
               include: {
                 subtasks: {
-                  where: { deletedAt: null },
+                  where: activeAtCutoff,
                   orderBy: { order: "asc" },
                   include: { creator: { select: { name: true } } },
                 },
@@ -155,6 +161,7 @@ export class ReportExcelService {
     await this.updateSheet(zip, 7, (xml) =>
       this.populateProgressLogs(xml, data)
     );
+    await this.applyHealthPresentation(zip, data);
     await this.forceRecalculation(zip);
 
     return zip.generateAsync({
@@ -176,7 +183,7 @@ export class ReportExcelService {
   }
 
   private async generateLegacyTemplate(zip: JSZip, projectId: string, data: any) {
-    const context = await this.loadLegacyContext(projectId, data.sCurve || []);
+    const context = await this.loadLegacyContext(projectId, data.sCurve || [], this.endOfManilaDate(data.report.periodEnd));
     const tokens = this.legacyTokens(data);
 
     for (let sheetNumber = 1; sheetNumber <= 5; sheetNumber++) {
@@ -192,6 +199,7 @@ export class ReportExcelService {
     }
 
     await this.updateLegacyChartRanges(zip, data.sCurve?.length || 0);
+    await this.applyHealthPresentation(zip, data);
     await this.forceRecalculation(zip);
     return zip.generateAsync({
       type: "nodebuffer",
@@ -211,13 +219,14 @@ export class ReportExcelService {
       "project.name": data.project.name,
       "project.start_date": formatDate(data.project.startDate),
       "project.total_budget": Number(data.project.totalBudget || 0).toFixed(2),
-      "summary.expected_progress": Number(data.summary.expectedProgress || 0) / 100,
-      "summary.actual_progress": Number(data.summary.totalProjectProgress || 0) / 100,
-      "summary.variance": Number(data.summary.variance || 0) / 100,
-      "summary.project_status": data.summary.health,
+      "summary.expected_progress": progressCell(data.summary.expectedProgress),
+      "summary.actual_progress": progressCell(data.summary.totalProjectProgress),
+      "summary.variance": progressCell(data.summary.variance),
+      "summary.project_status": reportHealthLabel(data.summary.health),
       "health.healthy_count": counts.HEALTHY,
-      "health.in_progress_count": counts.AT_RISK,
-      "health.delayed_count": counts.DELAYED,
+      "health.in_progress_count": counts.WARNING,
+      "health.delayed_count": counts.DANGER,
+      "health.not_started_count": counts.NOT_STARTED,
       "health.unclassified_count": counts.UNCLASSIFIED,
       "timeline.month_header": (data.sCurve || []).length
         ? `${formatDate(data.sCurve[0].date)} - ${formatDate(data.sCurve[data.sCurve.length - 1].date)}`
@@ -226,24 +235,25 @@ export class ReportExcelService {
   }
 
   private populateLegacyDashboard(xml: string, data: any) {
-    xml = setCell(xml, "E4", Number(data.summary.expectedProgress || 0) / 100);
-    xml = setCell(xml, "B5", Number(data.summary.totalProjectProgress || 0) / 100);
-    xml = setCell(xml, "C5", Number(data.summary.variance || 0) / 100);
-    xml = setCell(xml, "D5", data.summary.health);
+    xml = setCell(xml, "E4", progressCell(data.summary.expectedProgress));
+    xml = setCell(xml, "B5", progressCell(data.summary.totalProjectProgress));
+    xml = setCell(xml, "C5", progressCell(data.summary.variance));
+    xml = setCell(xml, "D5", reportHealthLabel(data.summary.health));
 
     for (let index = 0; index < 90; index++) {
       const row = 11 + index;
       const point = data.sCurve?.[index];
       xml = setCell(xml, `A${row}`, point?.date || null);
       xml = setCell(xml, `B${row}`, point ? Number(point.planned || 0) / 100 : null);
-      xml = setCell(xml, `C${row}`, point?.actual === null || !point ? null : Number(point.actual || 0) / 100);
+      xml = setCell(xml, `C${row}`, progressCell(point?.actual));
       xml = setCell(xml, `D${row}`, point?.forecast == null ? null : Number(point.forecast) / 100);
     }
 
     const counts = this.rawHealthCounts(data);
-    [counts.HEALTHY, counts.AT_RISK, counts.DELAYED, counts.UNCLASSIFIED].forEach(
-      (count, index) => { xml = setCell(xml, `G${10 + index}`, count); }
-    );
+    Object.entries(REPORT_HEALTH_PRESENTATION).forEach(([status, presentation], index) => {
+      xml = setCell(xml, `F${10 + index}`, presentation.label);
+      xml = setCell(xml, `G${10 + index}`, counts[status as keyof typeof counts]);
+    });
     const contributors = new Map<string, { name: string; entries: number }>();
     for (const entry of data.progressAudit?.entries || []) {
       const key = entry.submittedBy?.id || entry.submittedBy?.name || "unknown";
@@ -260,25 +270,27 @@ export class ReportExcelService {
   }
 
   private populateLegacyReport(xml: string, data: any) {
-    xml = setCell(xml, "E4", Number(data.summary.expectedProgress || 0) / 100);
-    xml = setCell(xml, "B5", Number(data.summary.totalProjectProgress || 0) / 100);
-    xml = setCell(xml, "C5", Number(data.summary.variance || 0) / 100);
-    xml = setCell(xml, "D5", data.summary.health);
-    const points = (data.sCurve || []).filter((point: any) => point.date <= data.report.periodEnd).slice(-20);
-    let previousPlanned = 0;
-    let previousActual = 0;
+    xml = setCell(xml, "E4", progressCell(data.summary.expectedProgress));
+    xml = setCell(xml, "B5", progressCell(data.summary.totalProjectProgress));
+    xml = setCell(xml, "C5", progressCell(data.summary.variance));
+    xml = setCell(xml, "D5", reportHealthLabel(data.summary.health));
+    const history = (data.sCurve || []).filter((point: any) => point.date <= data.report.periodEnd);
+    const points = history.slice(-20);
+    const baseline = history.length > 20 ? history[history.length - 21] : null;
+    let previousPlanned = baseline ? progressCell(baseline.planned)! : 0;
+    let previousActual: number | null = baseline ? progressCell(baseline.actual) : 0;
     const periodColumns = ["B", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"];
     for (let index = 0; index < periodColumns.length; index++) {
       const column = periodColumns[index];
       const point = points[index];
       const planned = point ? Number(point.planned || 0) / 100 : 0;
-      const actual = point?.actual != null ? Number(point.actual) / 100 : previousActual;
+      const actual = progressCell(point?.actual);
       xml = setCell(xml, `${column}9`, point?.date.slice(5) || null);
       xml = setCell(xml, `${column}15`, point ? planned - previousPlanned : null);
-      xml = setCell(xml, `${column}16`, point ? actual - previousActual : null);
+      xml = setCell(xml, `${column}16`, point && actual !== null && previousActual !== null ? actual - previousActual : null);
       xml = setCell(xml, `${column}17`, point ? planned : null);
       xml = setCell(xml, `${column}18`, point ? actual : null);
-      xml = setCell(xml, `${column}19`, point ? actual - planned : null);
+      xml = setCell(xml, `${column}19`, point && actual !== null ? actual - planned : null);
       xml = setCell(xml, `${column}20`, null);
       if (point) { previousPlanned = planned; previousActual = actual; }
     }
@@ -298,7 +310,7 @@ export class ReportExcelService {
       const values: CellValue[] = subtask ? [
         index + 1,
         `${subtask.task.scope.name} / ${subtask.task.title} / ${subtask.title}`,
-        Number(subtask.progress || 0) / 100,
+        progressCell(calculator.actualAt(subtask, this.endOfManilaDate(data.report.periodEnd))),
         Number(subtask.budgetAllocated || 0),
         Number(subtask.budgetPercent || 0) / 100,
         "PROJECTED",
@@ -315,7 +327,7 @@ export class ReportExcelService {
         const projected = subtask
           ? calculator.expectedAt(subtask, cutoff, context.schedule)
           : null;
-        const actual = subtask ? calculator.actualAt(subtask, cutoff) : null;
+        const actual = subtask && date <= data.report.periodEnd ? calculator.actualAt(subtask, cutoff) : null;
         xml = setCell(xml, `${column}${projectedRow}`, projected === null ? null : projected / 100);
         xml = setCell(xml, `${column}${actualRow}`, actual === null ? null : actual / 100);
       });
@@ -324,7 +336,6 @@ export class ReportExcelService {
   }
 
   private populateProjectData(xml: string, data: any, project: any) {
-    const counts = this.exportHealthCounts(data);
     const values: CellValue[] = [
       `${data.report.type} PROJECT PROGRESS REPORT`,
       data.project.name,
@@ -337,18 +348,19 @@ export class ReportExcelService {
       excelDate(data.report.periodEnd),
       excelDate(data.report.generatedAt),
       Number(data.project.totalBudget || 0),
-      Number(data.summary.expectedProgress || 0) / 100,
-      Number(data.summary.totalProjectProgress || 0) / 100,
+      progressCell(data.summary.expectedProgress),
+      progressCell(data.summary.totalProjectProgress),
       null,
-      Number(data.summary.variance || 0) / 100,
+      progressCell(data.summary.variance),
       null,
-      counts.healthy,
-      counts.inProgress,
-      counts.delayed,
-      counts.completed,
     ];
     values.forEach((value, index) => {
       xml = setCell(xml, `B${index + 2}`, value);
+    });
+    const counts = this.rawHealthCounts(data);
+    Object.entries(REPORT_HEALTH_PRESENTATION).forEach(([status, presentation], index) => {
+      xml = setCell(xml, `A${18 + index}`, presentation.label);
+      xml = setCell(xml, `B${18 + index}`, counts[status as keyof typeof counts]);
     });
     return xml;
   }
@@ -368,27 +380,27 @@ export class ReportExcelService {
       const scopeDetail = detailById.get(scope.id);
       rows.push([
         rows.length + 1, scope.name, "", "", "SCOPE",
-        Number(scopeDetail?.metrics?.actualProgress ?? scope.progress ?? 0) / 100,
+        progressCell(scopeDetail?.metrics?.actualProgress),
         Number(scope.budgetAllocated || 0), Number(scope.budgetPercent || 0) / 100,
-        null, null, null, null, scopeDetail?.metrics?.health || "", "", scope.description || "",
+        null, null, null, null, reportHealthLabel(scopeDetail?.metrics?.health), "", scope.description || "",
       ]);
       for (const task of scope.tasks) {
         const taskDetail = detailById.get(task.id);
         rows.push([
           rows.length + 1, scope.name, task.title, "", "TASK",
-          Number(taskDetail?.metrics?.actualProgress ?? task.progress ?? 0) / 100,
+          progressCell(taskDetail?.metrics?.actualProgress),
           Number(task.budgetAllocated || 0), Number(task.budgetPercent || 0) / 100,
-          null, null, null, null, taskDetail?.metrics?.health || "", "", task.description || "",
+          null, null, null, null, reportHealthLabel(taskDetail?.metrics?.health), "", task.description || "",
         ]);
         for (const subtask of task.subtasks) {
           const subtaskDetail = detailById.get(subtask.id);
           rows.push([
             rows.length + 1, scope.name, task.title, subtask.title, "SUBTASK",
-            Number(subtaskDetail?.metrics?.actualProgress ?? subtask.progress ?? 0) / 100,
+            progressCell(subtaskDetail?.metrics?.actualProgress),
             Number(subtask.budgetAllocated || 0), Number(subtask.budgetPercent || 0) / 100,
             excelDate(subtask.projectedStartDate), excelDate(subtask.projectedEndDate),
             excelDate(subtask.actualStartDate), excelDate(subtask.actualEndDate),
-            subtaskDetail?.metrics?.health || "", subtask.creator?.name || "", subtask.remarks || "",
+            reportHealthLabel(subtaskDetail?.metrics?.health), subtask.creator?.name || "", subtask.remarks || "",
           ]);
         }
       }
@@ -400,7 +412,7 @@ export class ReportExcelService {
     const rows = (data.sCurve || []).slice(0, 366).map((point: any) => [
       excelDate(point.date),
       Number(point.planned || 0) / 100,
-      point.actual === null ? null : Number(point.actual || 0) / 100,
+      progressCell(point.actual),
       point.forecast === null || point.forecast === undefined
         ? null
         : Number(point.forecast) / 100,
@@ -415,8 +427,8 @@ export class ReportExcelService {
       entry.scope?.name || "",
       entry.task?.title || "",
       entry.subtask?.title || "",
-      Number(entry.dailyProgress || 0) / 100,
-      Number(entry.progressAfter || 0) / 100,
+      progressCell(entry.dailyProgress),
+      progressCell(entry.progressAfter),
       entry.subtaskStatusAfter || "",
       entry.remarks || "",
       entry.submittedBy?.name || "",
@@ -445,24 +457,8 @@ export class ReportExcelService {
     return xml;
   }
 
-  private exportHealthCounts(data: any) {
-    const result = { healthy: 0, inProgress: 0, delayed: 0, completed: 0 };
-    for (const scope of data.detailedProgress || []) {
-      for (const task of scope.tasks || []) {
-        for (const subtask of task.subtasks || []) {
-          const actual = Number(subtask.metrics?.actualProgress || 0);
-          if (actual >= 100) result.completed++;
-          else if (subtask.metrics?.health === "DELAYED") result.delayed++;
-          else if (subtask.metrics?.health === "AT_RISK") result.inProgress++;
-          else result.healthy++;
-        }
-      }
-    }
-    return result;
-  }
-
   private rawHealthCounts(data: any) {
-    const counts = { HEALTHY: 0, AT_RISK: 0, DELAYED: 0, UNCLASSIFIED: 0 };
+    const counts = { DANGER: 0, WARNING: 0, HEALTHY: 0, NOT_STARTED: 0, UNCLASSIFIED: 0 };
     for (const scope of data.detailedProgress || []) {
       for (const task of scope.tasks || []) {
         for (const subtask of task.subtasks || []) {
@@ -475,21 +471,83 @@ export class ReportExcelService {
     return counts;
   }
 
-  private async loadLegacyContext(projectId: string, curve: any[]) {
+  private async applyHealthPresentation(zip: JSZip, data: any) {
+    const presentations = Object.entries(REPORT_HEALTH_PRESENTATION);
+    const counts = this.rawHealthCounts(data);
+    const stylesEntry = zip.file("xl/styles.xml");
+    const styleByLabel = new Map<string, number>();
+    if (stylesEntry) {
+      let styles = await stylesEntry.async("string");
+      const prefix = styles.includes("<x:styleSheet") ? "x:" : "";
+      const fontCount = Number(styles.match(/<(?:x:)?fonts\b[^>]*count="(\d+)"/)?.[1]);
+      const xfCount = Number(styles.match(/<(?:x:)?cellXfs\b[^>]*count="(\d+)"/)?.[1]);
+      if (Number.isFinite(fontCount) && Number.isFinite(xfCount)) {
+        const fonts = presentations.map(([, item]) =>
+          `<${prefix}font><${prefix}b/><${prefix}color rgb="FF${item.color.slice(1).toUpperCase()}"/><${prefix}sz val="11"/><${prefix}name val="Calibri"/></${prefix}font>`
+        ).join("");
+        const xfs = presentations.map(([, item], index) => {
+          styleByLabel.set(item.label, xfCount + index);
+          return `<${prefix}xf numFmtId="0" fontId="${fontCount + index}" fillId="0" borderId="0" xfId="0" applyFont="1"/>`;
+        }).join("");
+        styles = styles
+          .replace(/(<(?:x:)?fonts\b[^>]*count=")\d+(")/, (_match, before, after) => `${before}${fontCount + presentations.length}${after}`)
+          .replace(`</${prefix}fonts>`, `${fonts}</${prefix}fonts>`)
+          .replace(/(<(?:x:)?cellXfs\b[^>]*count=")\d+(")/, (_match, before, after) => `${before}${xfCount + presentations.length}${after}`)
+          .replace(`</${prefix}cellXfs>`, `${xfs}</${prefix}cellXfs>`);
+        zip.file("xl/styles.xml", styles);
+      }
+    }
+
+    for (const name of Object.keys(zip.files)) {
+      if (/^xl\/worksheets\/sheet\d+\.xml$/.test(name)) {
+        let xml = await zip.file(name)!.async("string");
+        xml = xml.replace(/<(?:x:)?c\b[^>]*?(?:\/>|>[\s\S]*?<\/(?:x:)?c>)/g, (cell) => {
+          const label = cell.match(/<(?:x:)?(?:t|v)>([^<]*)<\/(?:x:)?(?:t|v)>/)?.[1];
+          const style = label ? styleByLabel.get(label) : undefined;
+          if (style === undefined) return cell;
+          return cell.replace(/^(<(?:x:)?c\b)([^>]*)>/, (_match, tag, attributes) =>
+            `${tag}${attributes.replace(/\s+s="[^"]*"/, "")} s="${style}">`
+          );
+        });
+        zip.file(name, xml);
+      } else if (/^xl\/(?:drawings\/)?charts\/chart\d+\.xml$/.test(name)) {
+        let xml = await zip.file(name)!.async("string");
+        if (!/health/i.test(xml)) continue;
+        const labels = presentations.map(([, item], index) =>
+          `<c:pt idx="${index}"><c:v>${xmlEscape(item.label)}</c:v></c:pt>`
+        ).join("");
+        const values = presentations.map(([status], index) =>
+          `<c:pt idx="${index}"><c:v>${counts[status as keyof typeof counts]}</c:v></c:pt>`
+        ).join("");
+        const colors = presentations.map(([, item], index) =>
+          `<c:dPt><c:idx val="${index}"/><c:spPr><a:solidFill xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:srgbClr val="${item.color.slice(1).toUpperCase()}"/></a:solidFill></c:spPr></c:dPt>`
+        ).join("");
+        xml = xml
+          .replace(/<c:cat>[\s\S]*?<\/c:cat>/g, `<c:cat><c:strLit><c:ptCount val="5"/>${labels}</c:strLit></c:cat>`)
+          .replace(/<c:val>[\s\S]*?<\/c:val>/g, `<c:val><c:numLit><c:formatCode>General</c:formatCode><c:ptCount val="5"/>${values}</c:numLit></c:val>`)
+          .replace(/<c:dPt>[\s\S]*?<\/c:dPt>/g, "")
+          .replace(/<c:cat>/g, `${colors}<c:cat>`);
+        zip.file(name, xml);
+      }
+    }
+  }
+
+  private async loadLegacyContext(projectId: string, curve: any[], cutoff: Date) {
     const start = curve[0]?.date ? this.startOfManilaDate(curve[0].date) : new Date();
     const end = curve[curve.length - 1]?.date
       ? this.endOfManilaDate(curve[curve.length - 1].date)
       : new Date();
+    const activeAtCutoff = this.activeAtCutoff(cutoff);
     const [project, holidays, subtasks] = await Promise.all([
       prisma.project.findUniqueOrThrow({ where: { id: projectId } }),
       prisma.holiday.findMany({ where: { date: { gte: start, lte: end } } }),
       prisma.subtask.findMany({
         where: {
-          deletedAt: null,
-          task: { deletedAt: null, scope: { projectId, deletedAt: null } },
+          ...activeAtCutoff,
+          task: { ...activeAtCutoff, scope: { projectId, ...activeAtCutoff } },
         },
         include: {
-          progressLogs: { orderBy: { date: "asc" } },
+          progressLogs: { where: { date: { lte: cutoff } }, orderBy: [{ date: "asc" }, { createdAt: "asc" }, { id: "asc" }] },
           task: { include: { scope: true } },
         },
         orderBy: [{ task: { order: "asc" } }, { order: "asc" }],
@@ -511,6 +569,10 @@ export class ReportExcelService {
 
   private startOfManilaDate(date: string) {
     return new Date(new Date(`${date}T00:00:00.000Z`).getTime() - MANILA_OFFSET_MS);
+  }
+
+  private activeAtCutoff(cutoff: Date) {
+    return { createdAt: { lte: cutoff }, OR: [{ deletedAt: null }, { deletedAt: { gt: cutoff } }] };
   }
 
   private endOfManilaDate(date: string) {

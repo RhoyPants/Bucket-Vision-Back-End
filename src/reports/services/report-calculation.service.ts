@@ -1,18 +1,6 @@
-import { ReportHealth } from "../types/report.types";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-export interface WorkSchedule {
-  monday: boolean;
-  tuesday: boolean;
-  wednesday: boolean;
-  thursday: boolean;
-  friday: boolean;
-  saturday: boolean;
-  sunday: boolean;
-  includeHolidays: boolean;
-  holidayKeys: Set<string>;
-}
+import { evaluateScheduleHealth, expectedProgressAt, recordedProgressAt, recordedStartAt, WorkSchedule } from "../../utils/schedule-health";
+import { orderedProgressLogs, StoredProgressLog } from "./report-progress";
+export type { WorkSchedule } from "../../utils/schedule-health";
 
 export interface CalculableSubtask {
   isBudgeted?: boolean;
@@ -21,7 +9,9 @@ export interface CalculableSubtask {
   budgetAllocated: number | null;
   projectedStartDate: Date | null;
   projectedEndDate: Date | null;
-  progressLogs: Array<{ date: Date; cumulativePercent: number }>;
+  actualStartDate?: Date | null;
+  forecastEndDate?: Date | null;
+  progressLogs: StoredProgressLog[];
   task: {
     budgetPercent: number | null;
     budgetAllocated: number | null;
@@ -38,12 +28,12 @@ export class ReportCalculationService {
     return Math.round((value + Number.EPSILON) * factor) / factor;
   }
 
-  actualAt(subtask: CalculableSubtask, cutoff: Date): number {
-    let latest: { date: Date; cumulativePercent: number } | undefined;
-    for (const log of subtask.progressLogs) {
-      if (log.date <= cutoff && (!latest || log.date > latest.date)) latest = log;
-    }
-    return this.clamp(latest?.cumulativePercent ?? 0);
+  actualAt(subtask: CalculableSubtask, cutoff: Date): number | null {
+    return recordedProgressAt(orderedProgressLogs(subtask.progressLogs), cutoff);
+  }
+
+  actualStartAt(subtask: CalculableSubtask, cutoff: Date): Date | null {
+    return recordedStartAt(orderedProgressLogs(subtask.progressLogs), subtask.actualStartDate, cutoff);
   }
 
   expectedAt(
@@ -51,26 +41,20 @@ export class ReportCalculationService {
     cutoff: Date,
     schedule: WorkSchedule
   ): number | null {
-    if (!subtask.projectedStartDate || !subtask.projectedEndDate) return null;
-    const start = this.manilaCalendarDay(subtask.projectedStartDate);
-    const end = this.manilaCalendarDay(subtask.projectedEndDate);
-    const target = this.manilaCalendarDay(cutoff);
-
-    if (target < start) return 0;
-    if (target >= end) return 100;
-
-    const total = this.countWorkingDays(start, end, schedule);
-    if (total === 0) return null;
-    const elapsed = this.countWorkingDays(start, target, schedule);
-    return this.round(this.clamp((elapsed / total) * 100));
+    return expectedProgressAt(cutoff, subtask.projectedStartDate, subtask.projectedEndDate, schedule);
   }
 
   aggregate(
     subtasks: CalculableSubtask[],
-    value: (subtask: CalculableSubtask) => number | null
+    value: (subtask: CalculableSubtask) => number | null,
+    options: { strict?: boolean; round?: boolean } = {}
   ): number | null {
-    const values = subtasks
-      .map((subtask) => ({ subtask, value: value(subtask) ?? (subtask.isBudgeted === false ? 0 : null) }))
+    const candidates = subtasks.map((subtask) => ({ subtask, value: value(subtask) }));
+    if (options.strict && candidates.some((item) => item.value === null || !Number.isFinite(item.value))) {
+      return null;
+    }
+    const values = candidates
+      .map(({ subtask, value }) => ({ subtask, value: value ?? (subtask.isBudgeted === false ? 0 : null) }))
       .filter((item): item is { subtask: CalculableSubtask; value: number } =>
         item.value !== null && Number.isFinite(item.value)
       );
@@ -81,23 +65,24 @@ export class ReportCalculationService {
     const actualWeights = weightTotal > 0 ? weights : weights.map(() => 1);
     const denominator = actualWeights.reduce((sum, weight) => sum + weight, 0);
 
-    return this.round(
-      values.reduce((sum, item, index) => sum + item.value * actualWeights[index], 0) /
-        denominator
-    );
+    const result = values.reduce((sum, item, index) => sum + item.value * actualWeights[index], 0) / denominator;
+    return options.round === false ? result : this.round(result);
   }
 
   health(
-    actual: number,
-    expected: number | null,
-    config: { criticalBelow: number; healthyAtOrAbove: number }
-  ): ReportHealth {
-    if (expected === null) return "UNCLASSIFIED";
-    if (actual >= 100) return "HEALTHY";
-    const variance = actual - expected;
-    if (variance < config.criticalBelow) return "DELAYED";
-    if (variance >= config.healthyAtOrAbove) return "HEALTHY";
-    return "AT_RISK";
+    subtask: CalculableSubtask,
+    cutoff: Date,
+    schedule: WorkSchedule
+  ) {
+    return evaluateScheduleHealth({
+      actualProgress: this.actualAt(subtask, cutoff),
+      startDate: subtask.projectedStartDate,
+      endDate: subtask.projectedEndDate,
+      actualStartDate: this.actualStartAt(subtask, cutoff),
+      forecastEndDate: subtask.forecastEndDate,
+      asOf: cutoff,
+      schedule,
+    });
   }
 
   private weight(subtask: CalculableSubtask): number {
@@ -117,34 +102,6 @@ export class ReportCalculationService {
     return selected ?? 1;
   }
 
-  private countWorkingDays(start: Date, end: Date, schedule: WorkSchedule): number {
-    let count = 0;
-    for (let value = start.getTime(); value <= end.getTime(); value += DAY_MS) {
-      const date = new Date(value);
-      const enabled = [
-        schedule.sunday,
-        schedule.monday,
-        schedule.tuesday,
-        schedule.wednesday,
-        schedule.thursday,
-        schedule.friday,
-        schedule.saturday,
-      ][date.getUTCDay()];
-      const key = date.toISOString().slice(0, 10);
-      if (enabled && !(schedule.includeHolidays && schedule.holidayKeys.has(key))) count++;
-    }
-    return count;
-  }
-
-  private manilaCalendarDay(date: Date): Date {
-    return new Date(Date.parse(
-      `${new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10)}T00:00:00.000Z`
-    ));
-  }
-
-  private clamp(value: number) {
-    return Math.max(0, Math.min(100, value));
-  }
 }
 
 export const reportCalculationService = new ReportCalculationService();

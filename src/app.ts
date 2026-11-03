@@ -42,6 +42,7 @@ app.use(cors({
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  exposedHeaders: ["Content-Disposition", "X-Health-Rules-Version"],
 }));
 
 app.use(express.json());

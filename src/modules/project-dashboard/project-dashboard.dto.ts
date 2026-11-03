@@ -1,6 +1,6 @@
 export type KpiSourceType = "PROJECT" | "SCOPE" | "TASK" | "SUBTASK";
 export type KpiField = "PROGRESS";
-export type KpiStatus = "CRITICAL" | "ONFLOW" | "HEALTHY" | "UNCLASSIFIED";
+export type { ScheduleHealthStatus as KpiStatus } from "../../utils/schedule-health";
 export type KpiChartType = "DONUT" | "BAR";
 
 export interface KpiTargetDTO {
@@ -11,6 +11,7 @@ export interface KpiTargetDTO {
   field?: KpiField;
   unit?: string;
   criticalBelow?: number;
+  warningBelow?: number;
   healthyAtOrAbove?: number;
   sortOrder?: number;
 }
@@ -37,6 +38,7 @@ export interface SourcePreviewQueryDTO {
   subtaskId?: string;
   field?: KpiField;
   criticalBelow?: number;
+  warningBelow?: number;
   healthyAtOrAbove?: number;
 }
 

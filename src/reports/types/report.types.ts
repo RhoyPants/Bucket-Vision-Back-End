@@ -1,5 +1,7 @@
+import { ScheduleHealthStatus } from "../../utils/schedule-health";
+
 export type ProjectReportType = "DAILY" | "WEEKLY";
-export type ReportHealth = "HEALTHY" | "AT_RISK" | "DELAYED" | "UNCLASSIFIED";
+export type ReportHealth = ScheduleHealthStatus;
 
 export interface ReportPeriod {
   type: ProjectReportType;
@@ -14,10 +16,11 @@ export interface ReportPeriod {
 
 export interface ProgressMetrics {
   expectedProgress: number | null;
-  actualProgress: number;
+  actualProgress: number | null;
   variance: number | null;
   health: ReportHealth;
-  periodProgress: number;
+  statusReason: string;
+  periodProgress: number | null;
 }
 
 export interface ReportRequestQuery {

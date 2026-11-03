@@ -1,6 +1,8 @@
 import { recomputeNonBudgetedProject } from "../progress/non-budgeted-progress";
 import { Request, Response } from "express";
 import prisma from "../../config/prisma";
+import { Prisma } from "@prisma/client";
+import { lockProjectForStructureUpdate } from "../project/project-structure.service";
 import { resolveScopeSelection } from "../admin/work-breakdown-maintenance/work-breakdown-maintenance.service";
 import { buildAccessibleProjectWhere } from "../project/project-access";
 
@@ -13,8 +15,8 @@ import {
 
 export class ScopeController {
 
-  private static async validatePhase(projectId: string, phaseId: string | null | undefined) {
-    const project = await prisma.project.findUnique({
+  private static async validatePhase(projectId: string, phaseId: string | null | undefined, tx: Prisma.TransactionClient) {
+    const project = await tx.project.findUnique({
       where: { id: projectId },
       select: { isPhasing: true },
     });
@@ -24,7 +26,7 @@ export class ScopeController {
       return null;
     }
     if (!phaseId) throw new Error("phaseId is required for scopes in a phased project");
-    const phase = await prisma.phase.findFirst({
+    const phase = await tx.phase.findFirst({
       where: { id: phaseId, projectId, deletedAt: null },
       select: { id: true },
     });
@@ -71,7 +73,6 @@ export class ScopeController {
         order,
         phaseId,
       } = req.body;
-      const validatedPhaseId = await ScopeController.validatePhase(projectId, phaseId);
       const selection = await resolveScopeSelection({
         sourceType: req.body.sourceType,
         maintenanceId: req.body.scopeMaintenanceId,
@@ -79,30 +80,34 @@ export class ScopeController {
         projectId,
       });
 
-      // Calculate next order if not provided
-      let nextOrder = order ?? 0;
-      if (order === undefined) {
-        const maxOrder = await prisma.scope.findFirst({
-          where: { projectId, phaseId: validatedPhaseId },
-          orderBy: { order: "desc" },
-          select: { order: true }
-        });
-        nextOrder = (maxOrder?.order ?? -1) + 1;
-      }
-
-      const scope = await prisma.scope.create({
-        data: {
-          name: selection.name,
-          sourceType: selection.sourceType,
-          scopeMaintenanceId: selection.maintenanceId,
-          description,
-          projectId,
-          phaseId: validatedPhaseId,
-          order: nextOrder,
-          budgetAllocated,
-          budgetPercent
+      const scope = await prisma.$transaction(async (tx) => {
+        await lockProjectForStructureUpdate(tx, projectId);
+        const validatedPhaseId = await ScopeController.validatePhase(projectId, phaseId, tx);
+        // Calculate next order if not provided
+        let nextOrder = order ?? 0;
+        if (order === undefined) {
+          const maxOrder = await tx.scope.findFirst({
+            where: { projectId, phaseId: validatedPhaseId },
+            orderBy: { order: "desc" },
+            select: { order: true }
+          });
+          nextOrder = (maxOrder?.order ?? -1) + 1;
         }
-      });
+
+        return tx.scope.create({
+          data: {
+            name: selection.name,
+            sourceType: selection.sourceType,
+            scopeMaintenanceId: selection.maintenanceId,
+            description,
+            projectId,
+            phaseId: validatedPhaseId,
+            order: nextOrder,
+            budgetAllocated,
+            budgetPercent
+          }
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 10000 });
 
       res.json(scope);
     } catch (error: any) {
@@ -185,10 +190,6 @@ export class ScopeController {
       } = req.body;
       const existing = await (prisma.scope.findUnique as any)({ where: { id } });
       if (!existing) return res.status(404).json({ message: "Scope not found" });
-      const validatedPhaseId = await ScopeController.validatePhase(
-        existing.projectId,
-        phaseId === undefined ? existing.phaseId : phaseId,
-      );
       const requestedSourceType = req.body.sourceType === undefined
         ? existing.sourceType
         : String(req.body.sourceType).trim().toUpperCase();
@@ -209,23 +210,34 @@ export class ScopeController {
           })
         : null;
 
-      const updated = await prisma.scope.update({
-        where: { id },
-        data: {
-          ...(selection
-            ? {
-                name: selection.name,
-                sourceType: selection.sourceType,
-                scopeMaintenanceId: selection.maintenanceId,
-              }
-            : {}),
-          ...(description !== undefined && { description }),
-          ...(order !== undefined && { order }),
-          ...(phaseId !== undefined && { phaseId: validatedPhaseId }),
-          ...(budgetAllocated !== undefined && { budgetAllocated }),
-          ...(budgetPercent !== undefined && { budgetPercent })
-        }
-      });
+      const updated = await prisma.$transaction(async (tx) => {
+        await lockProjectForStructureUpdate(tx, existing.projectId);
+        // Retained phase links are dormant in Standard mode and must not block
+        // ordinary scope edits. Re-read after locking so a stale scope update
+        // cannot undo the grouping performed by a concurrent mode conversion.
+        const currentScope = await tx.scope.findUnique({ where: { id }, select: { phaseId: true } });
+        if (!currentScope) throw new Error("Scope not found");
+        const validatedPhaseId = phaseId === undefined || phaseId === currentScope.phaseId
+          ? currentScope.phaseId
+          : await ScopeController.validatePhase(existing.projectId, phaseId, tx);
+        return tx.scope.update({
+          where: { id },
+          data: {
+            ...(selection
+              ? {
+                  name: selection.name,
+                  sourceType: selection.sourceType,
+                  scopeMaintenanceId: selection.maintenanceId,
+                }
+              : {}),
+            ...(description !== undefined && { description }),
+            ...(order !== undefined && { order }),
+            ...(phaseId !== undefined && { phaseId: validatedPhaseId }),
+            ...(budgetAllocated !== undefined && { budgetAllocated }),
+            ...(budgetPercent !== undefined && { budgetPercent })
+          }
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 10000 });
 
       res.json(updated);
     } catch (error: any) {

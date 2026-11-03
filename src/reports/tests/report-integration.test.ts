@@ -1,4 +1,5 @@
 import "dotenv/config";
+import assert from "node:assert/strict";
 import prisma from "../../config/prisma";
 import { reportDataService } from "../services/report-data.service";
 import { utcToManilaDateKey } from "../validators/report-request.validator";
@@ -54,6 +55,19 @@ async function run() {
     date: utcToManilaDateKey(reportDate),
     timezone: "Asia/Manila",
   });
+  assert.equal(result.healthRulesVersion, 2);
+  assert.deepEqual(result.calculationRules.healthThresholds, { warningBelowVariance: 0 });
+  assert.ok(result.summary.statusReason);
+  for (const scope of result.detailedProgress) {
+    assert.ok(scope.metrics.statusReason);
+    for (const task of scope.tasks) {
+      assert.ok(task.metrics.statusReason);
+      for (const subtask of task.subtasks) {
+        assert.ok(subtask.metrics.statusReason);
+        assert.ok(["DANGER", "WARNING", "HEALTHY", "NOT_STARTED", "UNCLASSIFIED"].includes(subtask.metrics.health));
+      }
+    }
+  }
 
   console.log(
     JSON.stringify({

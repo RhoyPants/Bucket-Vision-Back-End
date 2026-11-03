@@ -101,22 +101,18 @@ export class ReportChartService {
   }
 
   buildHealthDonutSvg(detailedProgress: any[]) {
-    const health = { HEALTHY: 0, AT_RISK: 0, DELAYED: 0, UNCLASSIFIED: 0 };
+    const health = { DANGER: 0, WARNING: 0, HEALTHY: 0, NOT_STARTED: 0, UNCLASSIFIED: 0 };
     for (const scope of detailedProgress || []) {
       for (const task of scope.tasks || []) {
         for (const subtask of task.subtasks || []) {
           const key = subtask.metrics?.health as keyof typeof health;
           if (key in health) health[key]++;
+          else health.UNCLASSIFIED++;
         }
       }
     }
     const total = Object.values(health).reduce((sum, value) => sum + value, 0);
-    const colors = {
-      HEALTHY: "#16a34a",
-      AT_RISK: "#f59e0b",
-      DELAYED: "#dc2626",
-      UNCLASSIFIED: "#94a3b8",
-    };
+    const colors = Object.fromEntries(Object.entries(REPORT_HEALTH_PRESENTATION).map(([key, value]) => [key, value.color]));
     const radius = 63;
     const circumference = 2 * Math.PI * radius;
     let offset = 0;
@@ -129,12 +125,7 @@ export class ReportChartService {
       })
       .join("");
 
-    const labels = [
-      ["HEALTHY", "Healthy"],
-      ["AT_RISK", "At Risk"],
-      ["DELAYED", "Delayed"],
-      ["UNCLASSIFIED", "Unclassified"],
-    ]
+    const labels = Object.entries(REPORT_HEALTH_PRESENTATION).map(([key, value]) => [key, value.label])
       .map(([key, label], index) => {
         const value = health[key as keyof typeof health];
         const percentage = total ? Math.round((value / total) * 100) : 0;
@@ -149,7 +140,7 @@ export class ReportChartService {
       })
       .join("");
 
-    return `<svg viewBox="0 0 400 325" role="img" aria-label="Work health distribution">
+    return `<svg viewBox="0 0 400 350" role="img" aria-label="Work health distribution">
       ${circles}
       <text x="200" y="89" text-anchor="middle" font-size="28" font-weight="700" fill="#0f172a">${total}</text>
       <text x="200" y="108" text-anchor="middle" font-size="10" fill="#64748b">SUBTASKS</text>
@@ -159,3 +150,4 @@ export class ReportChartService {
 }
 
 export const reportChartService = new ReportChartService();
+import { REPORT_HEALTH_PRESENTATION } from "../types/report-health";

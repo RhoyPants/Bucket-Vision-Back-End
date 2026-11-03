@@ -12,6 +12,7 @@ import { durationDaysForRange, loadCpmCalendar } from "../cpm/cpm.service";
 import { approvalService } from "../approval/approval.service";
 import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
+import { lockProjectForStructureUpdate, prepareProjectStructureMode, projectConflict } from "./project-structure.service";
 
 const normalizeWbsBusinessUnitIds = (value: unknown): string[] => {
   let values: unknown[] = [];
@@ -1743,24 +1744,6 @@ export class ProjectController {
 
       const requestedIsBudgeted = parseIsBudgeted(rawIsBudgeted);
       const requestedIsPhasing = parseIsPhasing(rawIsPhasing);
-      const existingProject = await prisma.project.findUnique({
-        where: { id },
-        select: { isBudgeted: true, isPhasing: true, status: true, _count: { select: { scopes: true } } },
-      });
-      if (!existingProject) return res.status(404).json({ message: "Project not found" });
-      const isBudgeted = requestedIsBudgeted ?? existingProject.isBudgeted;
-      const isPhasing = requestedIsPhasing ?? existingProject.isPhasing;
-      if (existingProject.isPhasing && !isPhasing) {
-        return res.status(409).json({ message: "Phasing cannot be disabled after it has been enabled." });
-      }
-      if (!existingProject.isPhasing && isPhasing && existingProject._count.scopes > 0) {
-        return res.status(409).json({
-          message: "Phasing can only be enabled before scopes are created. Existing scopes must be migrated into a phase first.",
-        });
-      }
-      if (isBudgeted !== existingProject.isBudgeted && existingProject.status !== "DRAFT") {
-        return res.status(409).json({ message: "Project budget type can only be changed in DRAFT." });
-      }
 
       if (status !== undefined) {
         if (!Object.values(ProjectStatus).includes(status)) {
@@ -1779,23 +1762,6 @@ export class ProjectController {
               "Only DRAFT can be set through the project update endpoint",
           });
         }
-
-        const currentProject = await prisma.project.findUnique({
-          where: { id },
-          select: { status: true },
-        });
-        if (!currentProject) {
-          return res.status(404).json({
-            success: false,
-            message: "Project not found",
-          });
-        }
-        if (!["DRAFT", "NEEDS_REVISION"].includes(currentProject.status)) {
-          return res.status(409).json({
-            success: false,
-            message: `Project cannot be moved from ${currentProject.status} to DRAFT`,
-          });
-        }
       }
 
       const normalizedWbsBusinessUnitIds = wbsBusinessUnitIds === undefined
@@ -1804,6 +1770,16 @@ export class ProjectController {
       if (normalizedWbsBusinessUnitIds) await validateWbsBusinessUnits(normalizedWbsBusinessUnitIds);
 
       const updated = await prisma.$transaction(async tx => {
+        const existingProject = await lockProjectForStructureUpdate(tx, id);
+        const isBudgeted = requestedIsBudgeted ?? existingProject.isBudgeted;
+        const isPhasing = requestedIsPhasing ?? existingProject.isPhasing;
+        if (isBudgeted !== existingProject.isBudgeted && existingProject.status !== "DRAFT") {
+          throw projectConflict("Project budget type can only be changed in DRAFT.");
+        }
+        if (status !== undefined && !["DRAFT", "NEEDS_REVISION"].includes(existingProject.status)) {
+          throw projectConflict(`Project cannot be moved from ${existingProject.status} to DRAFT`);
+        }
+        await prepareProjectStructureMode(tx, existingProject, requestedIsPhasing);
         const result = await tx.project.update({
           where: { id },
           data: {
@@ -1857,14 +1833,18 @@ export class ProjectController {
           result.progress = (await tx.project.findUniqueOrThrow({where: {id}})).progress;
         }
         return result;
-      });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 10000 });
 
       const [enrichedProject] =
         await ProjectController.enrichBusinessUnitDetails([updated]);
 
       res.json(serializeProjectWbsBusinessUnits(enrichedProject));
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      const concurrentConflict = ["P2034", "P2028"].includes(error.code) ||
+        ["40P01", "55P03"].includes(error.meta?.code);
+      res.status(concurrentConflict ? 409 : error.statusCode ?? 400).json({
+        message: concurrentConflict ? "Project structure changed concurrently. Reload the project and retry." : error.message,
+      });
     }
   }
 

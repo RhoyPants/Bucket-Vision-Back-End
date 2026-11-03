@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma";
+import { HEALTH_RULES_VERSION, rollupHealth, summarizeHealth, validProgress } from "../../utils/schedule-health";
 import {
   parseCalendarMonth,
   parseReportPeriod,
@@ -10,6 +11,7 @@ import {
   reportCalculationService as calculator,
   WorkSchedule,
 } from "./report-calculation.service";
+import { orderedProgressLogs } from "./report-progress";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
@@ -31,54 +33,42 @@ export class ReportDataService {
       throw httpError("Report period is before the project start date", 400);
     }
 
+    const subtasks = this.flattenSubtasks(project);
+    const plannedDates = [project.startDate, project.expectedEndDate,
+      ...subtasks.flatMap((item) => [item.projectedStartDate, item.projectedEndDate])]
+      .filter((date): date is Date => date instanceof Date && Number.isFinite(date.getTime()));
     const holidays = await prisma.holiday.findMany({
       where: {
         date: {
-          gte: project.startDate || period.startUtc,
-          lte: period.cutoffUtc,
+          gte: plannedDates.length ? new Date(Math.min(...plannedDates.map((date) => date.getTime()))) : period.startUtc,
+          lte: new Date(Math.max(period.cutoffUtc.getTime(), ...plannedDates.map((date) => date.getTime()))),
         },
       },
       select: { date: true },
     });
     const schedule = this.schedule(project, holidays.map((item) => item.date));
-    const kpiConfig = project.subtaskKpiConfig || {
-      criticalBelow: -15,
-      healthyAtOrAbove: -5,
-    };
-    const subtasks = this.flattenSubtasks(project);
-
-    const actualProgress = calculator.aggregate(subtasks, (subtask) =>
-      calculator.actualAt(subtask, period.cutoffUtc)
-    ) ?? 0;
-    const openingProgress =
-      calculator.aggregate(subtasks, (subtask) =>
-        calculator.actualAt(subtask, period.openingCutoffUtc)
-      ) ?? 0;
-    const expectedProgress = calculator.aggregate(subtasks, (subtask) =>
-      calculator.expectedAt(subtask, period.cutoffUtc, schedule)
+    const summaryMetrics = this.metrics(subtasks, period, schedule);
+    const openingProgress = calculator.aggregate(subtasks, (subtask) =>
+      calculator.actualAt(subtask, period.openingCutoffUtc), { strict: true }
     );
-    const variance =
-      expectedProgress === null
-        ? null
-        : calculator.round(actualProgress - expectedProgress);
 
     const scopes = project.scopes.map((scope: any) => ({
       id: scope.id,
       name: scope.name,
       description: scope.description,
-      metrics: this.metrics(scope.tasks.flatMap((task: any) => task.subtasks.map((subtask: any) => ({...subtask, isBudgeted: project.isBudgeted}))), period, schedule, kpiConfig),
+      metrics: this.metrics(scope.tasks.flatMap((task: any) => task.subtasks.map((subtask: any) => ({...subtask, isBudgeted: project.isBudgeted}))), period, schedule),
       tasks: scope.tasks.map((task: any) => ({
         id: task.id,
         title: task.title,
         description: task.description,
-        metrics: this.metrics(task.subtasks, period, schedule, kpiConfig),
+        metrics: this.metrics(task.subtasks, period, schedule),
         subtasks: task.subtasks.map((subtask: any) => ({
           id: subtask.id,
           title: subtask.title,
           description: subtask.description,
           projectedStartDate: subtask.projectedStartDate,
           projectedEndDate: subtask.projectedEndDate,
-          metrics: this.metrics([subtask], period, schedule, kpiConfig),
+          metrics: this.metrics([subtask], period, schedule),
         })),
       })),
     }));
@@ -90,11 +80,11 @@ export class ReportDataService {
     const progressAudit = this.buildProgressAudit(
       subtasks,
       period,
-      schedule,
-      kpiConfig
+      schedule
     );
 
     return {
+      healthRulesVersion: HEALTH_RULES_VERSION,
       report: {
         type: period.type,
         timezone: period.timezone,
@@ -115,16 +105,9 @@ export class ReportDataService {
         owner: project.owner,
       },
       summary: {
-        expectedProgress,
-        actualProgress,
+        ...summaryMetrics,
         openingProgress: period.type === "WEEKLY" ? openingProgress : null,
-        periodProgress:
-          period.type === "WEEKLY"
-            ? calculator.round(actualProgress - openingProgress)
-            : calculator.round(actualProgress - openingProgress),
-        totalProjectProgress: actualProgress,
-        variance,
-        health: calculator.health(actualProgress, expectedProgress, kpiConfig),
+        totalProjectProgress: summaryMetrics.actualProgress,
       },
       sCurve: await this.buildSCurve(project, subtasks, period, schedule),
       progressAudit,
@@ -132,18 +115,20 @@ export class ReportDataService {
       photos,
       detailedProgress: scopes,
       calculationRules: {
-        actual: "Latest cumulative progress log on or before the reporting cutoff.",
+        actual: "Latest cumulative snapshot on or before the Asia/Manila reporting cutoff, ordered by effective date, creation time, then ID. Daily progress is an increment; cumulative snapshots are never summed.",
         expected:
           "Linear planned progress across configured working days and holidays for each dated subtask.",
         aggregation:
           project.isBudgeted === false ? "Equal weight per subtask; missing planned dates contribute zero." : "First positive available weight: subtask budget %, subtask budget, task budget %, task budget, scope budget %, scope budget; otherwise equal weight.",
         healthThresholds: {
-          delayedBelowVariance: kpiConfig.criticalBelow,
-          healthyAtOrAboveVariance: kpiConfig.healthyAtOrAbove,
+          warningBelowVariance: 0,
         },
+        health:
+          "Schedule health V2 is evaluated at the reporting cutoff, using full-precision working-day expectations. Task, scope, and project health roll up subtask classifications; invalid actual progress remains unavailable.",
         limitations: [
           "Reasonableness checks identify data consistency and planned pace only; they do not assign delay causation.",
           "Changes to projected dates and weights are not historically versioned; Phase 2 snapshots are required for immutable regeneration after configuration edits.",
+          "Historical reports use the current approved version of each log by effective date. Log edits are applied once; this is not a reconstruction of what was known before an edit was approved.",
         ],
       },
       emptyStates: {
@@ -229,9 +214,6 @@ export class ReportDataService {
       where: { id: projectId },
       include: {
         owner: { select: { id: true, name: true, email: true } },
-        subtaskKpiConfig: {
-          select: { criticalBelow: true, healthyAtOrAbove: true },
-        },
         scopes: {
           where: activeAtCutoff,
           orderBy: { order: "asc" },
@@ -265,7 +247,7 @@ export class ReportDataService {
                     },
                     progressLogs: {
                       where: { date: { lte: cutoff } },
-                      orderBy: [{ date: "asc" }, { updatedAt: "asc" }],
+                      orderBy: [{ date: "asc" }, { createdAt: "asc" }, { id: "asc" }],
                       include: {
                         user: {
                           select: { id: true, name: true, email: true },
@@ -330,41 +312,49 @@ export class ReportDataService {
   private metrics(
     subtasks: CalculableSubtask[],
     period: ReportPeriod,
-    schedule: WorkSchedule,
-    config: { criticalBelow: number; healthyAtOrAbove: number }
+    schedule: WorkSchedule
   ) {
-    const actual = calculator.aggregate(subtasks, (item) =>
-      calculator.actualAt(item, period.cutoffUtc)
-    ) ?? 0;
-    const opening = calculator.aggregate(subtasks, (item) =>
-      calculator.actualAt(item, period.openingCutoffUtc)
-    ) ?? 0;
-    const expected = calculator.aggregate(subtasks, (item) =>
-      calculator.expectedAt(item, period.cutoffUtc, schedule)
+    const actual = calculator.aggregate(
+      subtasks, (item) => calculator.actualAt(item, period.cutoffUtc),
+      { strict: true, round: false }
     );
-    const variance = expected === null ? null : calculator.round(actual - expected);
+    const opening = calculator.aggregate(
+      subtasks, (item) => calculator.actualAt(item, period.openingCutoffUtc),
+      { strict: true, round: false }
+    );
+    const expected = calculator.aggregate(
+      subtasks, (item) => calculator.expectedAt(item, period.cutoffUtc, schedule),
+      { round: false }
+    );
+    const evaluations = subtasks.map((item) => calculator.health(item, period.cutoffUtc, schedule));
+    const healthSummary = summarizeHealth(evaluations);
+    const health = actual === null ? "UNCLASSIFIED" : actual === 100 ? "HEALTHY" : rollupHealth(healthSummary);
+    const statusReason = subtasks.length === 1
+      ? evaluations[0].statusReason
+      : actual === null
+        ? "Actual progress is missing or invalid."
+        : actual === 100
+          ? "Completed at 100%."
+          : `Subtask schedule health rollup: ${healthSummary.danger} danger, ${healthSummary.warning} warning, ${healthSummary.healthy} healthy, ${healthSummary.notStarted} not started, ${healthSummary.unclassified} unavailable.`;
     return {
-      expectedProgress: expected,
-      actualProgress: actual,
-      variance,
-      health: calculator.health(actual, expected, config),
-      periodProgress: calculator.round(actual - opening),
+      expectedProgress: expected === null ? null : calculator.round(expected),
+      actualProgress: actual === null ? null : calculator.round(actual),
+      variance: expected === null || actual === null ? null : calculator.round(actual - expected),
+      health,
+      statusReason,
+      healthSummary,
+      periodProgress: actual === null || opening === null ? null : calculator.round(actual - opening),
     };
   }
 
   private buildProgressAudit(
     subtasks: any[],
     period: ReportPeriod,
-    schedule: WorkSchedule,
-    config: { criticalBelow: number; healthyAtOrAbove: number }
+    schedule: WorkSchedule
   ) {
     const entries = subtasks
       .flatMap((subtask) => {
-        const orderedLogs = [...subtask.progressLogs].sort(
-          (a: any, b: any) =>
-            a.date.getTime() - b.date.getTime() ||
-            a.updatedAt.getTime() - b.updatedAt.getTime()
-        );
+        const orderedLogs = orderedProgressLogs(subtask.progressLogs as any[]) as any[];
 
         return orderedLogs
           .map((log: any, index: number) => {
@@ -373,24 +363,31 @@ export class ReportDataService {
             }
 
             const previousProgress =
-              index > 0 ? Number(orderedLogs[index - 1].cumulativePercent) : 0;
-            const progressAfter = Number(log.cumulativePercent);
-            const expectedAfter = calculator.expectedAt(
-              subtask,
-              this.endOfManilaDay(log.date),
-              schedule
+              index > 0 ? validProgress(orderedLogs[index - 1].cumulativePercent) : 0;
+            const progressAfter = validProgress(log.cumulativePercent);
+            const healthAfter = calculator.health(
+              { ...subtask, progressLogs: orderedLogs.slice(0, index + 1) },
+              this.endOfManilaDay(log.date), schedule
             );
+            const expectedAfter = healthAfter.expectedProgress;
             const varianceAfter =
-              expectedAfter === null
+              expectedAfter === null || progressAfter === null
                 ? null
                 : calculator.round(progressAfter - expectedAfter);
-            const expectedCumulative = Math.min(
-              100,
-              Math.max(0, previousProgress + Number(log.dailyPercent))
-            );
+            const dailyProgress = validProgress(log.dailyPercent);
+            // Daily increments and snapshots use hundredths in the write flow.
+            const expectedCumulative = previousProgress === null || dailyProgress === null
+              ? null : (Math.round(previousProgress * 100) + Math.round(dailyProgress * 100)) / 100;
             const checks: Array<{ code: string; severity: "INFO" | "WARNING"; message: string }> = [];
 
-            if (Math.abs(expectedCumulative - progressAfter) > 0.01) {
+            if (previousProgress === null || progressAfter === null || dailyProgress === null) {
+              checks.push({
+                code: "INCOMPLETE_PROGRESS_DATA",
+                severity: "WARNING",
+                message: "Stored progress sequencing cannot be validated: previous cumulative, current cumulative, or daily progress is missing or invalid.",
+              });
+            }
+            if (progressAfter !== null && expectedCumulative !== null && Math.abs(expectedCumulative - progressAfter) > 0.001) {
               checks.push({
                 code: "CUMULATIVE_MISMATCH",
                 severity: "WARNING",
@@ -398,7 +395,7 @@ export class ReportDataService {
                   "Cumulative progress does not reconcile with the previous cumulative value plus this entry.",
               });
             }
-            if (progressAfter < previousProgress) {
+            if (progressAfter !== null && previousProgress !== null && progressAfter < previousProgress) {
               checks.push({
                 code: "PROGRESS_DECREASED",
                 severity: "WARNING",
@@ -418,7 +415,7 @@ export class ReportDataService {
             if (
               subtask.projectedEndDate &&
               log.date > this.endOfManilaDay(subtask.projectedEndDate) &&
-              progressAfter < 100
+              progressAfter !== null && progressAfter < 100
             ) {
               checks.push({
                 code: "AFTER_PLANNED_END_INCOMPLETE",
@@ -448,17 +445,18 @@ export class ReportDataService {
                 id: subtask.id,
                 title: subtask.title,
               },
-              dailyProgress: Number(log.dailyPercent),
+              dailyProgress,
               previousProgress,
               progressAfter,
-              subtaskStatusAfter: this.progressStatus(progressAfter),
-              expectedProgressAfter: expectedAfter,
+              subtaskStatusAfter: progressAfter === null ? "UNCLASSIFIED" : this.progressStatus(progressAfter),
+              expectedProgressAfter: expectedAfter === null ? null : calculator.round(expectedAfter),
               varianceAfter,
-              healthAfter: calculator.health(progressAfter, expectedAfter, config),
+              healthAfter: healthAfter.status,
+              statusReason: healthAfter.statusReason,
               paceStatus:
-                expectedAfter === null
+                expectedAfter === null || healthAfter.actualProgress === null
                   ? "UNCLASSIFIED"
-                  : progressAfter >= expectedAfter
+                  : progressAfter !== null && progressAfter >= expectedAfter
                     ? "ON_OR_ABOVE_PLAN"
                     : "BELOW_PLAN",
               assessment: checks.some((check) => check.severity === "WARNING")
@@ -478,7 +476,8 @@ export class ReportDataService {
       })
       .sort((a: any, b: any) =>
         a.date.localeCompare(b.date) ||
-        String(a.lastUpdatedAt).localeCompare(String(b.lastUpdatedAt))
+        a.submittedAt.getTime() - b.submittedAt.getTime() ||
+        a.progressLogId.localeCompare(b.progressLogId)
       );
 
     const openingExpected = calculator.aggregate(subtasks, (subtask) =>
@@ -487,21 +486,22 @@ export class ReportDataService {
     const closingExpected = calculator.aggregate(subtasks, (subtask) =>
       calculator.expectedAt(subtask, period.cutoffUtc, schedule)
     );
-    const openingActual =
-      calculator.aggregate(subtasks, (subtask) =>
-        calculator.actualAt(subtask, period.openingCutoffUtc)
-      ) ?? 0;
-    const closingActual =
-      calculator.aggregate(subtasks, (subtask) =>
-        calculator.actualAt(subtask, period.cutoffUtc)
-      ) ?? 0;
+    const openingActual = calculator.aggregate(
+      subtasks, (subtask) => calculator.actualAt(subtask, period.openingCutoffUtc),
+      { strict: true }
+    );
+    const closingActual = calculator.aggregate(
+      subtasks, (subtask) => calculator.actualAt(subtask, period.cutoffUtc),
+      { strict: true }
+    );
     const plannedDuringPeriod =
       openingExpected === null || closingExpected === null
         ? null
         : calculator.round(closingExpected - openingExpected);
-    const deliveredDuringPeriod = calculator.round(closingActual - openingActual);
+    const deliveredDuringPeriod = closingActual === null || openingActual === null
+      ? null : calculator.round(closingActual - openingActual);
     const paceVariance =
-      plannedDuringPeriod === null
+      plannedDuringPeriod === null || deliveredDuringPeriod === null
         ? null
         : calculator.round(deliveredDuringPeriod - plannedDuringPeriod);
 
@@ -574,8 +574,8 @@ export class ReportDataService {
         actual:
           day <= reportCutoffDay
             ? calculator.aggregate(subtasks, (subtask) =>
-                calculator.actualAt(subtask, cutoff)
-              ) ?? 0
+                calculator.actualAt(subtask, cutoff), { strict: true }
+              )
             : null,
       });
     }

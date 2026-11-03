@@ -26,9 +26,11 @@
     .metric .positive { color: #16a34a; }
     .metric .negative { color: #dc2626; }
     .pill { display: inline-block; border-radius: 12px; padding: 4px 8px; background: #e2e8f0; font-size: 8px; font-weight: 800; }
-    .pill.HEALTHY { color: #15803d; background: #dcfce7; }
-    .pill.AT_RISK { color: #a16207; background: #fef3c7; }
-    .pill.DELAYED { color: #b91c1c; background: #fee2e2; }
+    .pill.WARNING { color: #f59e0b; background: #fef3c7; }
+    .pill.DANGER { color: #dc2626; background: #fee2e2; }
+    .pill.HEALTHY { color: #16a34a; background: #dcfce7; }
+    .pill.NOT_STARTED { color: #64748b; background: #f1f5f9; }
+    .pill.UNCLASSIFIED { color: #94a3b8; background: #f1f5f9; }
     .charts { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
     .chart { border: 1px solid #dbe5f1; padding: 8px; }
     .chart svg { width: 100%; height: auto; }
@@ -76,7 +78,7 @@
       <div class="metric"><label>Progress Delivered</label><strong class="positive">{{percent summary.periodProgress}}</strong><small>Delivered during period</small></div>
       <div class="metric"><label>Total Progress</label><strong>{{percent summary.totalProjectProgress}}</strong><small>As of {{date report.periodEnd}}</small></div>
       <div class="metric"><label>Variance</label><strong>{{percent summary.variance}}</strong><small>Actual minus planned</small></div>
-      <div class="metric"><label>Project Status</label><strong><span class="pill {{summary.health}}">{{upper summary.health}}</span></strong><small>Based on configured thresholds</small></div>
+      <div class="metric"><label>Project Status</label><strong><span class="pill {{summary.health}}">{{healthLabel summary.health}}</span></strong><small>Schedule health rules V2</small></div>
     </div>
   </section>
 
@@ -123,7 +125,7 @@
       {{#each detailedProgress}}
         <tr class="scope-row"><td colspan="7">{{name}}</td></tr>
         {{#each tasks}}{{#each subtasks}}
-        <tr><td>{{../title}}</td><td>{{title}}</td><td class="number">{{percent metrics.actualProgress}}</td><td class="number">{{percent metrics.expectedProgress}}</td><td class="number">{{percent metrics.variance}}</td><td class="number">{{percent metrics.periodProgress}}</td><td><span class="pill {{metrics.health}}">{{upper metrics.health}}</span></td></tr>
+        <tr><td>{{../title}}</td><td>{{title}}</td><td class="number">{{percent metrics.actualProgress}}</td><td class="number">{{percent metrics.expectedProgress}}</td><td class="number">{{percent metrics.variance}}</td><td class="number">{{percent metrics.periodProgress}}</td><td><span class="pill {{metrics.health}}">{{healthLabel metrics.health}}</span></td></tr>
         {{/each}}{{/each}}
       {{/each}}
       </tbody>
@@ -132,7 +134,7 @@
 
   <section class="section notes">
     <strong>CALCULATION NOTES</strong><br>
-    Variance is actual progress minus expected progress. Health follows the configured project thresholds.
+    Variance is actual progress minus expected progress. Schedule health V2 uses the reporting cutoff and project work calendar; incomplete work after its deadline is Danger, and any negative variance is Warning. Aggregate health rolls up subtask classifications.
     Historical actual progress uses the latest cumulative progress logs at or before the report cutoff.
   </section>
 </body>
