@@ -8,7 +8,8 @@ export class SubtaskService {
     subtaskId: string,
     targetStatus: number | null, // unused (status comes from progress)
     newOrder: number,
-    userId: string
+    userId: string,
+    orderedIds?: string[],
   ) {
     return await prisma.$transaction(async (tx) => {
       const subtask = await tx.subtask.findUnique({
@@ -16,6 +17,37 @@ export class SubtaskService {
       });
 
       if (!subtask) throw new Error("Subtask not found");
+
+      // WBS ordering spans every status within the same task. Kanban callers
+      // omit orderedIds and retain the existing status-column behavior below.
+      if (orderedIds !== undefined) {
+        if (!Array.isArray(orderedIds) || !orderedIds.length ||
+            orderedIds.some((id) => typeof id !== "string") ||
+            new Set(orderedIds).size !== orderedIds.length ||
+            !Number.isInteger(newOrder) || newOrder < 0 ||
+            orderedIds[newOrder] !== subtaskId) {
+          throw new Error("Invalid subtask order. Refresh and try again.");
+        }
+        // Serialize WBS moves and child inserts against this parent task.
+        await tx.$queryRaw`SELECT id FROM "Task" WHERE id = ${subtask.taskId} FOR UPDATE`;
+        const siblings = await tx.subtask.findMany({
+          where: { taskId: subtask.taskId },
+          select: { id: true, order: true },
+        });
+        const byId = new Map(siblings.map((item) => [item.id, item]));
+        if (siblings.length !== orderedIds.length || orderedIds.some((id) => !byId.has(id))) {
+          throw new Error("This task's subtasks changed. Refresh and try again.");
+        }
+        for (const [order, id] of orderedIds.entries()) {
+          if (byId.get(id)!.order !== order) {
+            await tx.subtask.update({ where: { id }, data: { order } });
+          }
+        }
+        await tx.activityLog.create({
+          data: { userId, action: "SUBTASK_REORDERED", entityType: "SUBTASK", entityId: subtaskId },
+        });
+        return tx.subtask.findUnique({ where: { id: subtaskId } });
+      }
 
       const oldOrder = subtask.order;
       const status = subtask.status;

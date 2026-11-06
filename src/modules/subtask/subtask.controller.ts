@@ -454,7 +454,7 @@ export class SubtaskController {
         ? req.params.subtaskId[0]
         : req.params.subtaskId;
 
-      const { newOrder } = req.body;
+      const { newOrder, orderedIds } = req.body;
       const userId = (req as any).user.id;
 
       // 🔥 statusId removed — only reorder now
@@ -463,6 +463,7 @@ export class SubtaskController {
         null,
         newOrder,
         userId,
+        orderedIds,
       );
 
       res.json(result);
