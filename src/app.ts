@@ -32,6 +32,7 @@ import workBreakdownMaintenanceRoutes from "./modules/admin/work-breakdown-maint
 import reportRoutes from "./reports/routes/report.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
 import pinMasterRoutes from "./modules/pin-master/pin-master.routes";
+import emailRoutes from "./modules/email/email.routes";
 
 const app = express();
 app.use(cors({
@@ -82,6 +83,7 @@ app.use("/api/admin/work-breakdown-maintenance", workBreakdownMaintenanceRoutes)
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/pin-masters", pinMasterRoutes);
+app.use("/api/emails", emailRoutes);
     
 
 app.get("/test-auth", authenticate, (req: any, res) => {
