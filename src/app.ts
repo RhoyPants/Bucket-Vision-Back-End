@@ -39,6 +39,8 @@ app.use(cors({
   origin: [
     "http://localhost:3000",
     "http://localhost:3001",
+    "https://localhost:3001",
+    "https://itemmaster.globalvisions.com.ph:3001",
     "https://bucket-vision-exp.vercel.app",
     "https://vision.globalvisionsinc.com.ph"
   ],
