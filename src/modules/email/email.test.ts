@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { Request, Response } from "express";
+import express, { Request, Response } from "express";
+import { once } from "node:events";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { sendAutomateEmail } from "./email.controller";
+import emailRoutes from "./email.routes";
 
 async function main() {
   const commands: SendEmailCommand[] = [];
@@ -51,7 +53,41 @@ async function main() {
     assert.equal(partial.json.success, false);
     assert.deepEqual(partial.json.results.map((item: any) => item.accepted), [true, false, true]);
     assert.equal(partial.json.results[1].messageId, undefined);
-    console.log("Email validation, SES payload, deduplication, and partial failure checks passed (no real emails sent).");
+    const app = express();
+    app.use(express.json());
+    app.use("/api/emails", emailRoutes);
+    const server = app.listen(0, "127.0.0.1");
+    try {
+      await once(server, "listening");
+      const address = server.address();
+      assert.ok(address && typeof address !== "string");
+      const url = `http://127.0.0.1:${address.port}/api/emails/send`;
+      for (const authorization of [undefined, "Bearer invalid-token"]) {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (authorization) headers.Authorization = authorization;
+        const response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ to: "ok@example.com", subject: "ITM", message: "Hello" }),
+        });
+        assert.equal(response.status, 200, "Email route must not require or validate authorization");
+        const result = await response.json();
+        assert.equal(result.success, true);
+        assert.equal(result.results[0].accepted, true);
+      }
+      const invalid = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      assert.equal(invalid.status, 400, "Public email route must still validate input");
+      await invalid.json();
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close(error => error ? reject(error) : resolve());
+      });
+    }
+    console.log("Email validation, SES payload, deduplication, partial failure, and public route checks passed (no real emails sent).");
   } finally {
     SESClient.prototype.send = originalSend;
     console.error = originalError;
