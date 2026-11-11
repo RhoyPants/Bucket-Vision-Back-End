@@ -1997,12 +1997,6 @@ export class ProjectController {
           },
         });
 
-        await tx.projectTimeline.deleteMany({
-          where: {
-            projectId: id,
-          },
-        });
-
         await tx.attachment.deleteMany({
           where: {
             projectId: id,

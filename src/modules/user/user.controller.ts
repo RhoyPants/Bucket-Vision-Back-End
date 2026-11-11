@@ -15,7 +15,6 @@ const deleteProjectCascade = async (tx: any, projectId: string) => {
   });
 
   await tx.projectMember.deleteMany({ where: { projectId } });
-  await tx.projectTimeline.deleteMany({ where: { projectId } });
   await tx.attachment.deleteMany({ where: { projectId } });
 
   const scopeIds = (

@@ -38,7 +38,7 @@ router.post(
 
 /**
  * GET /api/versioning/:projectId/detail
- * Get full detail of a specific version (scopes, tasks, subtasks, team, timelines, reports)
+ * Get full detail of a specific version (scopes, tasks, subtasks, team, attachments, approvals)
  */
 router.get(
   "/:projectId/detail",

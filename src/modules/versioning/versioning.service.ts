@@ -43,7 +43,6 @@ export class VersioningService {
         },
         projectMembers: true,
         attachments: true,
-        timelines: true,
         cpmDependencies: true,
         wbsBusinessUnits: true,
         orgChart: { include: { nodes: true } },
@@ -333,22 +332,6 @@ export class VersioningService {
 
     console.log(`✅ Cloned ${source.attachments.length} attachments`);
 
-    // CLONE PROJECT TIMELINES (S-Curve history)
-    for (const timeline of source.timelines) {
-      await prisma.projectTimeline.create({
-        data: {
-          projectId: newProject.id,
-          date: timeline.date,
-          planned: timeline.planned,
-          actual: timeline.actual,
-          variance: timeline.variance,
-          daysAhead: timeline.daysAhead,
-        },
-      });
-    }
-
-    console.log(`✅ Cloned ${source.timelines.length} timeline snapshots`);
-
     // NOTE: Approval records are NOT cloned
     // v2 starts fresh with DRAFT status and will go through approval flow again
 
@@ -381,7 +364,6 @@ export class VersioningService {
         ),
         teamMembersCloned: source.projectMembers.length,
         attachmentsCloned: source.attachments.length,
-        timelinesCloned: source.timelines.length,
       },
     };
   }
@@ -522,9 +504,6 @@ export class VersioningService {
           include: {
             user: { select: { id: true, name: true, email: true } },
           },
-        },
-        timelines: {
-          orderBy: { date: "asc" },
         },
         attachments: {
           orderBy: { id: "asc" },
@@ -996,10 +975,6 @@ export class VersioningService {
       });
 
       await tx.projectMember.deleteMany({
-        where: { projectId },
-      });
-
-      await tx.projectTimeline.deleteMany({
         where: { projectId },
       });
 
