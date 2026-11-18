@@ -21,9 +21,10 @@ const HEALTH_TREND_KEYS = ["danger", "warning", "healthy", "notStarted"] as cons
 type TrendProject = Omit<WorkSchedule, "holidayKeys"> & { id: string; createdAt: Date };
 type TrendCounts = Pick<HealthSummary, typeof HEALTH_TREND_KEYS[number]> & { incidentReports: number };
 type TrendPoint = { date: string; value: number | null };
+export type TrendWindow = { days?: number; from?: string; to?: string };
 
 export class DashboardService {
-  async get(userId: string, asOf = new Date()) {
+  async get(userId: string, asOf = new Date(), trendWindow?: TrendWindow) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { role: true },
@@ -210,7 +211,7 @@ export class DashboardService {
       (sum, count) => sum + count,
       0
     );
-    const trends = await this.buildSevenDayTrends(projects, asOf, { ...kpiSummary, incidentReports });
+    const trends = await this.buildTrends(projects, asOf, { ...kpiSummary, incidentReports }, trendWindow);
 
     const statusCounts = new Map<string, number>();
     projects.forEach((project) => {
@@ -300,10 +301,18 @@ export class DashboardService {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 
-  private async buildSevenDayTrends(projects: TrendProject[], asOf: Date, current: TrendCounts) {
+  private async buildTrends(projects: TrendProject[], asOf: Date, current: TrendCounts, window?: TrendWindow) {
     const today = manilaCalendarDay(asOf);
-    const days = Array.from({ length: 7 }, (_, index) => {
-      return new Date(today.getTime() - (6 - index) * DAY_MS);
+    // The window ends today unless an earlier "to" date was requested; it never extends into the future.
+    const requestedEnd = window?.to ? new Date(`${window.to}T00:00:00.000Z`) : today;
+    const endDay = requestedEnd.getTime() > today.getTime() ? today : requestedEnd;
+    const endsToday = endDay.getTime() === today.getTime();
+    const dayCount = window?.from
+      ? Math.round((endDay.getTime() - new Date(`${window.from}T00:00:00.000Z`).getTime()) / DAY_MS) + 1
+      : window?.days ?? 7;
+    if (!Number.isInteger(dayCount) || dayCount < 1 || dayCount > 90) throw new Error("Invalid trend date range.");
+    const days = Array.from({ length: dayCount }, (_, index) => {
+      return new Date(endDay.getTime() - (dayCount - 1 - index) * DAY_MS);
     });
     const projectIds = projects.map((project) => project.id);
     const historyStart = new Date(days[0].getTime() - MANILA_OFFSET_MS);
@@ -360,7 +369,7 @@ export class DashboardService {
 
     for (const day of days) {
       const date = day.toISOString().slice(0, 10);
-      if (day.getTime() === today.getTime()) {
+      if (endsToday && day.getTime() === today.getTime()) {
         for (const key of [...HEALTH_TREND_KEYS, "incidentReports"] as const) {
           metricPoints[key].push({ date, value: current[key] });
         }
@@ -394,25 +403,27 @@ export class DashboardService {
 
     const isComplete = Object.values(metricPoints).every((points) => points.every((point) => point.value !== null));
     return {
-      healthRulesVersion: HEALTH_RULES_VERSION, period: "LAST_7_DAYS",
+      healthRulesVersion: HEALTH_RULES_VERSION,
+      period: window?.from ? "CUSTOM" : `LAST_${dayCount}_DAYS`,
+      dayCount, endsToday,
       basis: "RECALCULATED_PROGRESS_LOGS",
       dateFrom: days[0].toISOString().slice(0, 10),
-      dateTo: today.toISOString().slice(0, 10),
+      dateTo: endDay.toISOString().slice(0, 10),
       isComplete,
       note: "Recalculated from recorded progress using the current approved schedule and currently accessible active projects." +
         (isComplete ? "" : " Gaps indicate missing or invalid historical inputs."),
-      danger: this.metricTrend(metricPoints.danger, current.danger),
-      warning: this.metricTrend(metricPoints.warning, current.warning),
-      healthy: this.metricTrend(metricPoints.healthy, current.healthy),
-      notStarted: this.metricTrend(metricPoints.notStarted, current.notStarted),
-      incidentReports: this.metricTrend(metricPoints.incidentReports, current.incidentReports),
+      danger: this.metricTrend(metricPoints.danger, endsToday ? current.danger : metricPoints.danger[dayCount - 1].value),
+      warning: this.metricTrend(metricPoints.warning, endsToday ? current.warning : metricPoints.warning[dayCount - 1].value),
+      healthy: this.metricTrend(metricPoints.healthy, endsToday ? current.healthy : metricPoints.healthy[dayCount - 1].value),
+      notStarted: this.metricTrend(metricPoints.notStarted, endsToday ? current.notStarted : metricPoints.notStarted[dayCount - 1].value),
+      incidentReports: this.metricTrend(metricPoints.incidentReports, endsToday ? current.incidentReports : metricPoints.incidentReports[dayCount - 1].value),
     };
   }
 
-  private metricTrend(points: TrendPoint[], currentValue: number) {
+  private metricTrend(points: TrendPoint[], currentValue: number | null) {
     const baseline = points.slice(0, -1).find((point) => point.value !== null);
-    const change = baseline ? this.round(currentValue - baseline.value!) : null;
-    const changePercentage = baseline && change !== null
+    const change = baseline && currentValue !== null ? this.round(currentValue - baseline.value!) : null;
+    const changePercentage = baseline && change !== null && currentValue !== null
       ? baseline.value === 0 ? (currentValue === 0 ? 0 : null) : this.round((change / baseline.value!) * 100)
       : null;
     return {

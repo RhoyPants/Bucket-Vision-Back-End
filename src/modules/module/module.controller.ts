@@ -37,7 +37,47 @@ export const createModule = async (req: any, res: any) => {
   }
 };
 
-export const updateModule = async (req: any, res: any) => {
+// Create-only sync: inserts modules that do not exist yet (matched by key).
+// Existing modules, their paths, active flags and role permissions are untouched.
+export const syncModules = async (req: any, res: any) => {
+  try {
+    const items = Array.isArray(req.body?.modules) ? req.body.modules : null;
+    if (!items) {
+      return res.status(400).json({ success: false, message: "modules array is required" });
+    }
+
+    const incoming = new Map<string, string>();
+    for (const item of items) {
+      const key = String(item?.key || item?.name || "").trim();
+      const path = String(item?.path || "").trim();
+      if (key && path && /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/.test(key) && !incoming.has(key)) {
+        incoming.set(key, path);
+      }
+    }
+
+    const existing = await prisma.module.findMany({ select: { name: true } });
+    const existingNames = new Set(existing.map((m) => m.name));
+    const missing = [...incoming].filter(([key]) => !existingNames.has(key));
+
+    if (missing.length > 0) {
+      await prisma.module.createMany({
+        data: missing.map(([name, path]) => ({ name, path, isActive: true })),
+        skipDuplicates: true,
+      });
+    }
+
+    res.json({
+      success: true,
+      created: missing.map(([key, path]) => ({ key, path })),
+      createdCount: missing.length,
+      alreadyExisting: incoming.size - missing.length,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const updateModule =async (req: any, res: any) => {
   try {
     const { moduleId } = req.params;
     const { key, name, path, isActive } = req.body;

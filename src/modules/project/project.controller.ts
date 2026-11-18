@@ -13,6 +13,7 @@ import { approvalService } from "../approval/approval.service";
 import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
 import { lockProjectForStructureUpdate, prepareProjectStructureMode, projectConflict } from "./project-structure.service";
+import { deleteProjectAssets } from "./project-deletion.service";
 
 const normalizeWbsBusinessUnitIds = (value: unknown): string[] => {
   let values: unknown[] = [];
@@ -1889,6 +1890,29 @@ export class ProjectController {
           ),
         );
 
+        await deleteProjectAssets(tx, id);
+
+        await tx.activityLog.deleteMany({
+          where: {
+            OR: [
+              { subtaskId: { in: subtaskIds } },
+              { entityType: "PROJECT", entityId: id },
+              { entityType: "SCOPE", entityId: { in: scopeIds } },
+              { entityType: "TASK", entityId: { in: taskIds } },
+              { entityType: "SUBTASK", entityId: { in: subtaskIds } },
+              {
+                entityType: "CHECKLIST",
+                entityId: {
+                  in: (await tx.checklist.findMany({
+                    where: { subtaskId: { in: subtaskIds } },
+                    select: { id: true },
+                  })).map((checklist) => checklist.id),
+                },
+              },
+            ],
+          },
+        });
+
         // ============================
         // Delete Subtask Child Tables
         // ============================
@@ -1927,14 +1951,6 @@ export class ProjectController {
           });
 
           await tx.attachment.deleteMany({
-            where: {
-              subtaskId: {
-                in: subtaskIds,
-              },
-            },
-          });
-
-          await tx.activityLog.deleteMany({
             where: {
               subtaskId: {
                 in: subtaskIds,
@@ -2012,7 +2028,7 @@ export class ProjectController {
             id,
           },
         });
-      });
+      }, { timeout: 120_000 });
 
       return res.json({
         success: true,

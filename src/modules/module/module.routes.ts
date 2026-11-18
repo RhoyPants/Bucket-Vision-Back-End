@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createModule, getModules, updateModule } from "./module.controller";
+import { createModule, getModules, syncModules, updateModule } from "./module.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
 
@@ -10,6 +10,12 @@ router.post(
   authenticate,
   authorize("settings_modules", "CREATE"), // 🔥 protect it
   createModule
+);
+router.post(
+  "/sync",
+  authenticate,
+  authorize("settings_modules", "CREATE"),
+  syncModules
 );
 router.get(
   "/",

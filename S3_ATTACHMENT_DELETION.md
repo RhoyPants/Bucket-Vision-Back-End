@@ -116,8 +116,13 @@ Database cascade deletion alone cannot clean S3. Parent delete flows explicitly 
 
 - Incident report: authorize, delete each S3 object and attachment row, then delete the incident.
 - Organization chart: collect unique node photo references, delete managed S3 objects, then delete the chart.
+- Project: collect project/subtask attachments, progress attachments (including legacy photo/attachment fields), incident evidence, and organization-chart photos before deleting database records. Deduplicate managed keys and retain objects referenced outside the selected project version. Only the selected version is deleted; other versions remain.
 
 If an S3 deletion fails, the normal parent deletion does not continue past that failed cleanup operation.
+
+Project deletion also removes activity logs linked by subtask ID or by project, scope, task, subtask, and checklist entity IDs. Progress logs and their dependent requests/attachments are removed; approval and incident logs follow their schema cascades.
+
+Project cleanup uses a database transaction with a 120-second timeout to allow S3 requests. S3 is not transactional: if a later deletion or database commit fails, database changes roll back, but already deleted objects cannot be restored. Retrying deletion is safe because S3 deletion is idempotent. Shared-reference checks cover persisted references, not concurrent uploads or version creation.
 
 ## Module coverage
 

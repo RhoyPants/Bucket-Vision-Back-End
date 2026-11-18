@@ -16,6 +16,7 @@
     "test:assets": "ts-node src/services/s3-assets.service.test.ts",
     "test:cpm": "ts-node src/modules/cpm/cpm.calculator.test.ts",
     "test:project-structure": "ts-node src/modules/project/project-structure.test.ts",
+    "test:project-deletion": "ts-node src/modules/project/project-deletion.test.ts",
     "test:project-structure:integration": "ts-node src/modules/project/project-structure.integration.test.ts",
     "test:health": "ts-node src/utils/schedule-health.test.ts && ts-node src/modules/project-dashboard/project-dashboard.health.test.ts",
     "test:reports": "ts-node src/reports/tests/report-foundation.test.ts && ts-node src/reports/tests/report-progress.test.ts",
