@@ -108,12 +108,4 @@ router.get(
   SubtaskController.getById,
 );
 
-// ✅ GET LIST
-router.get(
-  "/task/:taskId",
-//   authenticate,
-//   authorize("projects", "READ"),
-  SubtaskController.getByTask,
-);
-
 export default router;
