@@ -12,6 +12,7 @@ export const ASSET_CATEGORIES = [
   "progress",
   "incidents",
   "org-chart-photos",
+  "discussions",
 ] as const;
 
 export type AssetCategory = (typeof ASSET_CATEGORIES)[number];
@@ -60,9 +61,19 @@ const allowedTypes = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]);
 
 const maxFileSize = 50 * 1024 * 1024;
+/** Attachments in Viscussion are small on purpose: screenshots, photos and short documents. */
+export const DISCUSSION_MAX_FILE_BYTES = 5 * 1024 * 1024;
+const categoryMaxSize: Partial<Record<string, number>> = {
+  "org-chart-photos": 5 * 1024 * 1024,
+  discussions: DISCUSSION_MAX_FILE_BYTES,
+};
+const maxSizeFor = (category: string) => categoryMaxSize[category] ?? maxFileSize;
+const megabytes = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
 
 function invalid(message: string): never {
   const error = new Error(message) as Error & { status?: number };
@@ -100,8 +111,8 @@ export function validateUploadMetadata(input: any) {
   const entityId = normalizeEntityId(String(input?.entityId || ""));
 
   if (!allowedTypes.has(contentType)) invalid("Unsupported contentType");
-  if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > maxFileSize) {
-    invalid("fileSize must be between 1 byte and 50 MB");
+  if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > maxSizeFor(category)) {
+    invalid(`fileSize must be between 1 byte and ${megabytes(maxSizeFor(category))}`);
   }
   if (!ASSET_CATEGORIES.includes(category)) invalid("Invalid storage category");
   if (category === "org-chart-photos" && !contentType.startsWith("image/")) {
@@ -183,7 +194,7 @@ export function validateStoredFileReference(value: any, expectedCategory: AssetC
     invalid("fileKey does not belong to this entity");
   }
   if (!allowedTypes.has(contentType)) invalid("Unsupported contentType");
-  if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > maxFileSize) {
+  if (!Number.isInteger(fileSize) || fileSize <= 0 || fileSize > maxSizeFor(expectedCategory)) {
     invalid("Invalid fileSize");
   }
   return { ...value, fileKey, fileName, contentType, fileSize };

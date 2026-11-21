@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { createPresignedUpload } from "../../services/s3-assets.service";
 import prisma from "../../config/prisma";
+import { canAccessProjectDiscussions } from "../discussion/discussion.access";
 
 const categoryModule: Record<string, string> = {
   projects: "projects",
@@ -26,7 +27,15 @@ export async function presignUpload(req: Request, res: Response) {
   try {
     const user = (req as any).user;
     if (!user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
-    if (!(await canUpload(user.roleId, String(req.body?.category || "")))) {
+    const category = String(req.body?.category || "");
+    if (category === "discussions") {
+      // Viscussion attachments are authorised by project access, not by a page permission: the entity is
+      // the project, and anyone who can take part in its discussions may attach files.
+      const projectId = String(req.body?.entityId || "");
+      if (!projectId || !(await canAccessProjectDiscussions(projectId, user.id, user.roleId))) {
+        return res.status(403).json({ success: false, message: "You are not authorized to upload files for this project" });
+      }
+    } else if (!(await canUpload(user.roleId, category))) {
       return res.status(403).json({ success: false, message: "You are not authorized to upload files for this category" });
     }
     const data = await createPresignedUpload(req.body);

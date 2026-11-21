@@ -56,3 +56,24 @@ test("deletion skips external references and refuses cross-environment keys befo
     /outside dev\/ environment/,
   );
 });
+
+test("discussion attachments are limited to 5 MB and keep the other upload rules", () => {
+  const base = { fileName: "screenshot.png", contentType: "image/png", category: "discussions", entityId: "project-1" };
+  assert.equal(validateUploadMetadata({ ...base, fileSize: 5 * 1024 * 1024 }).category, "discussions");
+  assert.throws(() => validateUploadMetadata({ ...base, fileSize: 5 * 1024 * 1024 + 1 }), /5 MB/);
+  assert.throws(() => validateUploadMetadata({ ...base, fileSize: 0 }), /fileSize/);
+  assert.throws(() => validateUploadMetadata({ ...base, fileSize: 1024, contentType: "application/x-msdownload" }), /Unsupported contentType/);
+  // PowerPoint is allowed (old and new format); archives and scripts are still not
+  for (const contentType of ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"]) {
+    assert.equal(validateUploadMetadata({ ...base, fileName: "deck.pptx", contentType, fileSize: 1024 }).contentType, contentType);
+  }
+  for (const contentType of ["application/zip", "application/x-sh", "text/html", "application/javascript"]) {
+    assert.throws(() => validateUploadMetadata({ ...base, contentType, fileSize: 1024 }), /Unsupported contentType/, contentType);
+  }
+  // other categories keep their larger limit
+  assert.equal(validateUploadMetadata({ ...base, category: "projects", fileSize: 20 * 1024 * 1024 }).category, "projects");
+  assert.equal(
+    buildObjectKey(validateUploadMetadata({ ...base, fileSize: 10 }), "dev", 1728800000000, "uuid"),
+    "dev/discussions/project-1/1728800000000-uuid-screenshot.png",
+  );
+});

@@ -108,7 +108,10 @@ async function run() {
   const patch = (object: any, key: string, value: any) => { patches.push([object, key, object[key]]); object[key] = value; };
   patch(prisma.project, "findUnique", async () => project);
   patch(prisma.project, "findUniqueOrThrow", async () => project);
-  patch(prisma.user, "findUnique", async () => ({ id: "owner", role: { name: "SUPERADMIN" } }));
+  patch(prisma.user, "findUnique", async () => ({ id: "owner", roleId: "role-admin", role: { name: "SUPERADMIN" } }));
+  // Project access now comes from the role's Project Access settings; a role that was never synced uses the defaults (SUPERADMIN sees all).
+  patch(prisma.role, "findUnique", async () => ({ name: "SUPERADMIN", projectAccess: [] }));
+  patch(prisma.project, "count", async () => 1);
   patch(prisma.holiday, "findMany", async () => []);
   patch(prisma.incidentReport, "findMany", async () => []);
   patch(prisma.progressLog, "findMany", async () => []);

@@ -80,7 +80,7 @@ Names only. Never commit values.
 | `PORT` | HTTP port (default 5000) |
 | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` | Validate Microsoft ID tokens |
 | `SP_TENANT_ID`, `SP_CLIENT_ID`, `SP_CLIENT_SECRET`, `SP_SITE_ID`, `SP_PIN_SITE_ID`, `SP_PIN_LIST_ID` | SharePoint (pin master) |
-| `ASSETS_ENV`, `AWS_REGION`, `AWS_S3_ASSETS_BUCKET`, `ASSETS_BASE_URL`, `AWS_PROFILE` | S3 asset storage (see [S3_BACKEND_MIGRATION.md](S3_BACKEND_MIGRATION.md)) |
+| `ASSETS_ENV`, `AWS_REGION`, `AWS_S3_ASSETS_BUCKET`, `ASSETS_BASE_URL`, `AWS_PROFILE` | S3 asset storage (see [S3_BACKEND_MIGRATION.md](docs/S3_BACKEND_MIGRATION.md)) |
 | `AWS_SES_FROM_EMAIL`, `AWS_SES_REGION` | Email |
 | `PUPPETEER_EXECUTABLE_PATH`, `PUPPETEER_NO_SANDBOX` | PDF rendering on servers |
 | `REPORT_EXCEL_TEMPLATE_PATH`, `REPORT_IMAGE_ALLOWED_HOSTS` | Report export |
@@ -100,13 +100,15 @@ The `*:integration` scripts need a real database.
 
 ## Feature documentation
 
-- [APPROVAL_FLOW_IMPLEMENTATION.md](APPROVAL_FLOW_IMPLEMENTATION.md)
-- [INCIDENT_ESCALATION_IMPLEMENTATION.md](INCIDENT_ESCALATION_IMPLEMENTATION.md)
-- [NON_BUDGETED_PROJECTS.md](NON_BUDGETED_PROJECTS.md)
-- [WBS_PHASING_REQUIREMENTS.md](WBS_PHASING_REQUIREMENTS.md)
-- [PROJECT_TIMELINE_REMOVAL.md](PROJECT_TIMELINE_REMOVAL.md)
-- [S3_BACKEND_MIGRATION.md](S3_BACKEND_MIGRATION.md), [S3_ATTACHMENT_DELETION.md](S3_ATTACHMENT_DELETION.md), [S3_FRONTEND_HANDOFF.md](S3_FRONTEND_HANDOFF.md)
-- [EMAIL_FRONTEND_HANDOFF.md](EMAIL_FRONTEND_HANDOFF.md)
+- [APPROVAL_FLOW_IMPLEMENTATION.md](docs/APPROVAL_FLOW_IMPLEMENTATION.md)
+- [INCIDENT_ESCALATION_IMPLEMENTATION.md](docs/INCIDENT_ESCALATION_IMPLEMENTATION.md)
+- [NON_BUDGETED_PROJECTS.md](docs/NON_BUDGETED_PROJECTS.md)
+- [WBS_PHASING_REQUIREMENTS.md](docs/WBS_PHASING_REQUIREMENTS.md)
+- [PROJECT_TIMELINE_REMOVAL.md](docs/PROJECT_TIMELINE_REMOVAL.md)
+- [S3_BACKEND_MIGRATION.md](docs/S3_BACKEND_MIGRATION.md), [S3_ATTACHMENT_DELETION.md](docs/S3_ATTACHMENT_DELETION.md), [S3_FRONTEND_HANDOFF.md](docs/S3_FRONTEND_HANDOFF.md)
+- [EMAIL_FRONTEND_HANDOFF.md](docs/EMAIL_FRONTEND_HANDOFF.md)
+- [DISCUSSIONS.md](docs/DISCUSSIONS.md)
+- [PROJECT_ACCESS.md](docs/PROJECT_ACCESS.md)
 
 ## Known issues and risks
 
@@ -114,7 +116,7 @@ The `*:integration` scripts need a real database.
 2. **Token in query string** is accepted on every authenticated route; it ends up in logs and browser history.
 3. **`POST /api/emails/send` is unauthenticated.**
 4. **CORS origins are hardcoded** in `app.ts`; changing environments needs a code change.
-5. Dead code was cleaned in BV-040 (see [CLEANUP_LOG.md](CLEANUP_LOG.md)). Still open: routes with no known caller (`/api/calendar`, `PATCH /api/modules/:moduleId`, `holidays/range`, `/test-auth`) pending access-log review.
+5. Dead code was cleaned in BV-040 (see [CLEANUP_LOG.md](docs/CLEANUP_LOG.md)). Still open: routes with no known caller (`/api/calendar`, `PATCH /api/modules/:moduleId`, `holidays/range`, `/test-auth`) pending access-log review.
 6. `POST /api/auth/refresh` exists but the frontend never calls it.
 7. 27 unused declarations under `--noUnusedLocals`.
 8. `.env` is present locally; confirm it is covered by `.gitignore` and was never committed. `uploads/` and `dist/` should be ignored too.

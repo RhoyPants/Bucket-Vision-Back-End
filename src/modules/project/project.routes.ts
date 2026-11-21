@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ProjectController, assignProjectMember, getProjectMembers, getProjectTeamOrgChart, removeProjectMember, getProjectEngagedUsers, updateProjectMemberRole, uploadProjectAttachment, getProjectAttachments, deleteProjectAttachment, streamProjectAttachment } from "./project.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/rbac.middleware";
+import { requireProjectManager, requireProjectReadAccess } from "../../middleware/project-role.middleware";
 import { CpmController } from "../cpm/cpm.controller";
 import { projectOrgChartController } from "./project-org-chart.controller";
 
@@ -17,6 +18,7 @@ router.put(
   "/:projectId/cpm/dependencies",
   authenticate,
   authorize("projects", "UPDATE"),
+  requireProjectManager("projectId"),
   CpmController.save,
 );
 
@@ -42,6 +44,7 @@ router.post(
   "/:projectId/org-chart-builder/clone",
   authenticate,
   authorize("projects", "UPDATE"),
+  requireProjectManager("projectId"),
   projectOrgChartController.cloneFromProject,
 );
 
@@ -49,6 +52,7 @@ router.post(
   "/:projectId/org-chart-builder/photo",
   authenticate,
   authorize("projects", "UPDATE"),
+  requireProjectManager("projectId"),
   projectOrgChartController.uploadPhoto,
 );
 
@@ -62,6 +66,7 @@ router.put(
   "/:projectId/org-chart-builder",
   authenticate,
   authorize("projects", "UPDATE"),
+  requireProjectManager("projectId"),
   projectOrgChartController.save,
 );
 
@@ -69,6 +74,7 @@ router.delete(
   "/:projectId/org-chart-builder",
   authenticate,
   authorize("projects", "DELETE"),
+  requireProjectManager("projectId"),
   projectOrgChartController.remove,
 );
 
@@ -133,6 +139,7 @@ router.get(
   "/:id",
   authenticate,
   // authorize("projects", "READ"),
+  requireProjectReadAccess("id"),
   ProjectController.getById,
 );
 
@@ -149,6 +156,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("projects", "UPDATE"),
+  requireProjectManager("id"),
   ProjectController.update,
 );
 
@@ -188,6 +196,7 @@ router.get(
   "/:id/full",
   authenticate,
   // authorize("projects", "READ"),
+  requireProjectReadAccess("id"),
   ProjectController.getFull,
 );
 
@@ -229,6 +238,7 @@ router.post(
   "/:projectId/assign-member",
   authenticate,
   authorize("team_management", "CREATE"),
+  requireProjectManager("projectId"),
   assignProjectMember
 );
 
@@ -237,6 +247,7 @@ router.patch(
   "/:projectId/members/:userId/role",
   authenticate,
   authorize("team_management", "UPDATE"),
+  requireProjectManager("projectId"),
   updateProjectMemberRole
 );
 
@@ -245,6 +256,7 @@ router.post(
   "/:projectId/remove-member",
   authenticate,
   authorize("team_management", "DELETE"),
+  requireProjectManager("projectId"),
   removeProjectMember
 );
 

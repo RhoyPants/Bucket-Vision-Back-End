@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma";
+import { buildAccessibleProjectWhere } from "../project/project-access";
 import { projectDashboardService } from "../project-dashboard/project-dashboard.service";
 import {
   evaluateScheduleHealth, HEALTH_RULES_VERSION, recordedProgressAt, recordedStartAt,
@@ -31,16 +32,10 @@ export class DashboardService {
     });
     if (!user) throw new Error("User not found");
 
+    // The same projects the person has access to everywhere else (their role's Project Access). The
+    // dashboard then only counts the ACTIVE ones, plus a short list of those waiting for review.
     const accessibleProjectWhere: any = {
-      deletedAt: null,
-      ...(user.role?.name === "SUPERADMIN" || user.role?.name === "OP"
-        ? {}
-        : {
-            OR: [
-              { ownerId: userId },
-              { projectMembers: { some: { userId } } },
-            ],
-          }),
+      AND: [{ deletedAt: null }, await buildAccessibleProjectWhere(userId, user.roleId)],
     };
 
     const projectSelect = {

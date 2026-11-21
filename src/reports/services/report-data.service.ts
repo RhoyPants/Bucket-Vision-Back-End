@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma";
+import { buildAccessibleProjectWhere } from "../../modules/project/project-access";
 import { HEALTH_RULES_VERSION, rollupHealth, summarizeHealth, validProgress } from "../../utils/schedule-health";
 import {
   parseCalendarMonth,
@@ -277,7 +278,7 @@ export class ReportDataService {
   private async loadProjectForAccess(projectId: string, userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { businessUnitId: true, role: { select: { name: true } } },
+      select: { roleId: true },
     });
     if (!user) throw httpError("User not found", 401);
 
@@ -294,17 +295,9 @@ export class ReportDataService {
     });
     if (!project) throw httpError("Project not found", 404);
 
-    const role = user.role?.name?.toUpperCase();
-    const canViewAll = role === "SUPERADMIN" || role === "OP";
-    const sameBusinessUnitHead =
-      role === "BU_HEAD" &&
-      !!user.businessUnitId &&
-      user.businessUnitId === project.businessUnit;
-    const hasAccess =
-      canViewAll ||
-      sameBusinessUnitHead ||
-      project.ownerId === userId ||
-      project.projectMembers.length > 0;
+    // Same rule as everywhere else: the role's Project Access settings decide.
+    const accessWhere = await buildAccessibleProjectWhere(userId, user.roleId);
+    const hasAccess = (await prisma.project.count({ where: { AND: [{ id: projectId }, accessWhere] } })) > 0;
     if (!hasAccess) throw httpError("You do not have access to this project", 403);
     return project;
   }

@@ -12,6 +12,7 @@ import { durationDaysForRange, loadCpmCalendar } from "../cpm/cpm.service";
 import { approvalService } from "../approval/approval.service";
 import { assertUploadedObject, buildAssetUrl, deleteManagedAsset, fileKeyFromStoredValue, validateStoredFileReference } from "../../services/s3-assets.service";
 import { buildAccessibleProjectWhere, canViewProjectForApproval } from "./project-access";
+import { getRoleProjectAccess } from "../project-access/project-access.service";
 import { lockProjectForStructureUpdate, prepareProjectStructureMode, projectConflict } from "./project-structure.service";
 import { deleteProjectAssets } from "./project-deletion.service";
 
@@ -1056,88 +1057,26 @@ export class ProjectController {
       const userId = (req as any).user.id;
       const userRoleId = (req as any).user.roleId;
 
-      // Check if user is SUPER_ADMIN
-      const userRole = await (prisma as any).role.findUnique({
-        where: { id: userRoleId },
+      // Which projects this person can see is decided by their role's Project Access settings.
+      const accessWhere = await buildAccessibleProjectWhere(userId, userRoleId);
+
+      const projects = await prisma.project.findMany({
+        where: accessWhere,
+        orderBy: { createdAt: "desc" },
+        include: {
+          projectMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
       });
-
-      let projects;
-
-      if (userRole?.name === "SUPERADMIN" || userRole?.name === "OP") {
-        projects = await prisma.project.findMany({
-          orderBy: { createdAt: "desc" },
-          include: {
-            projectMembers: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-      } else if (userRole?.name === "BU_HEAD") {
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            businessUnitId: true,
-          },
-        });
-
-        projects = await prisma.project.findMany({
-          where: {
-            businessUnit: user?.businessUnitId,
-          },
-          orderBy: { createdAt: "desc" },
-          include: {
-            projectMembers: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-      } else {
-        // Regular users see: projects they own + projects they're members of
-        projects = await prisma.project.findMany({
-          where: {
-            OR: [
-              { ownerId: userId }, // User is owner
-              {
-                projectMembers: {
-                  some: {
-                    userId: userId, // User is member (SUB_OWNER or MEMBER)
-                  },
-                },
-              },
-            ],
-          },
-          orderBy: { createdAt: "desc" },
-          include: {
-            projectMembers: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-      }
 
       const enriched =
         await ProjectController.enrichBusinessUnitDetails(projects);
@@ -1192,28 +1131,18 @@ export class ProjectController {
         });
       }
 
-      const role = await prisma.role.findUnique({
-        where: { id: userRoleId },
-        select: { name: true },
-      });
       const conditions: Prisma.ProjectWhereInput[] = [
         { status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.CANCELLED] } },
       ];
 
-      if (role?.name === "BU_HEAD") {
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { businessUnitId: true },
-        });
-        conditions.push({
-          businessUnit:
-            user?.businessUnitId || "__NO_ACCESSIBLE_BUSINESS_UNIT__",
-        });
-      } else if (!["SUPERADMIN", "OP"].includes(role?.name || "")) {
-        conditions.push({
-          OR: [{ ownerId: userId }, { projectMembers: { some: { userId } } }],
-        });
-      }
+      // Which projects this person can see is decided by their role's Project Access settings.
+      const accessWhere = await buildAccessibleProjectWhere(userId, userRoleId);
+      if (Object.keys(accessWhere).length) conditions.push(accessWhere);
+
+      // What the Projects page lists is also set per role (Project Access > Projects page statuses).
+      // This used to be forced to ACTIVE in the browser for everyone except BU_HEAD and SUPERADMIN.
+      const access = await getRoleProjectAccess(userRoleId);
+      if (!access.listAllStatuses) conditions.push({ status: { in: access.listStatuses } });
 
       if (search) {
         conditions.push({
@@ -1541,25 +1470,11 @@ export class ProjectController {
         });
       }
 
-      const userRole = await (prisma as any).role.findUnique({
-        where: { id: userRoleId },
-      });
+      // Which projects this person can see is decided by their role's Project Access settings.
+      const accessWhere = await buildAccessibleProjectWhere(userId, userRoleId);
 
       const projects = await prisma.project.findMany({
-        where:
-          userRole?.name === "SUPERADMIN"
-            ? { status }
-            : {
-                status,
-                OR: [
-                  { ownerId: userId },
-                  {
-                    projectMembers: {
-                      some: { userId },
-                    },
-                  },
-                ],
-              },
+        where: { AND: [{ status }, accessWhere] },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,

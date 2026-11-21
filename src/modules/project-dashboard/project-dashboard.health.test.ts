@@ -41,7 +41,9 @@ async function main() {
     actualStartDate: null, task: { id: "t1", title: "Task", scope: { id: "s1", name: "Scope" } },
     ...row,
   }));
-  mock.method(prisma.user, "findUnique", async () => ({ id: "owner", role: { name: "SUPERADMIN" } }));
+  mock.method(prisma.user, "findUnique", async () => ({ id: "owner", roleId: "role-admin", role: { name: "SUPERADMIN" } }));
+  // Project access now comes from the role's Project Access settings; a role that was never synced uses the defaults (SUPERADMIN sees all).
+  mock.method(prisma.role, "findUnique", async () => ({ name: "SUPERADMIN", projectAccess: [] }));
   mock.method(prisma.project, "findFirst", async () => project);
   mock.method(prisma.project, "findUnique", async () => project);
   mock.method(prisma.projectMember, "findUnique", async () => ({ role: "PROJECT_MANAGER" }));

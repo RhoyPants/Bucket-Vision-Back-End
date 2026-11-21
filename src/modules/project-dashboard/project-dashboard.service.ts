@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma";
+import { buildAccessibleProjectWhere } from "../project/project-access";
 import { getSCurve } from "../progress/scurve.service";
 import {
   CreateDashboardKpiDTO,
@@ -642,30 +643,12 @@ export class ProjectDashboardService {
   }
 
   private async ensureProjectAccess(projectId: string, userId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true },
-    });
-
-    const hasGlobalProjectAccess =
-      user?.role?.name === "SUPERADMIN" || user?.role?.name === "OP";
-    const hasBusinessUnitProjectAccess =
-      user?.role?.name === "BU_HEAD" && !!user.businessUnitId;
+    // Same rule as everywhere else: the role's Project Access settings decide.
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { roleId: true } });
+    const accessWhere = user ? await buildAccessibleProjectWhere(userId, user.roleId) : { id: "__no_such_user__" };
 
     const project = await prisma.project.findFirst({
-      where:
-        hasGlobalProjectAccess
-          ? { id: projectId }
-          : {
-              id: projectId,
-              OR: [
-                { ownerId: userId },
-                { projectMembers: { some: { userId } } },
-                ...(hasBusinessUnitProjectAccess
-                  ? [{ businessUnit: user.businessUnitId }]
-                  : []),
-              ],
-            },
+      where: { AND: [{ id: projectId }, accessWhere] },
     });
 
     if (!project) {
